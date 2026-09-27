@@ -23,6 +23,8 @@ import { useNavigate } from "react-router-dom"
 import { Badge, Button, Card, LoadingSpinner } from "../components/ui"
 import api from "../lib/axios"
 import { cn } from "../lib/cn"
+import { describePriceAge } from "../lib/priceAge"
+import { useStockPricesStore } from "../stores/stockPricesStore"
 
 export interface StockItem {
   id: number
@@ -77,12 +79,58 @@ type SortField = "symbol" | "last_price" | "change_percent" | "market_cap" | "vo
 type SortOrder = "asc" | "desc"
 type ViewMode = "grid" | "table"
 type PriceFilter = "all" | "gainers" | "losers" | "unchanged"
+type SyncStatus = { tone: "success" | "error"; text: string }
+
+const NUMERIC_FIELDS = [
+  "last_price", "change_percent", "volume", "listed_shares", "market_cap", "high_52w", "low_52w",
+] as const
+const NULLABLE_NUMERIC_FIELDS = ["eps", "pe_ratio", "book_value", "pb_ratio"] as const
+
+// The API serializes decimal columns as strings (e.g. "3219847618.0"). Convert them
+// so sums and comparisons work numerically instead of concatenating strings.
+function normalizeStock(raw: StockItem): StockItem {
+  const stock = { ...raw }
+  NUMERIC_FIELDS.forEach((field) => {
+    stock[field] = Number(raw[field]) || 0
+  })
+  NULLABLE_NUMERIC_FIELDS.forEach((field) => {
+    stock[field] = raw[field] === null || raw[field] === undefined ? null : Number(raw[field])
+  })
+  return stock
+}
 
 export function StocksPage() {
   const navigate = useNavigate()
-  const [stocks, setStocks] = useState<StockItem[]>([])
+  const [storedStocks, setStocks] = useState<StockItem[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null)
+  const livePrices = useStockPricesStore((state) => state.prices)
+
+  // Overlay prices pushed over the WebSocket (or polled) on top of the fetched list.
+  const stocks = useMemo(
+    () =>
+      storedStocks.map((stock) => {
+        const live = livePrices[stock.symbol]
+        if (!live || (stock.last_updated && new Date(live.updatedAt) <= new Date(stock.last_updated))) return stock
+        return {
+          ...stock,
+          last_price: live.lastPrice,
+          change_percent: live.changePercent,
+          volume: live.volume,
+          last_updated: live.updatedAt,
+        }
+      }),
+    [storedStocks, livePrices],
+  )
+
+  const priceAge = useMemo(() => {
+    const latest = stocks.reduce<string | null>(
+      (max, stock) => (stock.last_updated && (!max || new Date(stock.last_updated) > new Date(max)) ? stock.last_updated : max),
+      null,
+    )
+    return describePriceAge(latest)
+  }, [stocks])
   const [error, setError] = useState<string | null>(null)
 
   // Filters & Search
@@ -110,7 +158,7 @@ export function StocksPage() {
       setLoading(true)
       setError(null)
       const response = await api.get<StockItem[]>("/stocks")
-      setStocks(response.data)
+      setStocks(response.data.map(normalizeStock))
     } catch (err: any) {
       console.error("Failed to fetch stocks:", err)
       setError(err.response?.data?.error || "Failed to load stocks data. Please verify Rails API server is running.")
@@ -137,10 +185,21 @@ export function StocksPage() {
   const handleRefresh = async () => {
     try {
       setRefreshing(true)
-      await api.post("/data_imports/fetch_prices")
+      setSyncStatus(null)
+      const response = await api.post<{ processed: number; added: string[] }>("/data_imports/sync_market")
+      const added = response.data.added?.length ?? 0
+      setSyncStatus({
+        tone: "success",
+        text: `Updated ${response.data.processed} stocks${added > 0 ? `, added ${added} new listing${added === 1 ? "" : "s"}` : ""}.`,
+      })
       await fetchStocks()
     } catch (err) {
-      console.error("Failed to trigger live refresh:", err)
+      console.error("Failed to sync market prices:", err)
+      const apiError = (err as { response?: { data?: { error?: string } } }).response?.data?.error
+      setSyncStatus({
+        tone: "error",
+        text: apiError || "Could not sync prices. Check that the Rails API server is running.",
+      })
     } finally {
       setRefreshing(false)
     }
@@ -224,12 +283,13 @@ export function StocksPage() {
     }
   }
 
-  const formatLargeNumber = (val: number | null | undefined) => {
-    if (val === null || val === undefined || val === 0) return "N/A"
+  const formatLargeNumber = (raw: number | string | null | undefined) => {
+    const val = Number(raw)
+    if (raw === null || raw === undefined || !Number.isFinite(val) || val === 0) return "N/A"
     if (val >= 1_000_000_000_000) return `NPR ${(val / 1_000_000_000_000).toFixed(2)} Trillion`
     if (val >= 1_000_000_000) return `NPR ${(val / 1_000_000_000).toFixed(2)} Billion`
     if (val >= 1_000_000) return `NPR ${(val / 1_000_000).toFixed(2)} Million`
-    return `NPR ${val.toLocaleString()}`
+    return `NPR ${Math.round(val).toLocaleString()}`
   }
 
   return (
@@ -251,10 +311,28 @@ export function StocksPage() {
             className="flex items-center gap-2"
           >
             <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-            {refreshing ? "Syncing..." : "Sync Daily Prices"}
+            {refreshing ? "Syncing..." : "Sync Latest Prices"}
           </Button>
         </div>
       </div>
+
+      {(priceAge || syncStatus) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm" aria-live="polite">
+          {priceAge && (
+            <p className={cn("flex items-center gap-2", priceAge.isStale ? "text-amber-700" : "text-slate")}>
+              <span>
+                Prices as of <span className="font-semibold">{priceAge.label}</span> ({priceAge.age})
+              </span>
+              {priceAge.isStale && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold tracking-wide text-amber-800">May be out of date</span>}
+            </p>
+          )}
+          {syncStatus && (
+            <p className={syncStatus.tone === "success" ? "text-emerald-700" : "text-rose-700"} role={syncStatus.tone === "error" ? "alert" : undefined}>
+              {syncStatus.text}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Overview Stat Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
