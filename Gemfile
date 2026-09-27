@@ -52,7 +52,7 @@ gem "devise", "~> 5.0"
 gem "jwt", "~> 3.1"
 gem "rack-cors", "~> 3.0"
 gem "sidekiq", "~> 8.1"
-gem "redis", "~> 5.4"
+gem "redis", "~> 6.0"
 gem "httparty", "~> 0.24.2"
 gem "pg_enum", "~> 0.2.0", require: false
 
