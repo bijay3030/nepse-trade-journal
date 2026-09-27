@@ -1,0 +1,11 @@
+production:
+  daily_nepse_price_fetch:
+    class: FetchNepseDailyPricesJob
+    queue: default
+    schedule: "15 10 * * *" # Exactly 4:00 PM Nepali Standard Time (10:15 AM UTC) every day
+
+development:
+  daily_nepse_price_fetch:
+    class: FetchNepseDailyPricesJob
+    queue: default
+    schedule: "15 10 * * *" # Exactly 4:00 PM Nepali Standard Time (10:15 AM UTC) every day

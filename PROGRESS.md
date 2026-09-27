@@ -1,0 +1,519 @@
+# Project Progress
+
+## 2026-03-15
+
+### Completed
+- Step 1: Project Setup & Foundation
+  - Created Rails API app:
+    - `rails new nepse-trade-journal --api --database=postgresql --skip-test`
+  - Added core gems:
+    - `devise`, `jwt`, `devise-jwt`, `rack-cors`, `sidekiq`, `redis`, `httparty`, `pg_enum`
+  - Added dev/test gems:
+    - `active_model_serializers`, `faker`, `factory_bot_rails`, `rspec-rails`
+  - Ran setup commands:
+    - `rails db:create`
+    - `rails generate rspec:install`
+    - `rails generate devise:install`
+  - Configured CORS in `config/initializers/cors.rb` for `http://localhost:3001`.
+  - Added JWT dispatch/revocation config in `config/initializers/devise.rb`.
+
+- Step 2: Database Schema Design
+  - Generated migrations:
+    - `CreateStocks`
+    - `CreateTradingStrategies`
+    - `CreateTradePlans`
+    - `CreateTradeExecutions`
+    - `CreateTradeResults`
+    - `CreateDailyJournals`
+    - `CreatePortfolios`
+    - `CreateHoldings`
+  - Fixed duplicate migration timestamps caused by parallel generation.
+  - Ran `bin/rails db:migrate` successfully.
+
+- Step 3: Seed NEPSE Stock Data
+  - Added model files:
+    - `app/models/stock.rb`
+    - `app/models/trading_strategy.rb`
+  - Added migration:
+    - `AddNepseFieldsToStocksAndTradingStrategies`
+  - Added stock/strategy fields:
+    - `stocks`: `symbol`, `name`, `sector`, `last_price`, `last_updated`
+    - `trading_strategies`: `name`, `description`, `is_default`
+  - Added indexes:
+    - `stocks.symbol` (unique), `stocks.sector`
+    - `trading_strategies.name` (unique), `trading_strategies.is_default`
+  - Replaced `db/seeds.rb` with NEPSE stock + default strategy seed data.
+  - Ran:
+    - `rails db:migrate`
+    - `rails db:seed`
+  - Seed result:
+    - `Created 12 stocks`
+
+- Step 5: Build API Controllers
+  - Added API v1 controllers:
+    - `Api::V1::BaseController`
+    - `Api::V1::StocksController`
+    - `Api::V1::TradePlansController`
+    - `Api::V1::TradeExecutionsController`
+    - `Api::V1::TradeResultsController`
+    - `Api::V1::AnalyticsController`
+  - Added auth session controller:
+    - `Users::SessionsController`
+  - Added serializers:
+    - `StockSerializer`, `StockDetailSerializer`
+    - `TradePlanSerializer`, `TradePlanDetailSerializer`
+    - `TradeExecutionSerializer`, `TradeResultSerializer`
+  - Added supporting service/job:
+    - `NepsePriceService`
+    - `TradeAnalyticsCacheJob`
+  - Added model layer + associations/scopes/methods for:
+    - `User`, `TradePlan`, `TradeExecution`, `TradeResult`, `Portfolio`, `Holding`, `DailyJournal`
+  - Added routes for:
+    - `/login`, `/logout`
+    - `/api/v1/stocks`, `/api/v1/stocks/:id`, `/api/v1/stocks/sectors`
+    - `/api/v1/trade_plans` (index/create/show)
+    - Nested execution/result create endpoints
+    - `/api/v1/analytics/dashboard`, `/api/v1/analytics/trade_statistics`
+  - Added migration:
+    - `BuildTradeJournalDomain`
+    - Created `users` table and expanded domain tables with required fields/foreign keys/indexes.
+  - Validation:
+    - `rails db:migrate` passed
+    - `rails runner "puts 'boot_ok'"` passed
+    - `rails zeitwerk:check` passed
+
+- Step 8: Build Core UI Components (Tailwind)
+  - Frontend setup:
+    - Installed `tailwindcss@3.4.17`, `postcss`, `autoprefixer` in `frontend/`.
+    - Generated and configured:
+      - `frontend/tailwind.config.js`
+      - `frontend/postcss.config.js`
+      - `frontend/src/index.css` with Tailwind directives + project visual theme.
+  - Added reusable UI components:
+    - `Button`, `Card`, `Badge`, `Input`, `Select`, `StatCard`, `TradeTable`
+    - Shared utility: `frontend/src/lib/cn.ts`
+    - Layout shell: `frontend/src/components/layout/AppShell.tsx`
+  - Replaced starter app with NEPSE dashboard composition:
+    - `frontend/src/App.tsx` now uses reusable components for KPI cards, trade table, and quick plan entry panel.
+  - Build validation:
+    - `npm run build` passed in `frontend/`.
+
+- Step 9: Build Trade Entry Flow (Plan -> Execute -> Result Wizard)
+  - Added reusable textarea component:
+    - `frontend/src/components/ui/Textarea.tsx`
+  - Added multi-step trade capture wizard:
+    - `frontend/src/components/trade/TradeEntryWizard.tsx`
+  - Wizard includes:
+    - 3-step flow (`Plan`, `Execute`, `Result`)
+    - Progress bar + step chips
+    - Per-step required-field validation
+    - Smooth step transitions
+    - Estimated P/L preview
+    - Reset/back/continue/save controls
+    - Success feedback banner after submission
+  - Integrated wizard into main app:
+    - Updated `frontend/src/App.tsx`
+  - Validation:
+    - `npm run build` passed in `frontend/`.
+
+- Stock Search Component Integration
+  - Added reusable stock search component:
+    - `frontend/src/components/trades/StockSearchInput.tsx`
+  - Added frontend API client:
+    - `frontend/src/lib/axios.ts`
+  - Integrated React Query provider at app root:
+    - Updated `frontend/src/main.tsx`
+  - Integrated stock search into wizard Plan step:
+    - Updated `frontend/src/components/trade/TradeEntryWizard.tsx`
+  - Installed icon dependency:
+    - `lucide-react`
+  - Validation:
+    - `npm run build` passed in `frontend/`.
+
+- Routing + Persistent Layout (React Router v6)
+  - Installed and pinned routing/animation dependencies:
+    - `react-router-dom@6.30.1`
+    - `framer-motion`
+  - Implemented route structure:
+    - `/dashboard` -> Dashboard page
+    - `/trade/new` -> TradeEntryWizard page
+    - `/portfolio` -> Portfolio page
+    - `/trades` -> Trade history page
+    - `/analytics` -> AnalyticsDashboard mounted page
+    - `/journal` -> Daily journal page
+    - `/settings` -> Settings page
+  - Added persistent layout component:
+    - `frontend/src/layouts/PlatformLayout.tsx`
+    - Responsive sidebar navigation (desktop)
+    - Collapsible nav menu (mobile)
+    - Bottom mobile tab bar (`<md`)
+    - Active route highlighting with animated indicator
+    - User profile dropdown in header
+    - Market status indicator pill (Open/Closed, Kathmandu time)
+    - Framer Motion page transitions (slide from right)
+  - Added page components:
+    - `frontend/src/pages/DashboardPage.tsx`
+    - `frontend/src/pages/TradeNewPage.tsx`
+    - `frontend/src/pages/PortfolioPage.tsx`
+    - `frontend/src/pages/TradesPage.tsx`
+    - `frontend/src/pages/AnalyticsPage.tsx`
+    - `frontend/src/pages/JournalPage.tsx`
+    - `frontend/src/pages/SettingsPage.tsx`
+  - Updated app entry:
+    - `frontend/src/App.tsx` now defines route tree with nested layout and redirects.
+    - `frontend/src/main.tsx` now wraps app in `BrowserRouter`.
+  - Validation:
+    - `npm run build` passed in `frontend/`.
+
+- Comprehensive Trade Management (`/trades`)
+  - Rebuilt `frontend/src/pages/TradesPage.tsx` with:
+    - Trade list view using filter tabs: `All | Active | Closed | Planned`
+    - Filters: strategy, date range, stock search, P&L (win/loss)
+    - Sorting: date, P&L, R:R
+    - Responsive card-based layout (desktop grid, mobile list flow)
+    - Card fields: stock, strategy badge, entry/exit, P&L, status
+  - Added trade detail modal with:
+    - Three-column `Plan | Execution | Result` layout
+    - Visual trade replay chart (entry/exit reference markers)
+    - MAE/MFE badges for closed trades
+    - Mistake tags with color coding
+    - Lesson learned display
+    - Edit/Delete actions
+  - Added planned trades section:
+    - Lists unexecuted plans
+    - `Execute Now` action opening wizard prefilled at execution step
+    - Price alert status badges
+    - Auto-expiry behavior after 7 days
+  - Added bulk actions:
+    - Export CSV (selected trades or filtered trades)
+    - Print report (selected trades or filtered trades)
+  - Wizard integration for editing:
+    - Updated `frontend/src/components/trade/TradeEntryWizard.tsx`
+    - Added `initialDraft`, `initialStep`, `mode`, `onSave`, `onCancel` props
+    - Reused inside `/trades` edit/execute modal workflows
+  - Validation:
+    - `npm run build` passed in `frontend/`.
+
+- Real-time Price Updates (ActionCable + Fallback Polling)
+  - Backend:
+    - Added ActionCable channel:
+      - `app/channels/stock_prices_channel.rb`
+      - `app/channels/application_cable/channel.rb`
+      - `app/channels/application_cable/connection.rb`
+    - Mounted cable endpoint:
+      - `mount ActionCable.server => "/cable"` in `config/routes.rb`
+    - Added polling fallback endpoint:
+      - `GET /api/v1/stocks/current_prices` (optional `symbols`, optional `refresh=true`)
+      - Implemented in `app/controllers/api/v1/stocks_controller.rb`
+    - Added stock price payload helper:
+      - `Stock#price_payload` in `app/models/stock.rb`
+    - Broadcasting from job:
+      - `TradeAnalyticsCacheJob` now refreshes stock prices and broadcasts to `stock_prices` stream.
+    - ActionCable dev origins:
+      - Added localhost frontend origins in `config/environments/development.rb`
+  - Frontend:
+    - Added Zustand real-time store:
+      - `frontend/src/stores/stockPricesStore.ts`
+    - Added real-time hook with WS + polling fallback:
+      - `frontend/src/hooks/useStockPrices.ts`
+      - Subscribes to `/cable` on mount
+      - Falls back to polling every 30s if WS disconnects/fails
+      - Updates store with incoming prices
+      - Includes market status logic for NPT (Sun-Thu, 11:00-15:00)
+      - Pauses updates when market is closed
+      - Exposes manual `refresh()` method
+    - Price change animation + direction arrows:
+      - Enhanced `frontend/src/components/ui/PriceDisplay.tsx`
+      - Green flash on increase, red flash on decrease (1s transition)
+      - Optional up/down/flat arrow rendering
+    - Connection + market UX in layout:
+      - Updated `frontend/src/layouts/PlatformLayout.tsx`
+      - Live/Reconnecting/Polling/Paused indicator
+      - Manual refresh button
+      - \"Market Closed\" banner with countdown to next open
+    - Integrated live pricing into pages:
+      - `frontend/src/pages/DashboardPage.tsx`
+      - `frontend/src/pages/PortfolioPage.tsx`
+  - Validation:
+    - `rails zeitwerk:check` passed
+    - `npm run build` passed in `frontend/`.
+
+- Data Management Features (Export/Import/Integrity)
+  - Backend export/import APIs:
+    - Added `Api::V1::DataManagementController` with:
+      - `GET /api/v1/data_management/trades_export_csv`
+      - `GET /api/v1/data_management/journal_export_markdown`
+      - `GET /api/v1/data_management/analytics_export_report`
+      - `GET /api/v1/data_management/full_backup`
+      - `GET /api/v1/data_management/import_template`
+      - `POST /api/v1/data_management/import_preview`
+      - `POST /api/v1/data_management/import_commit`
+      - `GET /api/v1/data_management/deleted_trades`
+      - `POST /api/v1/data_management/restore_trade/:id`
+      - `GET /api/v1/data_management/audit_logs`
+    - Added services:
+      - `DataManagement::ExportService`
+      - `DataManagement::TradeImportService`
+      - `DataManagement::CloudBackupService` (optional provider placeholders)
+  - Import behavior:
+    - CSV template generation for bulk trade entry
+    - Import preview with row-level validation and error reporting
+    - Commit import for valid rows only
+    - Broker statement mapping support (`format=broker_statement`)
+  - Automated backups:
+    - Added `WeeklyBackupJob`
+    - Added `BackupMailer` + mail template
+    - Added recurring schedule template in `config/recurring.yml` (commented for production)
+  - Data integrity:
+    - Added migration `AddDataManagementAndIntegrityFeatures`:
+      - Soft-delete column (`deleted_at`) for `trade_plans`, `trade_executions`, `trade_results`, `daily_journals`
+      - `audit_logs` table
+      - `daily_journal_versions` table
+      - Added `daily_journals` fields (`user_id`, `trade_date`, `mood`, `discipline_score`, `content`)
+    - Added `SoftDeletable` concern (soft delete/restore + kept/with_deleted scopes)
+    - Added `Auditable` concern (create/update audit events)
+    - Added models:
+      - `Current`
+      - `AuditLog`
+      - `DailyJournalVersion`
+    - Updated models for associations/auditing/versioning:
+      - `TradePlan`, `TradeExecution`, `TradeResult`, `DailyJournal`, `User`
+    - Added journal version APIs via `Api::V1::DailyJournalsController`:
+      - `GET /api/v1/daily_journals/:daily_journal_id/version_history`
+      - `POST /api/v1/daily_journals/:daily_journal_id/versions/:id/restore`
+    - Added soft-delete endpoint for trades:
+      - `DELETE /api/v1/trade_plans/:id`
+  - Frontend data-management UI:
+    - Updated `frontend/src/pages/SettingsPage.tsx` to use backend APIs for:
+      - Exports (Trades CSV, Journal Markdown, Analytics PDF, Full backup JSON)
+      - Import template download
+      - CSV import preview + commit (with format selector)
+      - Deleted trade restore
+      - Audit log listing
+      - Automated backup notes
+  - Validation:
+    - `rails db:migrate` passed
+    - `rails zeitwerk:check` passed
+    - `npm run build` passed in `frontend/`.
+
+- Step 4: Create Rails Models & Associations
+  - Updated/added model files:
+    - `app/models/stock.rb`
+    - `app/models/trading_strategy.rb`
+    - `app/models/trade_plan.rb`
+    - `app/models/trade_execution.rb`
+    - `app/models/trade_result.rb`
+    - `app/models/user.rb`
+    - `app/models/jwt_denylist.rb`
+  - Added associations, validations, scopes, enums, and helper methods based on the Step 4 spec.
+  - Resolved enum naming conflict on `TradeExecution.order_type` by using `prefix: true`.
+  - Verified model eager loading:
+    - `bin/rails runner 'Rails.application.eager_load!; puts :ok'` -> `ok`
+
+- Step 5: API Routing Structure
+  - Updated `config/routes.rb` with:
+    - Devise auth routes under `api/v1/auth` (JSON default)
+    - `api/v1` resources for stocks, trade plans, trade executions/results, strategies, journals, portfolios
+    - Analytics endpoints: `dashboard`, `statistics`, `equity_curve`, `mae_mfe`
+  - Verified routes load successfully with `bin/rails routes`.
+
+- Step 6: Initialize React Application
+  - Created Vite React TypeScript app in `frontend/`.
+  - Installed essential frontend libraries:
+    - `react-router-dom`
+    - `axios`
+    - `@tanstack/react-query`
+    - `zustand`
+    - `react-hook-form`
+    - `zod`
+  - Verified frontend build:
+    - `npm run build` (success)
+
+- Step 10: Main Dashboard Page (`/dashboard`)
+  - Added router-based app shell with routes:
+    - `/dashboard` -> main dashboard page
+    - `/trades` -> trades page placeholder
+  - Implemented dashboard overview sections:
+    - Market Overview (NEPSE card, sparkline, breadth)
+    - Top Gainers auto-scroll carousel
+    - Top Losers auto-scroll carousel
+    - Portfolio Summary (animated total value, day P&L badge, return %, sector pie)
+    - Watchlist widget (search add/remove, 30s polling, sparkline, quick trade buttons)
+    - Recent Activity feed (last 5 trades + `/trades` link)
+    - Quick Actions + floating mobile actions
+  - Integrated `AnalyticsDashboard` as a dashboard tab (not a separate page).
+  - Updated analytics stats endpoint to `/analytics/trade_statistics`.
+  - Validation:
+    - `npm run build` passed.
+
+- Step 11: Portfolio Page (`/portfolio`)
+  - Built `/portfolio` with:
+    - Portfolio header metrics (`Total Value`, `Invested Amount`, `Total P&L`, `Day P&L`)
+    - Time period selector (`1D`, `1W`, `1M`, `3M`, `1Y`, `ALL`)
+    - Recharts equity curve (area + gradient)
+  - Implemented holdings table:
+    - Sortable columns (`Stock`, `Qty`, `Avg Price`, `Current`, `P&L Rs`, `P&L %`)
+    - Expandable rows with trade history, quick buy/sell, and price alerts
+    - Profit/loss row gradients (green/red)
+  - Added sector allocation donut chart:
+    - Click sector to filter holdings table
+  - Added cash position card:
+    - Available cash + mock `Add Funds`
+  - Added empty state:
+    - Illustration/icon + `Start your first trade` CTA
+  - Real-time behavior:
+    - Polls stock prices every 30s via React Query
+    - Calculates unrealized P&L on frontend from live prices
+    - Sell action opens pre-filled trade form modal
+  - Validation:
+    - `npm run build` passed.
+
+- Step 12: Trading Journal (`/journal`)
+  - Rebuilt `JournalPage` with full workflow:
+    - Daily entry form:
+      - Date picker (defaults to today)
+      - Market commentary textarea + optional voice-to-text toggle
+      - Emotion selector buttons (`😌 😎 😰 🤩 😱 😤`)
+      - Discipline score slider (`1-10`)
+      - Trades planned/taken counters
+      - Day P&L input
+      - Lessons learned + tomorrow plan textareas
+    - Journal archive:
+      - Toggle: List view / Calendar heatmap view
+      - Calendar heatmap cells color by P&L intensity (green/red)
+      - List cards with date, emotion, discipline, preview, expandable full details
+    - Weekly review generator:
+      - Computes weekly trades, P&L, win rate, tagged mistakes, mood trend
+      - PDF export via `jspdf` (lazy-loaded)
+    - Insights panel:
+      - Best weekday pattern
+      - Emotion-to-P&L correlation
+      - Discipline trend over time
+    - Tags + search:
+      - Auto tag parsing from hashtags in journal text
+      - Full-text search across commentary, lessons, tomorrow plan, and tags
+  - Data handling:
+    - Entries persisted to `localStorage`
+    - Managed via React Query (`journal-entries`) with loading state
+  - Validation:
+    - `npm run build` passed.
+
+- Step 13: Settings Page (`/settings`)
+  - Rebuilt settings page with full sections and `react-hook-form` validation:
+    - Profile settings:
+      - Name, email, phone edit
+      - Current/new password fields with validation
+      - Optional avatar upload
+    - Trading preferences:
+      - Default risk per trade (1-5%)
+      - Preferred broker dropdown
+      - Default strategy
+      - Position sizing method (Risk-based / Fixed amount)
+    - Notification settings:
+      - Email notification toggle
+      - Price alert method toggles (Email / Push / In-app)
+      - Daily summary email time
+      - Weekly report day
+    - Display settings:
+      - Theme (Dark/Light/System)
+      - Number format (Nepali/English)
+      - Default dashboard view
+    - Data management:
+      - Export trades as JSON/CSV
+      - Import trades from JSON/CSV
+      - Delete account with `DELETE` confirmation
+    - Billing placeholder:
+      - Current plan and upgrade action
+  - UX:
+    - Save success toast notification
+    - Local persistence of settings
+  - Validation:
+    - `npm run build` passed.
+
+- Step 14: Mobile + PWA Optimization
+  - Responsive/mobile UX:
+    - Increased interactive touch target baseline (`>=44px`) for buttons/nav.
+    - Added mobile floating action button with bottom-sheet quick actions.
+    - Added mobile onboarding overlay (first launch) with key feature tooltips.
+    - Added first-time sample data seeding for journal and portfolio.
+    - Converted portfolio holdings table to card-style mobile layout while keeping desktop table.
+  - Mobile interactions:
+    - Added pull-to-refresh behavior on mobile lists (Trades, Journal, Portfolio).
+    - Added swipe actions on trade cards:
+      - Swipe right => quick sell flow
+      - Swipe left => edit flow
+  - PWA:
+    - Added `vite-plugin-pwa` configuration in `vite.config.ts`.
+    - Added manifest with NEPSE theme colors and standalone app metadata.
+    - Added Workbox runtime caching for `/api/*` requests (NetworkFirst).
+    - Added generated PWA assets/icons in `frontend/public/pwa/`.
+    - Registered service worker in `src/main.tsx`.
+    - Added Apple touch icon + theme color in `index.html`.
+  - Performance:
+    - Route-level lazy loading/code splitting in `App.tsx`.
+    - Lazy-loaded analytics dashboard chunk in `AnalyticsPage`.
+    - Manual chunk splitting configured for core bundles (react/charts/motion/vendor).
+    - Incremental trade list rendering (`Load More`) to reduce initial list render cost.
+    - Simplified portfolio curve datapoints on mobile.
+  - Validation:
+    - `npm run build` passed with PWA artifacts generated (`sw.js`, `workbox-*.js`).
+
+- User-Facing Documentation & Guidance
+  - In-app onboarding/tour:
+    - Updated `frontend/src/layouts/PlatformLayout.tsx` with a multi-step first-login walkthrough.
+    - Tour highlights the `Plan -> Execute -> Review` workflow and includes a `Start Tutorial Trade` action.
+    - Added tutorial handoff to trade flow:
+      - `frontend/src/pages/TradeNewPage.tsx` supports `?tutorial=1` and pre-fills wizard draft values.
+  - Contextual help:
+    - Added reusable help tooltip component:
+      - `frontend/src/components/ui/HelpTooltip.tsx`
+    - Exported from shared UI barrel:
+      - `frontend/src/components/ui/index.ts`
+    - Added metric tooltips and help links in:
+      - `frontend/src/components/ui/StatCard.tsx`
+      - `frontend/src/pages/DashboardPage.tsx`
+      - `frontend/src/components/dashboard/AnalyticsDashboard.tsx`
+    - Added strategy explanation callout in:
+      - `frontend/src/components/trade/TradeEntryWizard.tsx`
+  - Help center/FAQ:
+    - Added dedicated help page:
+      - `frontend/src/pages/HelpPage.tsx`
+    - Includes:
+      - FAQ entries (`P&L`, `MAE/MFE`, stop-loss guidance, NEPSE market hours)
+      - Strategy explanation cards with examples
+      - Video tutorial placeholders with YouTube links
+    - Mounted route:
+      - `frontend/src/App.tsx` now includes `/help`
+      - `frontend/src/layouts/PlatformLayout.tsx` includes Help in navigation
+  - Keyboard shortcuts + quick navigation:
+    - Added global shortcuts in `PlatformLayout`:
+      - `/` -> open quick search
+      - `N` -> new trade
+      - `J` -> journal
+      - `?` -> show shortcuts modal
+    - Added lightweight command palette modal for route navigation.
+  - Validation:
+    - `npm run build` passed in `frontend/`.
+
+- Live NEPSE Price Service Wiring
+  - Replaced mock random price generation with real HTTP fetch/parsing in:
+    - `app/services/nepse_price_service.rb`
+  - Added configurable API integration via environment variables:
+    - `NEPSE_FREE_API_TEMPLATE` (URL template with `%{symbol}`)
+    - `NEPSE_FREE_API_KEY` (optional)
+    - `NEPSE_FREE_API_KEY_HEADER` (optional, default `X-API-Key`)
+  - Added tolerant payload normalization for common key variants:
+    - price keys (`last_price`, `ltp`, `price`, etc.)
+    - change keys (`change_percent`, `percentageChange`, etc.)
+    - volume keys (`volume`, `totalTradedQuantity`, etc.)
+  - Existing call sites continue to use the same service:
+    - stock show/current prices endpoints
+    - `TradeAnalyticsCacheJob` broadcast refresh loop
+  - Note:
+    - External API reachability could not be verified in sandbox due DNS/network restriction.
+
+### Notes
+- Rails boot was blocked by `pg_enum` auto-loading with Rails 8.
+- Temporary unblock applied in `Gemfile`:
+  - `gem "pg_enum", "~> 0.2.0", require: false`
+- Commands should be run with `rbenv` shims active to avoid macOS system Ruby (`2.6`) conflicts.
