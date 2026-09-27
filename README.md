@@ -60,6 +60,18 @@ The market sync adds any listed stock it hasn't seen before. The market table ha
 no company names or sectors, so new listings start with the symbol as the name and
 the sector "Others" until `bin/rails nepse:sync_fundamentals` fills them in.
 
+VCP and price-action analysis need months of daily history, which the market sync
+does not provide. Load about a year of it once (this takes roughly 30–45 minutes
+for all stocks, because the source answers slowly):
+
+```bash
+bin/rails "nepse:backfill_history[365]"             # all active stocks
+bin/rails "nepse:backfill_history[365,NABIL NICA]"  # or just a few symbols
+```
+
+The backfill reads adjusted daily bars from Merolagani's chart endpoint, replaces
+stored rows in that range, and recalculates moving averages afterwards.
+
 Health check: `curl http://localhost:3000/up` should return a green page.
 
 ### 2. Frontend (Vite on port 5173)
@@ -87,6 +99,7 @@ you can use the app straight away.
 | Market overview   | `/market`              | NEPSE index trend, breadth, sectors             |
 | VCP screener      | `/screener`            | Setup scores, breakout watch list               |
 | Stock analysis    | `/screener/NABIL`      | Candles, moving averages, levels, VCP breakdown |
+| Watchlist         | `/watchlist`           | Tracked setups, entry zones, alerts             |
 | Stocks explorer   | `/stocks`              | All stocks with price, change %, fundamentals   |
 | New trade         | `/trade/new`           | Plan → Execute → Result wizard                  |
 | Trades            | `/trades`              | Filters, trade detail, CSV export               |
@@ -120,7 +133,7 @@ Prices are stored in the database (`stocks` for the latest snapshot,
 `stock_daily_prices` for daily history) and the app reads from there.
 
 **While `bin/dev` is running, prices update automatically.** Every 5 minutes during
-market hours (Sun–Thu, 11:00–15:15 Nepal time) `SyncMarketPricesJob` pulls the
+market hours (Mon–Fri, 11:00–15:15 Nepal time) `SyncMarketPricesJob` pulls the
 Sharesansar market table for all listed stocks and pushes the new prices to open
 browsers over the WebSocket. At 4:00 PM Nepal time it records the closing prices.
 If Sharesansar is down at that point, it falls back to the per-symbol price API.
@@ -166,7 +179,7 @@ curl -X POST http://localhost:3000/api/v1/data_imports/sync_daily_prices
 - The **refresh button in the header** makes the API re-fetch the last traded price
   from the per-symbol API. It fetches the stocks on screen (for example, your portfolio
   holdings), or up to 200 stocks if none are being tracked. Expect it to be slow.
-- During market hours (Sun–Thu, 11:00–15:00 Nepal time) the frontend subscribes to
+- During market hours (Mon–Fri, 11:00–15:00 Nepal time) the frontend subscribes to
   the `StockPricesChannel` WebSocket and polls `/stocks/current_prices` every 30
   seconds if the socket drops. Outside market hours it stops fetching.
 
@@ -185,6 +198,38 @@ yet, so on a holiday the job simply re-reads the previous session's prices.
 
 ---
 
+## Watchlist and entry zones
+
+Track a stock toward an entry using a VCP or price-action setup.
+
+1. **Add a stock.** On `/screener`, use **Track** on any row, or on a stock's page
+   (`/screener/NABIL`) use **Add to watchlist**. Pick a setup:
+   - **VCP breakout:** zone from the pivot to 3% above it; the setup fails below the
+     low of the last contraction.
+   - **Pullback to support:** zone from the nearest support to 2% above it; the setup
+     fails 3% below support.
+
+   The target is the nearest resistance at least 1R above the zone, or 2R when there
+   is none. Every level can be edited before adding. The dialog warns when the
+   pattern does not qualify as a VCP (score below 60 or contractions not shrinking).
+2. **Watch it.** `/watchlist` shows each setup's price against its zone on a price
+   ladder, the levels, risk:reward, and a snapshot of the analysis from the day it was
+   added. The stock's chart on `/screener/SYMBOL` shows the zone, invalidation and
+   target lines.
+3. **Get alerts.** After every price sync (every 5 minutes in market hours) each setup
+   is checked, and an alert is raised when it moves into a new state:
+   - **Breakout confirmed / Breakout, low volume:** a VCP crossed into its zone from
+     below, on at least / under 1.5x its 50-day average volume.
+   - **Entered zone:** a pullback setup reached its zone.
+   - **Extended:** price ran above the zone.
+   - **Invalidated:** price hit the invalidation level. The setup stays invalidated
+     until you choose **Reset setup**.
+
+   Alerts appear on `/watchlist` and as a count next to **Watchlist** in the sidebar.
+4. **Plan the trade.** **Create plan** opens `/trade/new?watchlist=ID` with the entry,
+   stop, target and a thesis filled in, plus position sizing from your account size
+   and risk per trade. Saving creates a trade plan and marks the setup **Planned**.
+
 ## Configuration
 
 All environment variables are optional in development.
@@ -200,6 +245,8 @@ All environment variables are optional in development.
 | `DEFAULT_MARKET_DATA_PROVIDER` | Market data provider for ingestion jobs.                   |
 | `VITE_API_BASE_URL`            | Frontend API base URL (default `/api/v1` via Vite proxy).  |
 | `VITE_CABLE_URL`               | Frontend WebSocket URL (default derived from the API URL). |
+| `NEPSE_TRADING_DAYS`           | Trading weekdays, 0 = Sunday (default `1,2,3,4,5`, Mon–Fri). |
+| `VITE_NEPSE_TRADING_DAYS`      | Same setting for the frontend's market-open badge.         |
 
 ## Project layout
 

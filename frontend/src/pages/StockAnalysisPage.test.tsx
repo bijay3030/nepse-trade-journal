@@ -7,6 +7,14 @@ import { StockAnalysisPage } from "./StockAnalysisPage"
 
 const mockUseStockAnalysis = vi.fn()
 
+vi.mock("../features/watchlist/api", () => ({
+  useWatchlist: () => ({ data: [], isLoading: false, isError: false }),
+  useWatchlistAlerts: () => ({ data: { unread_count: 0, alerts: [] } }),
+  useSuggestion: () => ({ data: undefined, isLoading: false, isError: false }),
+  useAddToWatchlist: () => ({ mutate: vi.fn(), isPending: false, isSuccess: false, isError: false }),
+  apiErrorMessage: () => "",
+}))
+
 vi.mock("../features/screener/api", () => ({
   useStockAnalysis: (...args: unknown[]) => mockUseStockAnalysis(...args),
 }))

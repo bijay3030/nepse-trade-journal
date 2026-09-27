@@ -12,6 +12,7 @@ import type {
 } from "../features/screener/types"
 import { SETUP_STATE_LABELS } from "../features/screener/types"
 import { Badge, Button, Card, LoadingSpinner } from "../components/ui"
+import { AddToWatchlistButton } from "../features/watchlist/AddToWatchlist"
 import { cn } from "../lib/cn"
 
 type TabId = "watchlist" | "breakout"
@@ -124,6 +125,7 @@ function ScreenerTable({
               <th className="py-3 px-4 text-right">Distance to pivot</th>
               <th className="py-3 px-4">Sector</th>
               <th className="py-3 px-4">Market regime</th>
+              <th className="py-3 px-4"><span className="sr-only">Track</span></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-mist/60 font-medium">
@@ -160,6 +162,9 @@ function ScreenerTable({
                 <td className="py-3 px-4">{row.sector}</td>
                 <td className="py-3 px-4">
                   <Badge tone={REGIME_TONE[row.market_regime]}>{REGIME_LABEL[row.market_regime]}</Badge>
+                </td>
+                <td className="py-3 px-4 text-right">
+                  <AddToWatchlistButton symbol={row.symbol} size="sm" />
                 </td>
               </tr>
             ))}
@@ -246,7 +251,7 @@ export function ScreenerPage() {
         <div className="inline-flex rounded-xl border border-mist/80 bg-slate/5 p-1" role="tablist">
           {(
             [
-              { id: "watchlist", label: "Watchlist" },
+              { id: "watchlist", label: "All setups" },
               { id: "breakout", label: "Breakout Watch" },
             ] as const
           ).map((item) => (
