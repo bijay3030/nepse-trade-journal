@@ -110,6 +110,20 @@ RSpec.describe Nepse::Source::SharesansarMarketClient do
       )
     end
 
+    it "dates rows with the session shown on the page rather than today" do
+      html = <<~HTML
+        <input type="text" class="form-control datepicker" id="fromdate" value="2026-09-24">
+        <table>
+          <thead><tr><th>Symbol</th><th>LTP</th></tr></thead>
+          <tbody><tr><td>NABIL</td><td>569.00</td></tr></tbody>
+        </table>
+      HTML
+
+      rows = described_class.new.parse(html)[:rows]
+
+      expect(rows.first[:traded_on]).to eq(Date.new(2026, 9, 24))
+    end
+
     it "rejects rows without a usable symbol or last price" do
       html = <<~HTML
         <table>
