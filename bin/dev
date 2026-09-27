@@ -1,2 +1,5 @@
 #!/usr/bin/env ruby
+# Runs the Rails server with the Solid Queue worker (background jobs and the
+# recurring stock price sync) inside Puma.
+ENV["SOLID_QUEUE_IN_PUMA"] ||= "1"
 exec "./bin/rails", "server", *ARGV

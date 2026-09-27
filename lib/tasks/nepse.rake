@@ -27,7 +27,7 @@ namespace :nepse do
     result = Nepse::StockBasicsSyncService.sync_market
 
     if result[:success]
-      puts "[Market: Sharesansar] Processed: #{result[:processed]}, Rejected: #{result[:rejected_symbols].size}, Total Rows: #{result[:total_rows]}"
+      puts "[Market: Sharesansar] Processed: #{result[:processed]}, Added: #{Array(result[:created_symbols]).size}, Rejected: #{Array(result[:rejected_symbols]).size}, Total Rows: #{result[:total_rows]}"
     else
       puts "[Market: Sharesansar] Failed: #{result[:error]}"
     end
@@ -60,7 +60,7 @@ namespace :nepse do
 
     puts "[Market: Sharesansar] Syncing stock market data..."
     if market_result[:success]
-      puts "[Market: Sharesansar] Processed: #{market_result[:processed]}, Rejected: #{market_result[:rejected_symbols].size}, Total Rows: #{market_result[:total_rows]}"
+      puts "[Market: Sharesansar] Processed: #{market_result[:processed]}, Added: #{Array(market_result[:created_symbols]).size}, Rejected: #{Array(market_result[:rejected_symbols]).size}, Total Rows: #{market_result[:total_rows]}"
     else
       puts "[Market: Sharesansar] Failed: #{market_result[:error]}"
     end

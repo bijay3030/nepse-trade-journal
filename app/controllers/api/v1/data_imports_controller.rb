@@ -21,6 +21,24 @@ module Api
         end
       end
 
+      # Pulls the latest market table (all listed stocks) and pushes it to live clients.
+      def sync_market
+        result = Nepse::LivePriceSync.call
+
+        if result[:success]
+          render json: {
+            message: "Market prices synced",
+            processed: result[:processed],
+            added: result[:created_symbols],
+            last_updated: Stock.active.maximum(:last_updated)
+          }
+        else
+          error = result[:error]
+          message = error.is_a?(Hash) ? error[:message] : error
+          render json: { error: "Could not fetch market prices: #{message}" }, status: :bad_gateway
+        end
+      end
+
       def import_csv
         file = params[:file]
         type = params[:type] || "prices"

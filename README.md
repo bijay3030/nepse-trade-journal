@@ -38,9 +38,15 @@ You need two terminals: one for the Rails API and one for the React frontend.
 
 ```bash
 bundle install
-bin/rails db:prepare     # creates the database, runs migrations and seeds
-bin/rails server         # http://localhost:3000
+bin/rails db:prepare     # creates the databases, runs migrations and seeds
+bin/dev                  # http://localhost:3000
 ```
+
+`bin/dev` starts the Rails server together with the Solid Queue worker, which runs
+background jobs and the scheduled price sync. Plain `bin/rails server` also works,
+but jobs will queue up without running. Development uses three local databases:
+`nepse_trade_journal_development`, plus `_queue` (jobs) and `_cable` (WebSocket
+messages), all created by `db:prepare`.
 
 `db:prepare` seeds a starter list of 20 NEPSE stocks (from
 `db/seeds/nepse_stocks.json`) and the default trading strategies. Then pull today's
@@ -50,9 +56,9 @@ prices for them (see [Getting the latest stock prices](#getting-the-latest-stock
 bin/rails nepse:sync_market
 ```
 
-> The market sync only updates stocks that already exist in the database. It does not
-> add new ones. To track more stocks, add them to `db/seeds/nepse_stocks.json` and run
-> `bin/rails nepse:seed_stocks`.
+The market sync adds any listed stock it hasn't seen before. The market table has
+no company names or sectors, so new listings start with the symbol as the name and
+the sector "Others" until `bin/rails nepse:sync_fundamentals` fills them in.
 
 Health check: `curl http://localhost:3000/up` should return a green page.
 
@@ -111,10 +117,17 @@ cd frontend && npm run build
 ## Getting the latest stock prices
 
 Prices are stored in the database (`stocks` for the latest snapshot,
-`stock_daily_prices` for daily history) and the app reads from there. **They only
-change when a sync runs**, so refresh them before you look.
+`stock_daily_prices` for daily history) and the app reads from there.
 
-### Option 1: Rake tasks (recommended)
+**While `bin/dev` is running, prices update automatically.** Every 5 minutes during
+market hours (Sun–Thu, 11:00–15:15 Nepal time) `SyncMarketPricesJob` pulls the
+Sharesansar market table for all listed stocks and pushes the new prices to open
+browsers over the WebSocket. At 4:00 PM Nepal time it records the closing prices.
+If Sharesansar is down at that point, it falls back to the per-symbol price API.
+
+You can also sync by hand:
+
+### Option 1: Rake tasks
 
 ```bash
 # Latest market table for all listed stocks from Sharesansar
@@ -135,6 +148,9 @@ bin/rails nepse:fetch_prices
 ### Option 2: API
 
 ```bash
+# Sync the full market table now and push it to open browsers
+curl -X POST http://localhost:3000/api/v1/data_imports/sync_market
+
 # Refresh selected symbols from the live per-symbol API, then return them
 curl "http://localhost:3000/api/v1/stocks/current_prices?symbols=NABIL,NICA&refresh=true"
 
@@ -144,17 +160,15 @@ curl -X POST http://localhost:3000/api/v1/data_imports/sync_daily_prices
 
 ### Option 3: In the app
 
-- **`/stocks`** lists every stock with its stored price, change % and fundamentals.
+- **`/stocks`** lists every stock with its price, change % and fundamentals, and shows
+  when the prices were last updated. It flags them as "May be out of date" if they are
+  older than a normal weekend. **Sync Latest Prices** pulls the market table right away.
 - The **refresh button in the header** makes the API re-fetch the last traded price
   from the per-symbol API. It fetches the stocks on screen (for example, your portfolio
   holdings), or up to 200 stocks if none are being tracked. Expect it to be slow.
 - During market hours (Sun–Thu, 11:00–15:00 Nepal time) the frontend subscribes to
   the `StockPricesChannel` WebSocket and polls `/stocks/current_prices` every 30
   seconds if the socket drops. Outside market hours it stops fetching.
-
-> **Current limitation:** the "Sync Daily Prices" button on `/stocks` calls an
-> endpoint that does not exist yet, and the WebSocket only broadcasts after a trade
-> result is saved. Use the rake tasks above to get fresh prices for now.
 
 ### Importing prices from CSV
 
@@ -165,10 +179,9 @@ bin/rails "nepse:import_csv[path/to/financials.csv,financials]"
 
 ### Scheduled sync
 
-`config/recurring.yml` schedules `FetchNepseDailyPricesJob` daily at 10:15 UTC
-(4:00 PM Nepal time). It only runs when a Solid Queue worker is running. That is set
-up in production, but not in the default local setup, so run the rake tasks by hand
-during development.
+The schedule lives in `config/recurring.yml` and runs whenever a Solid Queue worker
+is running (`bin/dev`, or `bin/jobs` on its own). Market holidays are not modelled
+yet, so on a holiday the job simply re-reads the previous session's prices.
 
 ---
 

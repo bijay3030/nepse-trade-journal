@@ -51,10 +51,10 @@ class NepsePriceService
       low_price: low_price&.round(2),
       previous_close: prev_close&.round(2),
       change_amount: change_amount&.round(2),
-      change_percent: (change_percent || 0.0).round(2),
-      volume: volume || 0,
+      change_percent: change_percent&.round(2),
+      volume: volume,
       turnover: turnover&.round(2),
-      total_trades: total_trades || 0,
+      total_trades: total_trades,
       last_updated: last_updated_time
     }
   rescue StandardError => e

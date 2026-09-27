@@ -11,14 +11,7 @@ class TradeAnalyticsCacheJob < ApplicationJob
   def refresh_prices
     Stock.limit(200).map do |stock|
       price_data = NepsePriceService.new(stock.symbol).fetch_current
-      next stock.price_payload unless price_data
-
-      stock.update(
-        last_price: price_data[:last_price],
-        change_percent: price_data[:change_percent],
-        volume: price_data[:volume],
-        last_updated: Time.current
-      )
+      stock.apply_live_quote!(price_data) if price_data
       stock.price_payload
     end.compact
   end

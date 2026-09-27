@@ -74,6 +74,42 @@ RSpec.describe Nepse::Source::SharesansarMarketClient do
       )
     end
 
+    it "reads volume, percent change and transactions from the current Sharesansar headers" do
+      html = <<~HTML
+        <table>
+          <thead>
+            <tr>
+              <th>S.No</th><th>Symbol</th><th>Conf.</th><th>Open</th><th>High</th><th>Low</th><th>Close</th>
+              <th>LTP</th><th>Close - LTP</th><th>Close - LTP %</th><th>VWAP</th><th>Vol</th><th>Prev. Close</th>
+              <th>Turnover</th><th>Trans.</th><th>Diff</th><th>Range</th><th>Diff %</th>
+              <th>52 Weeks High</th><th>52 Weeks Low</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td><td>ACLBSL</td><td>37.39</td><td>871.10</td><td>890.00</td><td>871.10</td><td>877.00</td>
+              <td>877.00</td><td>0.00</td><td>0.00</td><td>886.95</td><td>281.00</td><td>878.00</td>
+              <td>249,233.50</td><td>13</td><td>-1.00</td><td>18.90</td><td>-0.11</td>
+              <td>1,095.00</td><td>827.90</td>
+            </tr>
+          </tbody>
+        </table>
+      HTML
+
+      row = described_class.new.parse(html)[:rows].first
+
+      expect(row).to include(
+        symbol: "ACLBSL",
+        last_price: 877.0,
+        previous_close: 878.0,
+        change_amount: -1.0,
+        change_percent: -0.11,
+        volume: 281,
+        total_trades: 13,
+        turnover: 249_233.5
+      )
+    end
+
     it "rejects rows without a usable symbol or last price" do
       html = <<~HTML
         <table>

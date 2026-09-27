@@ -1,11 +1,22 @@
-production:
-  daily_nepse_price_fetch:
-    class: FetchNepseDailyPricesJob
+# Solid Queue recurring tasks. They run when a Solid Queue worker is running
+# (bin/dev starts one inside Puma, or run bin/jobs separately).
+shared: &shared
+  # Refresh the market table every 5 minutes. The job skips itself outside
+  # NEPSE trading hours (Sun-Thu, 11:00-15:15 Nepal time).
+  market_price_sync:
+    class: SyncMarketPricesJob
     queue: default
-    schedule: "15 10 * * *" # Exactly 4:00 PM Nepali Standard Time (10:15 AM UTC) every day
+    schedule: every 5 minutes
+
+  # End-of-day closing prices: 4:00 PM Nepal time (10:15 UTC), Sun-Thu.
+  daily_nepse_price_fetch:
+    class: SyncMarketPricesJob
+    args: [ true ]
+    queue: default
+    schedule: "15 10 * * 0-4 UTC"
+
+production:
+  <<: *shared
 
 development:
-  daily_nepse_price_fetch:
-    class: FetchNepseDailyPricesJob
-    queue: default
-    schedule: "15 10 * * *" # Exactly 4:00 PM Nepali Standard Time (10:15 AM UTC) every day
+  <<: *shared

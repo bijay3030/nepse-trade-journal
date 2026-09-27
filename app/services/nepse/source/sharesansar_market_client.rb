@@ -5,7 +5,7 @@ module Nepse
   module Source
     class SharesansarMarketClient
       URL = "https://www.sharesansar.com/today-share-price".freeze
-      REQUEST_TIMEOUT = 15
+      REQUEST_TIMEOUT = 30
       USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36".freeze
 
       def fetch
@@ -55,10 +55,10 @@ module Nepse
           last_price: last_price,
           previous_close: numeric_value(fields["prevclose"] || fields["previousclose"]),
           change_amount: numeric_value(fields["diff"] || fields["pointchange"] || fields["change"]),
-          change_percent: numeric_value(fields["%change"] || fields["percentchange"] || fields["percentagechange"]),
-          volume: integer_value(fields["qty"] || fields["qty."] || fields["volume"]),
+          change_percent: numeric_value(fields["%change"] || fields["diff%"] || fields["percentchange"] || fields["percentagechange"]),
+          volume: integer_value(fields["qty"] || fields["vol"] || fields["volume"]),
           turnover: numeric_value(fields["turnover"]),
-          total_trades: integer_value(fields["nooftransactions"] || fields["no.oftransactions"] || fields["totaltrades"] || fields["trades"]),
+          total_trades: integer_value(fields["nooftransactions"] || fields["trans"] || fields["totaltrades"] || fields["trades"]),
           high_52w: numeric_value(fields["52weekshigh"] || fields["52wh"]),
           low_52w: numeric_value(fields["52weekslow"] || fields["52wl"]),
           traded_on: traded_on,

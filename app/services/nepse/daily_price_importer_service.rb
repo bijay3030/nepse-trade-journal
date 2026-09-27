@@ -37,46 +37,32 @@ module Nepse
 
     def record_daily_price(stock, price_data)
       last_price = price_data[:last_price]
-      prev_close = price_data[:previous_close] || (stock.last_price > 0 ? stock.last_price : last_price)
-      change_amount = price_data[:change_amount] || (last_price - prev_close).round(2)
-      change_percent = price_data[:change_percent] || (prev_close > 0 ? (((last_price - prev_close) / prev_close) * 100).round(2) : 0.0)
-      volume = price_data[:volume] || 0
-      turnover = price_data[:turnover] || (last_price * volume).round(2)
-      total_trades = price_data[:total_trades] || 0
+      prev_close = price_data[:previous_close] || stock.previous_close_before(@traded_on)
+      change_amount = price_data[:change_amount] || (prev_close ? (last_price - prev_close).round(2) : nil)
+      change_percent = price_data[:change_percent] || (prev_close.to_f.positive? ? (((last_price - prev_close) / prev_close) * 100).round(2) : nil)
 
       Stock.transaction do
-        # Update Master Stock Table
-        stock_updates = {
-          last_price: last_price,
-          change_percent: change_percent,
-          volume: volume,
-          last_updated: price_data[:last_updated] || Time.current
-        }
+        stock.apply_live_quote!(price_data.merge(previous_close: prev_close, change_percent: change_percent), traded_on: @traded_on)
+        stock_updates = {}
         stock_updates[:name] = price_data[:company_name] if price_data[:company_name].present? && stock.name.blank?
+        stock_updates[:high_52w] = last_price if stock.high_52w.zero? || last_price > stock.high_52w
+        stock_updates[:low_52w] = last_price if stock.low_52w.zero? || last_price < stock.low_52w
+        stock.update!(stock_updates) if stock_updates.any?
 
-        if stock.high_52w.zero? || last_price > stock.high_52w
-          stock_updates[:high_52w] = last_price
-        end
-
-        if stock.low_52w.zero? || last_price < stock.low_52w
-          stock_updates[:low_52w] = last_price
-        end
-
-        stock.update!(stock_updates)
-        stock.recalculate_market_cap!
-
-        # Record Daily Floor Sheet Record
+        # The per-symbol API often returns only the last traded price. Keep any real
+        # values already recorded for the day instead of overwriting them.
         daily_record = StockDailyPrice.find_or_initialize_by(stock: stock, traded_on: @traded_on)
-        daily_record.open_price = price_data[:open_price] || prev_close
-        daily_record.high_price = price_data[:high_price] || [prev_close, last_price].max
-        daily_record.low_price = price_data[:low_price] || [prev_close, last_price].min
+        existing = daily_record.persisted?
+        daily_record.open_price = price_data[:open_price] || (existing ? daily_record.open_price : last_price)
+        daily_record.high_price = price_data[:high_price] || (existing ? [ daily_record.high_price.to_f, last_price ].max : last_price)
+        daily_record.low_price = price_data[:low_price] || (existing ? [ daily_record.low_price.to_f, last_price ].select(&:positive?).min : last_price)
         daily_record.close_price = last_price
-        daily_record.previous_close = prev_close
-        daily_record.change_amount = change_amount
-        daily_record.change_percent = change_percent
-        daily_record.volume = volume
-        daily_record.turnover = turnover
-        daily_record.total_trades = total_trades
+        daily_record.previous_close = prev_close || (existing ? daily_record.previous_close : last_price)
+        daily_record.change_amount = change_amount unless change_amount.nil?
+        daily_record.change_percent = change_percent unless change_percent.nil?
+        daily_record.volume = price_data[:volume] unless price_data[:volume].nil?
+        daily_record.turnover = price_data[:turnover] || (price_data[:volume] ? (last_price * price_data[:volume]).round(2) : daily_record.turnover)
+        daily_record.total_trades = price_data[:total_trades] unless price_data[:total_trades].nil?
         daily_record.save!
       end
     end
