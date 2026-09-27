@@ -14,7 +14,7 @@ class SyncMarketPricesJob < ApplicationJob
 
     Rails.logger.warn("SyncMarketPricesJob: market sync failed, falling back to per-symbol prices")
     fallback = Nepse::DailyPriceImporterService.call
-    Nepse::LivePriceSync.broadcast if fallback[:success]
+    Nepse::LivePriceSync.publish if fallback[:success]
     fallback
   end
 end

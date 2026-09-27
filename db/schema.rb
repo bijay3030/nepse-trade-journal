@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_20_160000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_27_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -287,6 +287,47 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_20_160000) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  create_table "watchlist_alerts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "watchlist_item_id", null: false
+    t.string "kind", null: false
+    t.text "message", null: false
+    t.decimal "price", precision: 12, scale: 2
+    t.decimal "relative_volume", precision: 8, scale: 2
+    t.datetime "read_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "read_at"], name: "index_watchlist_alerts_on_user_id_and_read_at"
+    t.index ["user_id"], name: "index_watchlist_alerts_on_user_id"
+    t.index ["watchlist_item_id"], name: "index_watchlist_alerts_on_watchlist_item_id"
+  end
+
+  create_table "watchlist_items", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "stock_id", null: false
+    t.bigint "trade_plan_id"
+    t.string "setup_type", default: "vcp", null: false
+    t.string "status", default: "watching", null: false
+    t.string "price_state"
+    t.decimal "entry_zone_low", precision: 12, scale: 2, null: false
+    t.decimal "entry_zone_high", precision: 12, scale: 2, null: false
+    t.decimal "invalidation_price", precision: 12, scale: 2, null: false
+    t.decimal "stop_loss_price", precision: 12, scale: 2
+    t.decimal "target_price", precision: 12, scale: 2
+    t.decimal "pivot_price", precision: 12, scale: 2
+    t.decimal "price_at_add", precision: 12, scale: 2
+    t.jsonb "setup_snapshot", default: {}, null: false
+    t.text "notes"
+    t.datetime "last_evaluated_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["status"], name: "index_watchlist_items_on_status"
+    t.index ["stock_id"], name: "index_watchlist_items_on_stock_id"
+    t.index ["trade_plan_id"], name: "index_watchlist_items_on_trade_plan_id"
+    t.index ["user_id", "stock_id"], name: "index_watchlist_items_on_user_id_and_stock_id", unique: true
+    t.index ["user_id"], name: "index_watchlist_items_on_user_id"
+  end
+
   add_foreign_key "audit_logs", "users"
   add_foreign_key "daily_journal_versions", "daily_journals"
   add_foreign_key "daily_journal_versions", "users"
@@ -304,4 +345,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_20_160000) do
   add_foreign_key "trade_plans", "trading_strategies"
   add_foreign_key "trade_plans", "users"
   add_foreign_key "trade_results", "trade_executions"
+  add_foreign_key "watchlist_alerts", "users"
+  add_foreign_key "watchlist_alerts", "watchlist_items", on_delete: :cascade
+  add_foreign_key "watchlist_items", "stocks"
+  add_foreign_key "watchlist_items", "trade_plans"
+  add_foreign_key "watchlist_items", "users"
 end

@@ -35,6 +35,14 @@ Rails.application.routes.draw do
       post "data_imports/sync_market", to: "data_imports#sync_market"
       post "data_imports/import_csv", to: "data_imports#import_csv"
 
+      resources :watchlist_items, only: [:index, :create, :update, :destroy] do
+        get :suggestion, on: :collection
+        post :trade_plan, on: :member
+      end
+      resources :watchlist_alerts, only: [:index] do
+        post :mark_read, on: :collection
+      end
+
       resources :trade_plans, only: [:index, :create, :show, :destroy] do
         resource :trade_execution, only: :create
       end

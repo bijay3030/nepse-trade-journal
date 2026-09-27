@@ -4,6 +4,7 @@ class Stock < ApplicationRecord
   has_many :daily_prices, class_name: "StockDailyPrice", dependent: :destroy
   has_many :daily_indicators, class_name: "StockDailyIndicator", dependent: :destroy
   has_many :company_financials, class_name: "StockCompanyFinancial", dependent: :destroy
+  has_many :watchlist_items, dependent: :destroy
 
   scope :active, -> { where(is_active: true) }
   scope :by_sector, ->(sector) { where(sector: sector) }
