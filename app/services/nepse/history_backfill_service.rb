@@ -68,7 +68,11 @@ module Nepse
 
       StockDailyPrice.transaction do
         dates = bars.map { _1[:traded_on] }
-        removed = stock.daily_prices.where(traded_on: dates.first..dates.last).where.not(traded_on: dates).delete_all
+        stale = stock.daily_prices.where(traded_on: dates.first..dates.last).where.not(traded_on: dates)
+        # Indicators computed for a date with no session are meaningless too, and
+        # their foreign key would block deleting the price row.
+        StockDailyIndicator.where(stock_daily_price_id: stale.select(:id)).delete_all
+        removed = stale.delete_all
         StockDailyPrice.upsert_all(rows, unique_by: %i[stock_id traded_on], update_only: %i[
           open_price high_price low_price close_price previous_close change_amount change_percent volume turnover
         ])

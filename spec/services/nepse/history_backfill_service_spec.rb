@@ -39,6 +39,14 @@ RSpec.describe Nepse::HistoryBackfillService do
     expect(StockDailyPrice.find_by!(stock: stock, traded_on: Date.new(2026, 9, 27)).close_price.to_f).to eq(571.0)
   end
 
+  it "removes indicators calculated for a dropped date" do
+    stale = create(:stock_daily_price, stock: stock, traded_on: Date.new(2026, 9, 23), close_price: 515.0)
+    StockDailyIndicator.create!(stock: stock, stock_daily_price: stale, traded_on: stale.traded_on, sma_20: 510)
+
+    expect(run).to include(removed: 1)
+    expect(StockDailyIndicator.where(traded_on: Date.new(2026, 9, 23))).to be_empty
+  end
+
   it "records symbols the source could not provide" do
     allow(client).to receive(:fetch).and_return({ success: false, error: "No history" })
 
