@@ -18,6 +18,7 @@ Rails.application.routes.draw do
       get "market/overview", to: "market#overview"
       get "screener", to: "screener#index"
       get "screener/buy_zone", to: "screener#buy_zone"
+      get "backtest", to: "backtests#latest"
       get "screener/:symbol", to: "screener#show"
 
       resources :stocks, only: [:index, :show] do

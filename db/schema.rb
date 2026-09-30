@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_30_140000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_30_160000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -26,6 +26,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_140000) do
     t.index ["action"], name: "index_audit_logs_on_action"
     t.index ["auditable_type", "auditable_id"], name: "index_audit_logs_on_auditable_type_and_auditable_id"
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
+  end
+
+  create_table "backtest_runs", force: :cascade do |t|
+    t.date "from_date"
+    t.date "to_date"
+    t.integer "sessions", default: 0, null: false
+    t.jsonb "parameters", default: {}, null: false
+    t.jsonb "results", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "brokers", force: :cascade do |t|
