@@ -28,12 +28,13 @@ module Vcp
       end
 
       # Segment contractions (T1, T2, T3...)
-      contractions = segment_contractions(base_window)
+      every_contraction = all_contractions(base_window)
+      contractions = base_contractions(every_contraction)
       if contractions.empty?
         return no_pattern_result(base_high, base_low, base_duration, current_price, current_date)
       end
 
-      classification = classify_vcp(contractions)
+      classification = classify_vcp(contractions, every_contraction)
       volume_behavior = analyze_volume_behavior(contractions)
 
       pivot_level = contractions.last[:high]
@@ -76,7 +77,9 @@ module Vcp
         is_pivot_near: distance_to_pivot.abs <= @config.pivot_proximity_pct,
         above_sma50: ma_metrics[:above_sma50],
         above_sma200: ma_metrics[:above_sma200],
-        score_breakdown: score_breakdown
+        score_breakdown: score_breakdown,
+        swing_threshold_pct: reversal_pct.round(2),
+        qualification_checks: qualification_checks(contractions, ma_metrics)
       }
     end
 
@@ -106,98 +109,162 @@ module Vcp
       @records.last(window_size)
     end
 
+    # Contractions are the pullbacks (swing high -> swing low) of the current base.
+    # The base is the most recent run of swings whose highs do not rise by more than
+    # max_high_drift_pct, so it starts at the peak the stock is consolidating from.
     def segment_contractions(window)
-      swings = detect_local_swings(window)
-      return [] if swings.size < 3
+      base_contractions(all_contractions(window))
+    end
 
-      contractions = []
-      # Group swings into High -> Low contraction pairs
-      i = 0
-      while i < swings.size - 1
-        high_swing = swings[i]
-        low_swing = swings[i + 1]
+    def all_contractions(window)
+      pivots = zigzag_pivots(window)
+      pivots.each_cons(2).filter_map do |high, low|
+        next unless high[:type] == :high && low[:type] == :low
 
-        if high_swing[:type] == :high && low_swing[:type] == :low
-          high_p = high_swing[:price]
-          low_p = low_swing[:price]
-          range_p = (high_p - low_p).round(2)
-          depth_pct = high_p.positive? ? (((high_p - low_p) / high_p) * 100.0).round(2) : 0.0
+        bars = window[high[:index]..low[:index]] || []
+        total_volume = bars.sum { |r| parse_i(record_volume(r)) }
+        {
+          name: nil,
+          high: high[:price],
+          low: low[:price],
+          range: (high[:price] - low[:price]).round(2),
+          depth_pct: high[:price].positive? ? (((high[:price] - low[:price]) / high[:price]) * 100.0).round(2) : 0.0,
+          volume: total_volume,
+          avg_volume: bars.empty? ? 0 : (total_volume.to_f / bars.size).round,
+          bars: bars.size,
+          start_date: high[:traded_on],
+          end_date: low[:traded_on]
+        }
+      end
+    end
 
-          # Calculate total volume in this contraction wave
-          sub_window = window[high_swing[:index]..low_swing[:index]] || []
-          total_vol = sub_window.sum { |r| parse_i(record_volume(r)) }
+    def base_contractions(contractions)
+      return [] if contractions.empty?
 
-          contractions << {
-            name: "T#{contractions.size + 1}",
-            high: high_p,
-            low: low_p,
-            range: range_p,
-            depth_pct: depth_pct,
-            volume: total_vol,
-            start_date: high_swing[:traded_on],
-            end_date: low_swing[:traded_on]
-          }
-          i += 2
+      drift = 1 + @config.max_high_drift_pct / 100.0
+      start = contractions.size - 1
+      start -= 1 while start.positive? && contractions[start][:high] <= contractions[start - 1][:high] * drift
+      contractions[start..].each_with_index.map { |c, i| c.merge(name: "T#{i + 1}") }
+    end
+
+    # Alternating swing highs and lows, each recorded only once price has reversed by
+    # at least zigzag_reversal_pct. An unfinished final decline counts as a swing low
+    # once it is deep enough, so a contraction still in progress is included.
+    def zigzag_pivots(window)
+      return [] if window.size < 3
+
+      threshold = reversal_pct / 100.0
+      highs = window.map { |r| parse_f(record_high(r)) }
+      lows = window.map { |r| parse_f(record_low(r)) }
+      pivots = []
+
+      # Start from the first significant move out of the opening bar.
+      mode = nil
+      hi_idx = lo_idx = 0
+      window.each_index do |i|
+        hi_idx = i if highs[i] > highs[hi_idx]
+        lo_idx = i if lows[i] < lows[lo_idx]
+        if lows[lo_idx].positive? && highs[i] >= lows[lo_idx] * (1 + threshold) && lo_idx < i
+          pivots << pivot(:low, lo_idx, lows, window)
+          mode = :up
+          hi_idx = i
+          break
+        elsif lows[i] <= highs[hi_idx] * (1 - threshold) && hi_idx < i
+          pivots << pivot(:high, hi_idx, highs, window)
+          mode = :down
+          lo_idx = i
+          break
+        end
+      end
+      return [] unless mode
+
+      ((mode == :up ? hi_idx : lo_idx) + 1...window.size).each do |i|
+        if mode == :up
+          if highs[i] > highs[hi_idx]
+            hi_idx = i
+          elsif lows[i] <= highs[hi_idx] * (1 - threshold)
+            pivots << pivot(:high, hi_idx, highs, window)
+            mode = :down
+            lo_idx = i
+          end
         else
-          i += 1
+          if lows[i] < lows[lo_idx]
+            lo_idx = i
+          elsif highs[i] >= lows[lo_idx] * (1 + threshold)
+            pivots << pivot(:low, lo_idx, lows, window)
+            mode = :up
+            hi_idx = i
+          end
         end
       end
 
-      contractions
-    end
-
-    def detect_local_swings(window)
-      sens = @config.swing_sensitivity
-      swings = []
-
-      (sens...(window.size - sens)).each do |i|
-        high_p = parse_f(record_high(window[i]))
-        low_p = parse_f(record_low(window[i]))
-        sub_range = ((i - sens)..(i + sens)).reject { |idx| idx == i }
-
-        is_high = sub_range.all? { |idx| high_p > parse_f(record_high(window[idx])) }
-        is_low = sub_range.all? { |idx| low_p < parse_f(record_low(window[idx])) }
-
-        if is_high
-          swings << { type: :high, price: high_p, index: i, traded_on: record_date(window[i]) }
-        end
-        if is_low
-          swings << { type: :low, price: low_p, index: i, traded_on: record_date(window[i]) }
-        end
+      # The leg still in progress: a decline deep enough to be a contraction.
+      if mode == :down && pivots.last&.dig(:type) == :high && lows[lo_idx] <= pivots.last[:price] * (1 - threshold)
+        pivots << pivot(:low, lo_idx, lows, window)
+      elsif mode == :up && pivots.last&.dig(:type) == :low && highs[hi_idx] >= pivots.last[:price] * (1 + threshold)
+        pivots << pivot(:high, hi_idx, highs, window)
       end
 
-      swings
+      pivots
     end
 
-    def classify_vcp(contractions)
-      return "no_pattern" if contractions.size < @config.min_contractions
+    # Reversal needed for a swing: a multiple of this stock's median daily range.
+    def reversal_pct
+      @reversal_pct ||= begin
+        ranges = @records.last(60).filter_map do |r|
+          close = parse_f(record_close(r))
+          ((parse_f(record_high(r)) - parse_f(record_low(r))) / close) * 100 if close.positive?
+        end.sort
+        median = ranges.empty? ? 0.0 : ranges[ranges.size / 2]
+        (median * @config.zigzag_range_multiple).clamp(@config.zigzag_reversal_pct, @config.zigzag_max_reversal_pct)
+      end
+    end
+
+    def pivot(type, index, prices, window)
+      { type: type, price: prices[index], index: index, traded_on: record_date(window[index]) }
+    end
+
+    def classify_vcp(contractions, all = contractions)
+      if contractions.size < @config.min_contractions
+        depths = all.map { |c| c[:depth_pct] }
+        return depths.size >= 2 && depths.each_cons(2).all? { |a, b| a < b } ? "expanding_price" : "no_pattern"
+      end
+      # Many pullbacks at similar highs is a choppy range, not a contracting base.
+      return "no_pattern" if contractions.size > @config.max_contractions
 
       depths = contractions.map { |c| c[:depth_pct] }
-      vols = contractions.map { |c| c[:volume] }
+      return "failed_contraction" if depths.first > @config.max_t1_contraction_pct
+      # Small pullbacks inside a flat range are not a volatility contraction.
+      return "no_pattern" if depths.first < @config.min_t1_contraction_pct || base_bars(contractions) < @config.min_base_duration_bars
 
-      # Highly volatile check
-      return "failed_contraction" if depths.any? { |d| d > @config.max_t1_contraction_pct }
-
-      is_price_contracting = depths.each_cons(2).all? { |a, b| a > b }
-      is_price_expanding = depths.each_cons(2).all? { |a, b| a < b }
-
-      if is_price_expanding
+      if shrinking?(depths)
+        volume_drying_up?(contractions) ? "contracting_price_and_volume" : "contracting_price_increasing_volume"
+      elsif depths.each_cons(2).all? { |a, b| a < b }
         "expanding_price"
-      elsif is_price_contracting
-        if vols.last <= vols.first
-          "contracting_price_and_volume"
-        else
-          "contracting_price_increasing_volume"
-        end
       else
         "failed_contraction"
       end
     end
 
+    def shrinking?(depths)
+      depths.size >= 2 && depths.each_cons(2).all? { |a, b| b <= a * @config.max_depth_ratio }
+    end
+
+    # Trading days from the start of the first contraction to the latest bar.
+    def base_bars(contractions)
+      start = contractions.first[:start_date]
+      @records.count { |r| record_date(r) >= start }
+    end
+
+    # Average daily volume, so a long contraction is not judged heavier just for lasting longer.
+    def volume_drying_up?(contractions)
+      contractions.last[:avg_volume] < contractions.first[:avg_volume]
+    end
+
     def analyze_volume_behavior(contractions)
       return "flat" if contractions.empty?
 
-      vols = contractions.map { |c| c[:volume] }
+      vols = contractions.map { |c| c[:avg_volume] || c[:volume] }
       if vols.each_cons(2).all? { |a, b| a >= b }
         "contracting"
       elsif vols.each_cons(2).all? { |a, b| a <= b }
@@ -205,6 +272,28 @@ module Vcp
       else
         "mixed"
       end
+    end
+
+    # Each rule of a qualified VCP, pass or fail, for display.
+    def qualification_checks(contractions, ma_metrics)
+      depths = contractions.map { |c| c[:depth_pct] }
+      count = contractions.size
+      [
+        { key: "contraction_count", label: "#{@config.min_contractions}-#{@config.max_contractions} contractions",
+          passed: count.between?(@config.min_contractions, @config.max_contractions), detail: "#{count} found" },
+        { key: "shrinking", label: "Each contraction at most #{(@config.max_depth_ratio * 100).round}% as deep as the last",
+          passed: shrinking?(depths), detail: depths.map { "#{_1}%" }.join(" -> ") },
+        { key: "first_depth", label: "First contraction #{@config.min_t1_contraction_pct.round}-#{@config.max_t1_contraction_pct.round}%",
+          passed: depths.first.to_f.between?(@config.min_t1_contraction_pct, @config.max_t1_contraction_pct), detail: "#{depths.first}%" },
+        { key: "base_length", label: "Base at least #{@config.min_base_duration_bars} trading days",
+          passed: count.positive? && base_bars(contractions) >= @config.min_base_duration_bars, detail: count.positive? ? "#{base_bars(contractions)} days" : "n/a" },
+        { key: "final_depth", label: "Last contraction at most #{@config.max_final_contraction_pct.round}%",
+          passed: depths.last.to_f.positive? && depths.last <= @config.max_final_contraction_pct, detail: "#{depths.last}%" },
+        { key: "volume_drying_up", label: "Volume drying up",
+          passed: count >= 2 && volume_drying_up?(contractions),
+          detail: count >= 2 ? "avg #{contractions.first[:avg_volume]} -> #{contractions.last[:avg_volume]} shares/day" : "n/a" },
+        { key: "above_sma50", label: "Price above its 50-day average", passed: ma_metrics[:above_sma50] == true, detail: nil }
+      ]
     end
 
     def check_moving_averages(current_price)

@@ -19,16 +19,20 @@ import {
   Wifi,
   WifiOff,
   X,
+  Bookmark,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
+import { useWatchlistAlerts } from "../features/watchlist/api"
 import { useStockPrices } from "../hooks/useStockPrices"
+import { tradingDaysLabel } from "../lib/marketHours"
 import { cn } from "../lib/cn"
 
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/market", label: "Market Overview", icon: Activity },
   { to: "/screener", label: "VCP Screener", icon: ScanSearch },
+  { to: "/watchlist", label: "Watchlist", icon: Bookmark },
   { to: "/trade/new", label: "New Trade", icon: PlusCircle },
   { to: "/portfolio", label: "Portfolio", icon: Briefcase },
   { to: "/trades", label: "Trades", icon: Clock3 },
@@ -61,6 +65,7 @@ export function PlatformLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { connectionStatus, market, refresh, lastUpdatedAt } = useStockPrices()
+  const unreadAlerts = useWatchlistAlerts().data?.unread_count ?? 0
   const status = market.statusLabel
 
   useEffect(() => {
@@ -169,6 +174,7 @@ export function PlatformLayout() {
     { label: "Dashboard", path: "/dashboard" },
     { label: "Market Overview", path: "/market" },
     { label: "VCP Screener", path: "/screener" },
+    { label: "Watchlist", path: "/watchlist" },
     { label: "New Trade", path: "/trade/new" },
     { label: "Trades", path: "/trades" },
     { label: "Stocks", path: "/stocks" },
@@ -207,6 +213,11 @@ export function PlatformLayout() {
                       <span className="relative flex items-center gap-2.5">
                         <Icon className={cn("h-4 w-4 text-white/70", isActive && "text-white")} />
                         <span>{item.label}</span>
+                        {item.to === "/watchlist" && unreadAlerts > 0 ? (
+                          <span className="ml-auto rounded-full bg-ember px-2 py-0.5 text-[10px] font-bold text-white" aria-label={`${unreadAlerts} unread alerts`}>
+                            {unreadAlerts}
+                          </span>
+                        ) : null}
                       </span>
                     </>
                   )}
@@ -330,7 +341,7 @@ export function PlatformLayout() {
 
             {!market.isOpen ? (
               <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                Market Closed. Next open in {market.nextOpenIn} (Sun-Thu, 11:00-15:00 NPT).
+                Market Closed. Next open in {market.nextOpenIn} ({tradingDaysLabel()}, 11:00-15:00 NPT).
               </div>
             ) : null}
 

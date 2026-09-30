@@ -10,11 +10,16 @@ class SyncMarketPricesJob < ApplicationJob
 
     result = Nepse::LivePriceSync.call
     Rails.logger.info("SyncMarketPricesJob finished: #{result.except(:created_symbols, :rejected_symbols).inspect}")
-    return result if result[:success] || !force
+    return result unless force
 
-    Rails.logger.warn("SyncMarketPricesJob: market sync failed, falling back to per-symbol prices")
-    fallback = Nepse::DailyPriceImporterService.call
-    Nepse::LivePriceSync.broadcast if fallback[:success]
-    fallback
+    unless result[:success]
+      Rails.logger.warn("SyncMarketPricesJob: market sync failed, falling back to per-symbol prices")
+      result = Nepse::DailyPriceImporterService.call
+      Nepse::LivePriceSync.publish if result[:success]
+    end
+
+    # The forced run is the end-of-day one: judge each setup on the close.
+    result = result.merge(close: Watchlist::CloseEvaluator.call) if result[:success]
+    result
   end
 end

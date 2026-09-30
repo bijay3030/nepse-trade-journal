@@ -223,5 +223,60 @@ RSpec.describe Vcp::DetectionEngine do
         expect(result[:reason]).to include("broke down below base low")
       end
     end
+  
+    context "9. Rules that tell a real VCP from noise" do
+      def bars(highs, lows, vols)
+        highs.each_index.map do |i|
+          { traded_on: Date.new(2026, 1, 1) + i, open_price: lows[i], high_price: highs[i].to_f, low_price: lows[i].to_f,
+            close_price: ((highs[i] + lows[i]) / 2.0), volume: vols[i] }
+        end
+      end
+
+      it "ignores wiggles smaller than the zigzag threshold" do
+        # A 20% pullback, then tiny 1% wiggles: one contraction, not many.
+        highs = [100, 104, 108, 110, 104, 98, 92, 90, 89, 90, 89, 90, 89, 90, 89, 90, 89]
+        lows = highs.map { _1 - 1 }
+        result = described_class.call(bars(highs, lows, Array.new(highs.size, 1000)), config)
+
+        expect(result[:contractions_count]).to eq(1)
+        expect(result[:classification]).to eq("no_pattern")
+      end
+
+      it "treats more than four pullbacks at the same highs as a range, not a VCP" do
+        highs = []
+        6.times { highs.concat([ 110, 106, 100, 104 ]) }
+        lows = highs.map { _1 - 2 }
+        result = described_class.call(bars(highs, lows, Array.new(highs.size, 1000)), config)
+
+        expect(result[:classification]).to eq("no_pattern")
+        expect(result[:is_vcp_setup]).to be false
+      end
+
+      it "compares volume per day, so a long quiet contraction is not read as heavier" do
+        # T1: 2 heavy bars. T2: 8 light bars with more total volume than T1.
+        highs = [100, 110, 100, 90, 95, 104, 102, 100, 98, 97, 96, 97, 98, 99, 101, 103, 104, 103]
+        lows = highs.map { _1 - 1 }
+        vols = [500, 900, 900, 900, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300, 300]
+        result = described_class.call(bars(highs, lows, vols), config)
+
+        check = result[:qualification_checks].find { _1[:key] == "volume_drying_up" }
+        expect(result[:contractions].first[:avg_volume]).to be > result[:contractions].last[:avg_volume]
+        expect(check[:passed]).to be true
+      end
+    end
+
+    it "explains each qualification rule for an ideal VCP" do
+      start_date = Date.parse("2026-01-01")
+      highs = [180, 185, 192, 198, 200, 192, 184, 172, 164, 172, 180, 186, 189, 190, 184, 178, 172, 171, 176, 181, 184, 185, 182, 178, 176, 179, 182, 184]
+      vols = [100, 120, 150, 180, 200, 180, 160, 140, 120, 110, 100, 90, 85, 80, 75, 70, 65, 60, 55, 50, 45, 40, 35, 30, 25, 20, 18, 15]
+      records = highs.map.with_index do |h, i|
+        l = h - (i < 10 ? 8 : (i < 20 ? 5 : 3))
+        { traded_on: start_date + i.days, high_price: h.to_f, low_price: l.to_f, close_price: (h + l) / 2.0, volume: vols[i] * 100 }
+      end
+
+      checks = described_class.call(records, config)[:qualification_checks].to_h { [ _1[:key], _1[:passed] ] }
+
+      expect(checks).to include("contraction_count" => true, "shrinking" => true, "first_depth" => true, "final_depth" => true, "volume_drying_up" => true)
+    end
   end
 end

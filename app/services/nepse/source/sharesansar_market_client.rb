@@ -17,9 +17,15 @@ module Nepse
         { success: false, error: { code: :request_failed, message: e.message } }
       end
 
-      def parse(html, traded_on: Date.current, fetched_at: Time.current)
-        table = find_market_table(Nokogiri::HTML(html))
+      # The page shows the latest completed session, which is not necessarily
+      # today (weekends, holidays, before the open), so rows are dated from the
+      # page's own date picker when it is present.
+      def parse(html, traded_on: nil, fetched_at: Time.current)
+        doc = Nokogiri::HTML(html)
+        table = find_market_table(doc)
         return missing_table_error unless table
+
+        traded_on ||= session_date(doc) || Date.current
 
         headers = table.css("thead th").map { |header| normalize_header(header.text) }
         rows = table.css("tbody tr").filter_map do |row|
@@ -64,6 +70,13 @@ module Nepse
           traded_on: traded_on,
           fetched_at: fetched_at
         }
+      end
+
+      def session_date(doc)
+        value = doc.at_css("#fromdate")&.[]("value").to_s.strip
+        Date.iso8601(value) if value.match?(/\A\d{4}-\d{2}-\d{2}\z/)
+      rescue Date::Error
+        nil
       end
 
       def missing_table_error
