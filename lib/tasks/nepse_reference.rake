@@ -17,7 +17,8 @@ namespace :nepse do
     desc "Sync fundamentals (Chukul, then Merolagani). Usage: rails \"nepse:data:fundamentals[NABIL NICA]\""
     task :fundamentals, [ :symbols ] => :environment do |_t, args|
       symbols = args[:symbols].to_s.split(/[\s,]+/).presence
-      puts "Syncing fundamentals for #{symbols&.size || Stock.active.count} securities (about 5s each)..."
+      count = symbols&.size || Stock.active.where(security_type: Nepse::Reference::FundamentalsSync::SECURITY_TYPES).count
+      puts "Syncing fundamentals for #{count} securities (about 5s each)..."
       print_result("Fundamentals", Nepse::Reference::FundamentalsSync.call(symbols: symbols))
     end
 

@@ -18,6 +18,10 @@ module Nepse
       configured.any? ? configured : DEFAULT_TRADING_WDAYS
     end
 
+    def today(time = Time.current)
+      time.in_time_zone(TIME_ZONE).to_date
+    end
+
     def open?(time = Time.current)
       within?(time, CLOSE_MINUTE)
     end

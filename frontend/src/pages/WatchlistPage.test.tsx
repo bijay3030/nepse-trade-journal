@@ -39,10 +39,30 @@ describe("WatchlistPage", () => {
     expect(within(card).getByText("Watching")).toBeInTheDocument()
     expect(within(card).getByText("570.00–587.10")).toBeInTheDocument()
     expect(within(card).getByText("548.00", { selector: ".text-ember" })).toBeInTheDocument()
-    expect(within(card).getByText("3.18R")).toBeInTheDocument()
+    // Once in the levels and once in the checklist's risk:reward detail.
+    expect(within(card).getAllByText("3.18R")).toHaveLength(2)
     expect(within(card).getByText(/0.88% below the zone/)).toBeInTheDocument()
     expect(within(card).getByText(/VCP score 72/)).toBeInTheDocument()
     expect(within(card).getByRole("link", { name: /Create plan/ })).toHaveAttribute("href", "/trade/new?watchlist=7")
+  })
+
+  it("shows the entry checklist with each rule's status", async () => {
+    renderWithClient(<WatchlistPage />)
+
+    const checklist = await screen.findByRole("region", { name: "Entry checklist" })
+    expect(within(checklist).getByText("3 of 7 met")).toBeInTheDocument()
+    expect(within(checklist).getByText("Qualified VCP")).toBeInTheDocument()
+    expect(within(checklist).getAllByLabelText("Waiting")).toHaveLength(3)
+    expect(within(checklist).getByLabelText("Not met")).toBeInTheDocument()
+    expect(within(checklist).getByText("Commercial Banks -2.10% vs NEPSE -1.20%")).toBeInTheDocument()
+  })
+
+  it("highlights a setup that meets every condition", async () => {
+    const item = watchlistItem()
+    mockApi([{ ...item, checklist: { ...item.checklist, passed: 7, total: 7, all_passed: true } }])
+    renderWithClient(<WatchlistPage />)
+
+    expect(await screen.findByText("All conditions met")).toBeInTheDocument()
   })
 
   it("lists alerts and marks them read", async () => {

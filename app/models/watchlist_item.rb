@@ -15,6 +15,7 @@ class WatchlistItem < ApplicationRecord
   validates :setup_type, inclusion: { in: SETUP_TYPES }
   validates :status, inclusion: { in: STATUSES }
   validates :price_state, inclusion: { in: PRICE_STATES }, allow_nil: true
+  validates :last_close_state, inclusion: { in: %w[confirmed unconfirmed failed held_zone in_zone below_zone above_zone invalidated] }, allow_nil: true
   validates :entry_zone_low, :entry_zone_high, :invalidation_price, numericality: { greater_than: 0 }
   validates :stock_id, uniqueness: { scope: :user_id, message: "is already on your watchlist" }
   validate :levels_are_ordered

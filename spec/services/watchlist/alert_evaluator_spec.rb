@@ -29,7 +29,7 @@ RSpec.describe Watchlist::AlertEvaluator do
     expect(alert.kind).to eq("breakout_confirmed")
     expect(alert.relative_volume.to_f).to eq(1.8)
     expect(alert.message).to eq("NABIL broke above the 500.00 pivot at 505.00 on 1.8x its 50-day average volume so far.")
-    expect(item).to have_attributes(status: "in_zone", price_state: "in_zone")
+    expect(item).to have_attributes(status: "in_zone", price_state: "in_zone", touched_zone_on: Nepse::MarketHours.today)
   end
 
   it "flags a breakout on light volume" do

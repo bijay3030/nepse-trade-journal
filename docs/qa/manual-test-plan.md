@@ -103,6 +103,37 @@ Add a stock whose price is just below its zone, then wait for the price to cross
 | H4 | Same state for several syncs | No repeated alerts |
 | H5 | Sidebar | Red count next to **Watchlist**; **Mark all read** clears it |
 
+## H2. End-of-day verdict *(after the 4 PM close)*
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H2.1 | A VCP setup closes inside its zone on ≥ 1.5× average volume | **Close confirmed** alert; checklist "Closed above the pivot" and "Volume" show ✓ |
+| H2.2 | Closes above the pivot on lighter volume | **Close, low volume** alert; volume check ✗ |
+| H2.3 | Reached the zone intraday but closed below it | **Failed at close** alert |
+| H2.4 | A pullback setup closes inside its zone | **Held zone at close** alert |
+| H2.5 | Run the close check twice for the same session | Only one verdict/alert |
+
+To force it outside the schedule (after the close only): `bin/rails runner 'SyncMarketPricesJob.perform_now(true)'`.
+
+## H3. Entry checklist — `/watchlist`
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H3.1 | Open a VCP card | Seven checks with ✓ met, ✗ not met, dashed circle waiting, grey not applicable; badge "N of 7 met" |
+| H3.2 | Card added before 4 PM today | Close and volume checks show "Judged after the 4 PM close" |
+| H3.3 | Unqualified VCP | "Qualified VCP" ✗ lists the rules not met (e.g. "2-4 contractions") |
+| H3.4 | Pullback card | Pattern check is "Price-action trend is up"; volume check greyed as not applicable; badge "N of 6 met" |
+| H3.5 | Stock in a sector without an index (e.g. Mutual Fund) | Sector check not applicable |
+| H3.6 | Edit levels so target is below 2R | "Risk:reward at least 2R" turns ✗ |
+| H3.7 | All applicable checks met | Green "All conditions met" badge |
+
+## H4. VCP detection
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H4.1 | `/screener` → sort/filter by VCP score | Few stocks qualify (3 on 2026-09-30 in a weak market); contraction sequences are short (2-4 steps) and shrinking |
+| H4.2 | Track dialog for a stock with a long noisy pattern | "Not a qualified VCP yet" warning |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

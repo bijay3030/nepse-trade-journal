@@ -26,6 +26,24 @@ export function watchlistItem(overrides: Partial<WatchlistItem> = {}): Watchlist
     trade_plan_id: null,
     last_evaluated_at: "2026-09-27T09:00:00Z",
     created_at: "2026-09-27T08:00:00Z",
+    last_close_on: null,
+    last_close_state: null,
+    last_close_price: null,
+    last_close_relative_volume: null,
+    checklist: {
+      passed: 3,
+      total: 7,
+      all_passed: false,
+      checks: [
+        { key: "pattern", label: "Qualified VCP", status: "pass", detail: "Score 80, 13.4% -> 5.4%" },
+        { key: "close", label: "Closed above the pivot", status: "pending", detail: "Judged after the 4 PM close" },
+        { key: "volume", label: "Volume at least 1.5x average at the close", status: "pending", detail: "Judged after the 4 PM close" },
+        { key: "regime", label: "Market regime not weak", status: "pass", detail: "Market neutral" },
+        { key: "sector", label: "Sector stronger than NEPSE (20 sessions)", status: "fail", detail: "Commercial Banks -2.10% vs NEPSE -1.20%" },
+        { key: "risk_reward", label: "Risk:reward at least 2R", status: "pass", detail: "3.18R" },
+        { key: "not_extended", label: "Price not above the entry zone", status: "pending", detail: null },
+      ],
+    },
     ...overrides,
   }
 }
