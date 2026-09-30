@@ -61,4 +61,17 @@ RSpec.describe Setups::SnapshotBuilder do
     expect(result[:stocks]).to eq(1)
     expect(StockSetupSnapshot.joins(:stock).find_by!(stocks: { symbol: "DROP" }).zone_state).to eq("failed")
   end
+
+  it "builds a past session from data up to that day only" do
+    stock = stock_with_history("BANK", Array.new(100) { |i| 100.0 + i * 1.0 })
+    later = day + 1
+    create(:stock_daily_price, stock: stock, traded_on: later, close_price: 400.0) # a jump after the as-of date
+    expect(Stock::SetupAnalysis).to receive(:new).with(stock, market: anything, as_of: day).and_return(analysis)
+
+    result = described_class.call(as_of: day)
+
+    expect(result[:traded_on]).to eq(day)
+    snapshot = stock.setup_snapshots.sole
+    expect(snapshot).to have_attributes(traded_on: day, close_price: 199.0, zone_state: "in_zone")
+  end
 end

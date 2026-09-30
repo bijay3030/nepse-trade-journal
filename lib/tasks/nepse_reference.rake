@@ -51,6 +51,25 @@ namespace :nepse do
       Array(result[:failed]).first(10).each { |symbol, error| puts "  failed #{symbol}: #{error}" }
     end
 
+    desc "Build point-in-time setup snapshots for past sessions (for the backtest). Usage: rails \"nepse:data:setup_history[120]\""
+    task :setup_history, [ :sessions ] => :environment do |_t, args|
+      sessions = (args[:sessions].presence || 120).to_i
+      puts "Building snapshots for up to #{sessions} past sessions (about 12s each)..."
+      result = Setups::HistoryBuilder.call(sessions: sessions)
+      puts "Built #{result[:built].size} sessions#{result[:built].any? ? " (#{result[:built].min}..#{result[:built].max})" : ''}; failed #{result[:failed].size}"
+    end
+
+    desc "Backtest the signals over the stored snapshots and save the run"
+    task backtest: :environment do
+      result = Backtest::Runner.call
+      next puts(result[:error]) unless result[:success]
+
+      period = result[:period]
+      puts "Backtest #{period[:from]}..#{period[:to]}: #{period[:sessions]} sessions, #{period[:snapshots]} snapshots, #{period[:stocks]} stocks"
+      result[:groups][:readiness].each { |band, h| puts "  readiness #{band.ljust(6)} 10-session: #{h[10].inspect}" }
+      puts "  trades: #{result[:trades].except(:list).inspect}"
+    end
+
     desc "Print how complete the stored data is"
     task report: :environment do
       puts JSON.pretty_generate(Nepse::Reference::CoverageReport.call)
