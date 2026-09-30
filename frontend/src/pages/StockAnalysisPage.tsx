@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Badge, Button, Card, CardBody, CardHeader, LoadingSpinner } from "../components/ui"
 import { useStockAnalysis } from "../features/screener/api"
-import type { PriceLevel, StockAnalysis } from "../features/screener/types"
+import type { PriceLevel, RsLine, StockAnalysis } from "../features/screener/types"
 import { SETUP_STATE_LABELS } from "../features/screener/types"
 import { CandlestickChart, type ChartLevels } from "../features/readiness/CandlestickChart"
 import { CorporateActionsCard } from "../features/corporate/CorporateActionsCard"
@@ -42,6 +42,35 @@ function inSentence(label: string) {
   return /^[A-Z]{2}/.test(label) ? label : label.charAt(0).toLowerCase() + label.slice(1)
 }
 
+const signedPct = (value: number) => `${value > 0 ? "+" : ""}${value.toFixed(2)}%`
+
+// How the stock did against NEPSE, from the RS line.
+function RsSummary({ rsLine }: { rsLine: RsLine }) {
+  const periods = (["20", "60"] as const).filter((key) => rsLine.change[key] !== null)
+  return (
+    <p className="mb-3 text-sm text-slate" aria-label="Relative strength vs NEPSE">
+      <span className="font-semibold text-ink">RS vs NEPSE:</span>{" "}
+      {periods.length === 0
+        ? "not enough history yet"
+        : periods.map((key, i) => {
+            const change = rsLine.change[key] as number
+            return (
+              <span key={key}>
+                {i > 0 && ", "}
+                <b className={change >= 0 ? "text-pine" : "text-ember"}>{signedPct(change)}</b> over {key} sessions
+              </span>
+            )
+          })}
+      {rsLine.last_new_high_on && (
+        <>
+          {" · "}last RS new high {format(parseISO(rsLine.last_new_high_on), "MMM d")}
+          {rsLine.last_new_high_leads_price && " (before price)"}
+        </>
+      )}
+    </p>
+  )
+}
+
 function PriceChart({ data, plan }: { data: StockAnalysis; plan?: WatchlistItem }) {
   // Your watchlist levels when you track the stock, otherwise the nightly best setup.
   const readiness = data.readiness
@@ -67,7 +96,8 @@ function PriceChart({ data, plan }: { data: StockAnalysis; plan?: WatchlistItem 
         }
       />
       <CardBody>
-        <CandlestickChart candles={data.candles} levels={levels} contractions={data.vcp.contractions} addedOn={plan?.created_at.slice(0, 10)} />
+        {data.rs_line && data.rs_line.points.length > 1 && <RsSummary rsLine={data.rs_line} />}
+        <CandlestickChart candles={data.candles} levels={levels} contractions={data.vcp.contractions} addedOn={plan?.created_at.slice(0, 10)} rsLine={data.rs_line?.points} />
       </CardBody>
     </Card>
   )
@@ -321,7 +351,7 @@ function StockAnalysisBody({ symbol, onBack }: { symbol: string; onBack: () => v
         </div>
       </header>
 
-      {data.readiness ? <ReadinessCard snapshot={data.readiness} /> : null}
+      {data.readiness ? <ReadinessCard snapshot={data.readiness} history={data.readiness_history} /> : null}
 
        {data.candles.length > 0 ? (
          <>

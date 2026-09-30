@@ -11,7 +11,7 @@ import {
 } from "lightweight-charts"
 import { useEffect, useRef } from "react"
 
-import type { Candle, Contraction } from "../screener/types"
+import type { Candle, Contraction, RsLinePoint } from "../screener/types"
 
 export type ChartLevels = {
   entryLow: number | null
@@ -22,6 +22,7 @@ export type ChartLevels = {
 }
 
 const NO_CONTRACTIONS: Contraction[] = []
+const RS_PANE_HEIGHT = 110
 
 const COLORS = {
   up: "#18745a",
@@ -32,6 +33,8 @@ const COLORS = {
   pivot: "#ff6b2c",
   sma50: "#1f2d42",
   sma200: "#8b5cf6",
+  rs: "#2563eb",
+  rsLead: "#18745a",
 }
 
 /**
@@ -39,20 +42,25 @@ const COLORS = {
  *
  * Daily candles with volume, the 50- and 200-day averages, the entry zone as a
  * shaded band, invalidation / target / pivot lines, and contraction markers.
+ * With `rsLine`, a lower pane plots the stock against NEPSE (100 at the start),
+ * with dots on RS new highs (green where RS got there before price).
  */
 export function CandlestickChart({
   candles,
   levels,
   contractions = NO_CONTRACTIONS,
   addedOn,
+  rsLine,
   height = 380,
 }: {
   candles: Candle[]
   levels?: ChartLevels
   contractions?: Contraction[]
   addedOn?: string
+  rsLine?: RsLinePoint[]
   height?: number
 }) {
+  const showRs = Boolean(rsLine && rsLine.length > 1)
   const container = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -134,13 +142,29 @@ export function CandlestickChart({
     if (addedCandle) markers.push({ time: addedCandle.traded_on as Time, position: "belowBar", shape: "circle", color: "#64748b", text: "Added" })
     createSeriesMarkers(price, markers.sort((a, b) => String(a.time).localeCompare(String(b.time))))
 
+    if (rsLine && rsLine.length > 1) {
+      const rs = chart.addSeries(
+        LineSeries,
+        { color: COLORS.rs, lineWidth: 2, priceLineVisible: false, title: "RS vs NEPSE", priceFormat: { type: "price", precision: 1, minMove: 0.1 } },
+        1,
+      )
+      rs.setData(rsLine.map((point) => ({ time: point.traded_on as Time, value: point.value })))
+      createSeriesMarkers(
+        rs,
+        rsLine
+          .filter((point) => point.new_high)
+          .map((point) => ({ time: point.traded_on as Time, position: "inBar" as const, shape: "circle" as const, size: 0.5, color: point.leads_price ? COLORS.rsLead : COLORS.rs })),
+      )
+      chart.panes()[1]?.setHeight(RS_PANE_HEIGHT)
+    }
+
     chart.timeScale().fitContent()
     return () => chart.remove()
-  }, [candles, levels, contractions, addedOn])
+  }, [candles, levels, contractions, addedOn, rsLine])
 
   return (
     <div>
-      <div ref={container} style={{ height }} data-testid="candlestick-chart" />
+      <div ref={container} style={{ height: height + (showRs ? RS_PANE_HEIGHT : 0) }} data-testid="candlestick-chart" />
       <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate" aria-label="Chart legend">
         {levels?.entryLow && levels.entryHigh ? <li><span className="mr-1 inline-block h-2.5 w-4 rounded-sm bg-pine/25 align-middle" />Entry zone</li> : null}
         {levels?.invalidation ? <li><span className="mr-1 inline-block h-0.5 w-4 border-t border-dashed border-ember align-middle" />Invalidation</li> : null}
@@ -149,6 +173,13 @@ export function CandlestickChart({
         <li><span className="mr-1 inline-block h-0.5 w-4 bg-ink align-middle" />50-day</li>
         <li><span className="mr-1 inline-block h-0.5 w-4 bg-[#8b5cf6] align-middle" />200-day</li>
         {contractions.length > 0 && <li>▼ T1, T2… where each contraction starts</li>}
+        {showRs && (
+          <>
+            <li><span className="mr-1 inline-block h-0.5 w-4 bg-[#2563eb] align-middle" />RS vs NEPSE (lower pane, rising = beating the market)</li>
+            <li><span className="mr-1 inline-block h-2 w-2 rounded-full bg-[#2563eb] align-middle" />RS new high</li>
+            <li><span className="mr-1 inline-block h-2 w-2 rounded-full bg-pine align-middle" />RS new high before price</li>
+          </>
+        )}
       </ul>
     </div>
   )

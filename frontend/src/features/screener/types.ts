@@ -124,6 +124,20 @@ export type BrokerFlow = {
   daily: Array<{ traded_on: string; top_buyers_net: number; top_sellers_net: number; volume: number }>
 }
 
+/** One session of Setups::ReadinessHistory, oldest first. */
+export type ReadinessHistoryPoint = { traded_on: string; score: number; zone_state: ZoneState; in_buy_zone: boolean }
+
+/** Setups::RsLine: close / NEPSE, 100 at the first point. */
+export type RsLinePoint = { traded_on: string; value: number; new_high: boolean; leads_price: boolean }
+
+export type RsLine = {
+  points: RsLinePoint[]
+  /** % the RS line moved over 20 and 60 sessions: how far the stock beat (+) or lagged (-) NEPSE. */
+  change: { "20": number | null; "60": number | null }
+  last_new_high_on: string | null
+  last_new_high_leads_price: boolean
+}
+
 /** Tradability guards (Setups::Guards) that keep a qualifying chart off the board. */
 export type Guard = "thin_volume" | "upper_circuit" | "lower_circuit"
 
@@ -170,7 +184,13 @@ export type ReadinessSnapshot = {
   guards?: Guard[]
 }
 
-export type BuyZoneRow = ReadinessSnapshot & { symbol: string; name: string; sector: string; next_book_close?: BookClose | null }
+export type BuyZoneRow = ReadinessSnapshot & {
+  symbol: string
+  name: string
+  sector: string
+  next_book_close?: BookClose | null
+  readiness_history?: ReadinessHistoryPoint[]
+}
 
 /** GET /screener/buy_zone */
 export type BuyZoneResponse = {
@@ -278,6 +298,8 @@ export type StockAnalysis = {
   } | null
   /** Latest nightly snapshot, or null before the first build. */
   readiness?: ReadinessSnapshot | null
+  readiness_history?: ReadinessHistoryPoint[]
+  rs_line?: RsLine
   broker_flow?: BrokerFlow
   corporate_actions?: { upcoming: BookClose | null; history: DividendRow[] }
 }

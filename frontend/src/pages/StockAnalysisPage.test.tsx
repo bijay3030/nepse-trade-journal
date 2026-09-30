@@ -128,6 +128,24 @@ describe("StockAnalysisPage", () => {
     expect(screen.getByText(/Entry zone 221.00–227.63, invalidation 207.10, target 250.00 \(from the VCP breakout setup found on 2026-09-28\)/)).toBeInTheDocument()
   })
 
+  it("summarises relative strength against NEPSE above the chart", () => {
+    const rs_line = {
+      points: [
+        { traded_on: "2026-09-25", value: 100, new_high: false, leads_price: false },
+        { traded_on: "2026-09-28", value: 104.5, new_high: true, leads_price: true },
+      ],
+      change: { "20": 4.46, "60": -2.1 },
+      last_new_high_on: "2026-09-28",
+      last_new_high_leads_price: true,
+    }
+    mockUseStockAnalysis.mockReturnValue({ data: { ...mockStockAnalysis, rs_line }, isLoading: false, isError: false, refetch: vi.fn() })
+    renderPage()
+
+    expect(screen.getByLabelText("Relative strength vs NEPSE")).toHaveTextContent(
+      "RS vs NEPSE: +4.46% over 20 sessions, -2.10% over 60 sessions · last RS new high Sep 28 (before price)",
+    )
+  })
+
   it("never renders trading advice words", () => {
     mockUseStockAnalysis.mockReturnValue({ data: { ...mockStockAnalysis, readiness: readinessSnapshot() }, isLoading: false, isError: false, refetch: vi.fn() })
     const { container } = renderPage()

@@ -11,6 +11,8 @@ module Api
         snapshot = stock.setup_snapshots.order(traded_on: :desc).first
         render json: Stock::SetupAnalysis.new(stock, market: market).detail.merge(
           readiness: snapshot && StockSetupSnapshotSerializer.new(snapshot).as_json,
+          readiness_history: Setups::ReadinessHistory.for_stock(stock),
+          rs_line: Setups::RsLine.call(stock),
           broker_flow: Flows::AccumulationAnalyzer.call(stock),
           corporate_actions: {
             upcoming: CorporateActions::Upcoming.for_stock(stock),
@@ -31,6 +33,7 @@ module Api
         held_back = StockSetupSnapshot.where(traded_on: traded_on).held_back_by_guards.joins(:stock).merge(Stock.active)
                                       .includes(:stock).order(readiness_score: :desc).to_a
         upcoming = CorporateActions::Upcoming.for_stocks((snapshots + held_back).map(&:stock_id))
+        @histories = Setups::ReadinessHistory.for_stocks((snapshots + held_back).map(&:stock_id))
         render json: {
           traded_on: traded_on&.iso8601,
           criteria: {
@@ -47,7 +50,8 @@ module Api
       def board_row(snapshot, upcoming)
         StockSetupSnapshotSerializer.new(snapshot).as_json.merge(
           symbol: snapshot.stock.symbol, name: snapshot.stock.name, sector: snapshot.stock.sector,
-          next_book_close: upcoming[snapshot.stock_id]
+          next_book_close: upcoming[snapshot.stock_id],
+          readiness_history: @histories.fetch(snapshot.stock_id, [])
         )
       end
     end

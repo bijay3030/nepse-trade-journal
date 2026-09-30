@@ -8,6 +8,7 @@ import { AddToWatchlistButton } from "../watchlist/AddToWatchlist"
 import { GuardBadges } from "./GuardBadges"
 import { FLOW_LABELS, GUARD_LABELS, SETUP_TYPE_LABELS, ZONE_LABELS, ZONE_TONE, formatTurnover } from "./labels"
 import { ReadinessGauge } from "./ReadinessGauge"
+import { ReadinessSparkline } from "./ReadinessSparkline"
 
 const price = (value: number | null) => (value === null ? "—" : value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
 
@@ -80,7 +81,12 @@ function BoardCard({ row }: { row: BuyZoneRow }) {
   return (
     <article aria-label={`${row.symbol} entry zone`}>
       <Card className="flex h-full gap-3 p-4">
-        <ReadinessGauge score={row.readiness_score} size={58} />
+        <div className="flex shrink-0 flex-col items-center gap-1">
+          <ReadinessGauge score={row.readiness_score} size={58} />
+          {row.readiness_history && row.readiness_history.length > 1 && (
+            <ReadinessSparkline history={row.readiness_history} width={64} height={24} showDots={false} fitRange />
+          )}
+        </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <Link to={`/screener/${encodeURIComponent(row.symbol)}`} className="font-display text-lg font-bold text-ink hover:underline">

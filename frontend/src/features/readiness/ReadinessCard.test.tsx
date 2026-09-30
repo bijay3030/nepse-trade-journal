@@ -48,4 +48,17 @@ describe("ReadinessCard", () => {
     expect(screen.getByText(/a small order can move the price.*Kept off the Entry zone now board/)).toBeInTheDocument()
     expect(screen.queryByText("Meets entry-zone criteria")).not.toBeInTheDocument()
   })
+
+  it("shows the readiness history when there is one", () => {
+    const history = [
+      { traded_on: "2026-09-24", score: 48, zone_state: "too_early" as const, in_buy_zone: false },
+      { traded_on: "2026-09-25", score: 61, zone_state: "in_zone" as const, in_buy_zone: true },
+      { traded_on: "2026-09-28", score: 68, zone_state: "in_zone" as const, in_buy_zone: true },
+    ]
+    render(<ReadinessCard snapshot={readinessSnapshot()} history={history} />)
+
+    expect(screen.getByText("Readiness, last 3 sessions")).toBeInTheDocument()
+    expect(screen.getByRole("img", { name: "Readiness over 3 sessions: 48 to 68" })).toBeInTheDocument()
+    expect(screen.getByText(/48 on 2026-09-24 → 68 now · dashed line at 60/)).toHaveTextContent("2 sessions met the entry-zone criteria")
+  })
 })

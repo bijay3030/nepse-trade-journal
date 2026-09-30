@@ -4,11 +4,11 @@ import { vi } from "vitest"
 import type { Candle, Contraction } from "../screener/types"
 import { CandlestickChart } from "./CandlestickChart"
 
-const calls = vi.hoisted(() => ({ series: [] as Array<{ kind: string; options: Record<string, unknown> }>, priceLines: [] as Array<Record<string, unknown>>, markers: [] as Array<Record<string, unknown>>, removed: 0 }))
+const calls = vi.hoisted(() => ({ paneHeights: [] as number[], series: [] as Array<{ kind: string; options: Record<string, unknown>; pane?: number }>, priceLines: [] as Array<Record<string, unknown>>, markers: [] as Array<Record<string, unknown>>, removed: 0 }))
 
 vi.mock("lightweight-charts", () => {
-  const series = (kind: string, options: Record<string, unknown>) => {
-    calls.series.push({ kind, options })
+  const series = (kind: string, options: Record<string, unknown>, pane?: number) => {
+    calls.series.push({ kind, options, pane })
     return { setData: vi.fn(), createPriceLine: (line: Record<string, unknown>) => calls.priceLines.push(line) }
   }
   return {
@@ -18,7 +18,8 @@ vi.mock("lightweight-charts", () => {
     BaselineSeries: "Baseline",
     LineStyle: { Solid: 0, Dotted: 1, Dashed: 2 },
     createChart: () => ({
-      addSeries: (kind: string, options: Record<string, unknown>) => series(kind, options),
+      addSeries: (kind: string, options: Record<string, unknown>, pane?: number) => series(kind, options, pane),
+      panes: () => [0, 1].map(() => ({ setHeight: (px: number) => calls.paneHeights.push(px) })),
       priceScale: () => ({ applyOptions: vi.fn() }),
       timeScale: () => ({ fitContent: vi.fn() }),
       remove: () => { calls.removed += 1 },
@@ -37,6 +38,7 @@ describe("CandlestickChart", () => {
     calls.series.length = 0
     calls.priceLines.length = 0
     calls.markers.length = 0
+    calls.paneHeights.length = 0
   })
 
   it("draws candles, volume, averages, the zone band, level lines and markers", () => {
@@ -46,6 +48,22 @@ describe("CandlestickChart", () => {
     expect(calls.series[0].options.baseValue).toEqual({ type: "price", price: 221 })
     expect(calls.priceLines.map((line) => [line.title, line.price])).toEqual([["Invalidation", 207.1], ["Target", 250], ["Pivot", 221]])
     expect(calls.markers.map((marker) => marker.text)).toEqual(["T1", "Added"])
+  })
+
+  it("plots the RS line in a lower pane with dots on new highs", () => {
+    const rsLine = [
+      { traded_on: "2026-09-24", value: 100, new_high: false, leads_price: false },
+      { traded_on: "2026-09-25", value: 102, new_high: true, leads_price: true },
+      { traded_on: "2026-09-28", value: 103, new_high: true, leads_price: false },
+    ]
+    const { getByTestId, getByText } = render(<CandlestickChart candles={candles} rsLine={rsLine} />)
+
+    const rs = calls.series.find((s) => s.options.title === "RS vs NEPSE")
+    expect(rs).toMatchObject({ kind: "Line", pane: 1 })
+    expect(calls.markers.filter((marker) => marker.shape === "circle" && marker.position === "inBar").map((marker) => marker.color)).toEqual(["#18745a", "#2563eb"])
+    expect(calls.paneHeights).toEqual([110])
+    expect(getByTestId("candlestick-chart")).toHaveStyle({ height: "490px" })
+    expect(getByText("RS new high before price")).toBeInTheDocument()
   })
 
   it("skips the zone band and lines without levels, and cleans up on unmount", () => {

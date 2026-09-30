@@ -156,6 +156,10 @@ Run `bin/rails nepse:data:setups` once (about a minute) if no snapshot exists ye
 | H5.7 | Track the stock, then reopen its page | Chart subtitle says "(from your watchlist levels)" and an "Added" marker appears |
 | H5.8 | Search the page for "buy" or "sell" | Not found anywhere (neutral wording) |
 | H5.9 | Run the command twice for the same close | Snapshots are replaced, not duplicated |
+| H5.10 | `/screener/NABIL` → **Price & Trend** | Caption "RS vs NEPSE: +x% over 20 sessions, +y% over 60 sessions · last RS new high <date> (before price)"; green = beating NEPSE, orange = lagging |
+| H5.11 | Same chart, lower pane | Blue RS line labelled "RS vs NEPSE" starting at 100, same time axis as the candles (pan/zoom together); blue dots on RS new highs, green where RS got there before price; legend entries for both |
+| H5.12 | Entry readiness card | "Readiness, last 60 sessions" sparkline with a dashed 60 line and dots on entry-zone sessions; caption "58 on 2026-07-01 → 63 now · … sessions met the entry-zone criteria" |
+| H5.13 | `/screener` → **Entry zone now** | A small sparkline under each gauge showing whether readiness has been rising or fading (green rising, amber falling) |
 
 ## H6. Broker flow — `/screener/SYMBOL`
 

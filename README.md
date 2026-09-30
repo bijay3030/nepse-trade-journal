@@ -296,6 +296,15 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
   average prices), the **Entry readiness** card and a candlestick chart with volume,
   50/200-day averages, the entry-zone band, invalidation / target / pivot lines and
   contraction markers (your watchlist levels when you track the stock)
+- **RS line vs NEPSE** (lower pane of that chart): the close divided by the NEPSE
+  index, 100 at the first point; rising means the stock is beating the market. Dots
+  mark RS new highs (above the prior 252 sessions, or all history when shorter);
+  green dots are new RS highs made while price was still below its own high (RS
+  leading price). A caption above the chart gives the RS change over 20 and 60
+  sessions and the last RS new high.
+- **Readiness history**: a 60-session sparkline on the Entry readiness card (dashed
+  line at 60, dots on sessions that met the entry-zone criteria) and a small one under
+  each gauge on **Entry zone now**, scaled to that stock's range so the trend shows
 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.

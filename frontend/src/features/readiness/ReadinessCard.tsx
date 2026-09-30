@@ -2,15 +2,16 @@ import { CheckCircle2, XCircle } from "lucide-react"
 
 import { Badge, Card, CardBody, CardHeader } from "../../components/ui"
 import { cn } from "../../lib/cn"
-import type { ReadinessSnapshot } from "../screener/types"
+import type { ReadinessHistoryPoint, ReadinessSnapshot } from "../screener/types"
 import { GuardBadges } from "./GuardBadges"
 import { COMPONENT_LABELS, GUARD_DETAILS, SETUP_TYPE_LABELS, ZONE_LABELS, ZONE_TONE, formatTurnover, readinessTone } from "./labels"
 import { ReadinessGauge } from "./ReadinessGauge"
+import { ReadinessSparkline } from "./ReadinessSparkline"
 import { ZoneLadder } from "./ZoneLadder"
 
 const price = (value: number | null) => (value === null ? "—" : value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
 
-export function ReadinessCard({ snapshot }: { snapshot: ReadinessSnapshot }) {
+export function ReadinessCard({ snapshot, history = [] }: { snapshot: ReadinessSnapshot; history?: ReadinessHistoryPoint[] }) {
   const tone = readinessTone(snapshot.readiness_score)
   // Snapshots built before broker flow existed have no flow component.
   const components = (["trend", "setup", "market", "sector", "flow"] as const).flatMap((key) => {
@@ -50,6 +51,17 @@ export function ReadinessCard({ snapshot }: { snapshot: ReadinessSnapshot }) {
         <div className="mt-4">
           <ZoneLadder state={snapshot.zone_state} />
         </div>
+
+        {history.length > 1 && (
+          <div className="mt-4">
+            <h4 className="text-xs font-bold uppercase tracking-wide text-slate">Readiness, last {history.length} sessions</h4>
+            <ReadinessSparkline history={history} width={320} height={64} className="mt-1 h-16 w-full max-w-md" />
+            <p className="text-xs text-slate">
+              {history[0].score} on {history[0].traded_on} → {history[history.length - 1].score} now · dashed line at 60
+              {history.some((point) => point.in_buy_zone) && <> · ● {history.filter((point) => point.in_buy_zone).length} sessions met the entry-zone criteria</>}
+            </p>
+          </div>
+        )}
 
         <div className="mt-5 grid gap-6 lg:grid-cols-2">
           <div>
