@@ -31,4 +31,16 @@ RSpec.describe "Market overview", type: :request do
     get "/api/v1/market/overview"
     expect(JSON.parse(response.body)).to include("breadth_rating" => "neutral", "regime_status" => "neutral")
   end
+
+  it "uses the latest session that also has stock prices" do
+    index = create(:market_index, symbol: "NEPSE")
+    create(:market_index_history, market_index: index, traded_on: Date.new(2026, 9, 24), index_value: 2629.81)
+    create(:market_index_history, market_index: index, traded_on: Date.new(2026, 9, 28), index_value: 2605.79)
+    stock = create(:stock, symbol: "BANK")
+    create(:stock_daily_price, stock: stock, traded_on: Date.new(2026, 9, 24), close_price: 105, previous_close: 100)
+
+    get "/api/v1/market/overview"
+
+    expect(JSON.parse(response.body)).to include("traded_on" => "2026-09-24", "nepse_index" => 2629.81, "total_stocks_audited" => 1)
+  end
 end
