@@ -415,6 +415,34 @@ Read it at `/digest` (pick an earlier session from the dropdown; opening one mar
 read) or in the card at the top of the dashboard. Build it by hand with
 `bin/rails nepse:data:digest`. It is in-app only; nothing is emailed.
 
+## Telegram messages
+
+Each user can link their own Telegram chat (**Settings → Telegram**) and get:
+
+- **Watchlist stock enters its zone:** during market hours, within about 5 minutes of a
+  tracked stock moving into its entry zone (for breakout setups, breaking out into it),
+  with price, zone, stop, target, R:R, setup, readiness, trend rules, RS and warnings
+  (thin volume, circuit, bonus book close within 10 days)
+- **New on Entry zone now:** after the close, one message listing the stocks that newly
+  met every entry-zone rule (top 10 by readiness) with the same levels and context
+
+At most one message per stock per day for each kind. Both can be switched off in Settings.
+
+Setup (once):
+
+1. In Telegram, message **@BotFather**, send `/newbot`, and copy the bot token.
+2. Start the Rails server with the token, e.g. add `export TELEGRAM_BOT_TOKEN=...` to your
+   shell profile (or `bin/rails credentials:edit` → `telegram: { bot_token: ... }`), then
+   restart `bin/dev`. Keep the token secret; don't commit it.
+3. In the app: **Settings → Telegram → Connect Telegram**. It shows your bot's @name and
+   an 8-character code. In Telegram (phone or computer), open the bot and **send it the
+   code as a message**. The page shows "Connected" within a few seconds. **Send test
+   message** checks it. (The "open it from here" link can carry the code with Start, but
+   Telegram often drops it, e.g. for forwarded links, so sending the code is the reliable way.)
+
+The app reads the bot's messages every minute (no public URL or webhook needed); send
+`/stop` to the bot to disconnect. Without a token, Telegram stays off.
+
 ## Configuration
 
 All environment variables are optional in development.
@@ -433,6 +461,7 @@ All environment variables are optional in development.
 | `NEPSE_TRADING_DAYS`           | Trading weekdays, 0 = Sunday (default `1,2,3,4,5`, Mon–Fri). |
 | `VITE_NEPSE_TRADING_DAYS`      | Same setting for the frontend's market-open badge.         |
 | `NEPSE_MIN_TURNOVER`           | Liquidity guard: min average daily turnover in NPR (default `2000000`). |
+| `TELEGRAM_BOT_TOKEN`           | Telegram bot token from @BotFather; enables Telegram messages. |
 
 ## Project layout
 

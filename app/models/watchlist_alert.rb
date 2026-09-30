@@ -12,4 +12,13 @@ class WatchlistAlert < ApplicationRecord
 
   scope :unread, -> { where(read_at: nil) }
   scope :recent, -> { order(created_at: :desc, id: :desc) }
+
+  # Zone entries go to the user's Telegram chat when one is linked.
+  after_create_commit :queue_telegram, if: -> { Telegram::Notifier::ZONE_ALERT_KINDS.include?(kind) }
+
+  private
+
+  def queue_telegram
+    TelegramAlertJob.perform_later(id) if Telegram::Client.configured? && user.telegram_chat_id.present?
+  end
 end

@@ -20,6 +20,13 @@ class StockSetupSnapshot < ApplicationRecord
       .where("guards <> '[]'::jsonb")
   }
 
+  # On "Entry zone now" for the session but not on the snapshot session before it.
+  def self.joined_board(traded_on)
+    previous = where("traded_on < ?", traded_on).maximum(:traded_on)
+    scope = where(traded_on: traded_on, in_buy_zone: true)
+    previous ? scope.where.not(stock_id: where(traded_on: previous, in_buy_zone: true).select(:stock_id)) : scope
+  end
+
   private
 
   def known_guards

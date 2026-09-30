@@ -8,7 +8,7 @@ RSpec.describe BuildSetupSnapshotsJob do
     expect(Setups::SnapshotBuilder).to receive(:call).ordered.and_return({ success: true, stocks: 2, in_buy_zone: [] })
     expect(Backtest::Runner).to receive(:call).ordered.and_return({ success: true, run_id: 1 })
 
-    expect { expect(described_class.perform_now).to include(success: true, stocks: 2) }.to have_enqueued_job(BuildDailyDigestsJob)
+    expect { expect(described_class.perform_now).to include(success: true, stocks: 2) }.to have_enqueued_job(BuildDailyDigestsJob).and have_enqueued_job(TelegramBoardJob)
   end
 
   it "skips the backtest and digests when no snapshots were built" do
