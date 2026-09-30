@@ -125,7 +125,7 @@ describe("StockAnalysisPage", () => {
     renderPage()
 
     expect(screen.getByRole("img", { name: "Entry readiness 68 of 100" })).toBeInTheDocument()
-    expect(screen.getByText(/Entry zone 221.00–227.63, invalidation 207.10, target 250.00 \(from the VCP setup found on 2026-09-28\)/)).toBeInTheDocument()
+    expect(screen.getByText(/Entry zone 221.00–227.63, invalidation 207.10, target 250.00 \(from the VCP breakout setup found on 2026-09-28\)/)).toBeInTheDocument()
   })
 
   it("never renders trading advice words", () => {

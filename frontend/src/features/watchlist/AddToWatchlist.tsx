@@ -11,6 +11,13 @@ import { LevelFields } from "./LevelFields"
 import { EMPTY_LEVELS, draftToLevels, levelsToDraft, type LevelDraft } from "./levels"
 import type { SetupType } from "./types"
 
+// One line describing what the newer patterns found.
+function patternSummary(type: SetupType, details: Record<string, string | number | boolean | null>) {
+  if (type === "ma_pullback") return `rising ${details.anchor} average at ${details.anchor_value}`
+  if (type === "base_breakout") return `${details.base_sessions}-session base, ${details.base_depth_pct}% deep`
+  return ""
+}
+
 export function AddToWatchlistDialog({ symbol, onClose }: { symbol: string; onClose: () => void }) {
   const [setupType, setSetupType] = useState<SetupType>("vcp")
   const [notes, setNotes] = useState("")
@@ -135,6 +142,7 @@ export function AddToWatchlistDialog({ symbol, onClose }: { symbol: string; onCl
                   <span>
                     Data as of <b className="text-ink">{snapshot.analysed_on ?? "—"}</b>
                   </span>
+                  {suggestion.data.pattern && <span>Pattern <b className="text-ink">{patternSummary(setupType, suggestion.data.pattern.details)}</b></span>}
                   {setupType === "vcp" && snapshot.is_vcp_setup === false && (
                     <p className="mt-1 w-full text-amber-800">
                       Not a qualified VCP yet (score {snapshot.vcp_score ?? "—"}; the screener needs 60+ with contracting price and volume). The pivot is still

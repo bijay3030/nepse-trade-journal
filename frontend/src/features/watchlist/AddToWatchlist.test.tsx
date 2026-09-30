@@ -81,6 +81,23 @@ describe("AddToWatchlistButton", () => {
     expect(await screen.findByText(/Not a qualified VCP yet \(score 35/)).toBeInTheDocument()
   })
 
+  it("offers all four setup types and shows what a flat-base breakout found", async () => {
+    mockGet.mockImplementation((path: string, config?: { params?: { setup_type?: string } }) => {
+      if (path === "/watchlist_items") return Promise.resolve({ data: [] })
+      if (config?.params?.setup_type === "base_breakout") {
+        return Promise.resolve({ data: { ...vcpSuggestion, setup_type: "base_breakout", pattern: { quality: 85, details: { base_sessions: 31, base_depth_pct: 8 } } } })
+      }
+      return Promise.resolve({ data: vcpSuggestion })
+    })
+    renderWithClient(<AddToWatchlistButton symbol="NABIL" />)
+
+    await userEvent.click(await screen.findByRole("button", { name: "Add NABIL to watchlist" }))
+    expect(screen.getAllByRole("radio")).toHaveLength(4)
+    await userEvent.click(screen.getByRole("radio", { name: /Flat-base breakout/ }))
+
+    expect(await screen.findByText("31-session base, 8% deep")).toBeInTheDocument()
+  })
+
   it("links to the watchlist when the stock is already tracked", async () => {
     mockGet.mockResolvedValue({ data: [watchlistItem()] })
     renderWithClient(<AddToWatchlistButton symbol="NABIL" />)

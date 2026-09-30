@@ -17,7 +17,12 @@ export const ZONE_TONE: Record<ZoneState, "neutral" | "gain" | "loss"> = {
   no_setup: "neutral",
 }
 
-export const SETUP_TYPE_LABELS = { vcp: "VCP breakout", pullback: "Pullback to support" } as const
+export const SETUP_TYPE_LABELS = {
+  vcp: "VCP breakout",
+  pullback: "Pullback to support",
+  ma_pullback: "Pullback to a rising average",
+  base_breakout: "Flat-base breakout",
+} as const
 
 export const COMPONENT_LABELS = {
   trend: "Trend template",
