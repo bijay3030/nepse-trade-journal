@@ -47,6 +47,13 @@ only behave as described then, and only while the backend runs with `bin/dev`.
 | C2 | Before the day's stock sync has run *(e.g. early in market hours)* | Still shows the previous session with breadth figures, not today with 0 stocks |
 | C3 | Look at the regime | One of strong / neutral / weak, derived from real index history |
 | C4 | Index chart | About 90 recent sessions of the NEPSE index |
+| C5 | **Market Heatmap** card | Sectors as blocks, largest market cap top-left (Commercial Banks); each stock a tile sized by market cap; dark header per larger sector with its market-cap weighted change |
+| C6 | Tile colours | Red for falling, grey for within ±0.25%, green for rising, darker for bigger moves; legend below matches |
+| C7 | Small tiles | Show colour only; no clipped labels like "UPP…" |
+| C8 | Click a tile (e.g. NABIL) | Opens `/screener/NABIL` |
+| C9 | Footer and subtitle | "281 stocks · 20 without market cap not shown" (numbers vary); "prices as of" time of the last price sync |
+| C10 | Market hours | Colours update within about a minute of each 5-minute price sync without reloading |
+| C11 | Phone width | Taller layout (portrait), no horizontal scroll |
 
 ## D. Screener — `/screener`
 
