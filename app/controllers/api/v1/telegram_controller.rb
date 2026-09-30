@@ -10,8 +10,8 @@ module Api
       def link
         return not_configured unless Telegram::Client.configured?
 
-        url = Telegram::Linker.start(current_user)
-        render json: status_payload.merge(link_url: url)
+        link = Telegram::Linker.start(current_user)
+        render json: status_payload.merge(link_url: link[:url], code: link[:code], bot_username: link[:bot_username])
       rescue Telegram::Error => e
         render json: { error: e.message }, status: :bad_gateway
       end

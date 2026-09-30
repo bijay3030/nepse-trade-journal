@@ -434,8 +434,11 @@ Setup (once):
 2. Start the Rails server with the token, e.g. add `export TELEGRAM_BOT_TOKEN=...` to your
    shell profile (or `bin/rails credentials:edit` → `telegram: { bot_token: ... }`), then
    restart `bin/dev`. Keep the token secret; don't commit it.
-3. In the app: **Settings → Telegram → Connect Telegram**, open the bot and press **Start**.
-   The page shows "Connected" within a few seconds. **Send test message** checks it.
+3. In the app: **Settings → Telegram → Connect Telegram**. It shows your bot's @name and
+   an 8-character code. In Telegram (phone or computer), open the bot and **send it the
+   code as a message**. The page shows "Connected" within a few seconds. **Send test
+   message** checks it. (The "open it from here" link can carry the code with Start, but
+   Telegram often drops it, e.g. for forwarded links, so sending the code is the reliable way.)
 
 The app reads the bot's messages every minute (no public URL or webhook needed); send
 `/stop` to the bot to disconnect. Without a token, Telegram stays off.

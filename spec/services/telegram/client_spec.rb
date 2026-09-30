@@ -33,10 +33,7 @@ RSpec.describe Telegram::Client do
     expect { client.get_updates }.to raise_error(Telegram::Error) { |error| expect(error.message).not_to include("secret") }
   end
 
-  it "is off without a token" do
-    allow(ENV).to receive(:[]).and_call_original
-    allow(ENV).to receive(:[]).with("TELEGRAM_BOT_TOKEN").and_return(nil)
-
+  it "is off without a token (rails_helper hides the real one)" do
     expect(described_class.configured?).to be(false)
     expect { described_class.new }.to raise_error(Telegram::Error, /TELEGRAM_BOT_TOKEN/)
   end

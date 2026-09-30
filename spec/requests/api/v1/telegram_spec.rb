@@ -17,7 +17,8 @@ RSpec.describe "Telegram settings", type: :request do
     expect(json).to include("configured" => true, "linked" => false, "pending" => false, "watchlist_alerts" => true, "board_alerts" => true)
 
     post "/api/v1/telegram/link", headers: headers
-    expect(json["link_url"]).to eq("https://t.me/nepse_journal_bot?start=#{user.reload.telegram_link_token}")
+    code = user.reload.telegram_link_token
+    expect(json).to include("code" => code, "bot_username" => "nepse_journal_bot", "link_url" => "https://t.me/nepse_journal_bot?start=#{code}")
     expect(json["pending"]).to be(true)
   end
 

@@ -45,6 +45,10 @@ RSpec.configure do |config|
   # instead of true.
   config.use_transactional_fixtures = true
 
+  # Tests never see a real Telegram bot token (credentials are shared with
+  # development), so nothing can message a real chat. Specs stub what they need.
+  config.before { allow(Telegram::Client).to receive(:token).and_return(nil) }
+
   # You can uncomment this line to turn off ActiveRecord support entirely.
   # config.use_active_record = false
 

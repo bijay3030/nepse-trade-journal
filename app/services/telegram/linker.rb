@@ -1,8 +1,10 @@
 module Telegram
   # Links a user's Telegram chat without a public webhook:
   #
-  # 1. start(user) gives the user a one-time code in a t.me deep link.
-  # 2. Pressing Start in the bot sends "/start <code>" to it.
+  # 1. start(user) gives the user a short one-time code, also in a t.me deep link.
+  # 2. Pressing Start from the link sends "/start <code>" to the bot. Telegram often
+  #    drops the code (a forwarded link, or a chat opened before), so sending the
+  #    code itself as a message works too.
   # 3. poll (every minute, or when the user clicks "Check") reads the bot's new
   #    messages and links the chat whose code matches. "/stop" unlinks.
   #
@@ -10,12 +12,20 @@ module Telegram
   # an old "/stop" could unlink a chat that was linked again since.
   class Linker
     CODE_TTL = 30.minutes
+    # Easy to read and type on a phone: no 0/O, 1/I/L.
+    CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789".chars.freeze
+    CODE_LENGTH = 8
+    CODE_PATTERN = /\A(?:\/(?:start|link)\s+)?([A-Za-z0-9]{#{CODE_LENGTH}})\z/
+    HOW_TO_CONNECT = "To connect, open NEPSE Trade Journal → Settings → Telegram, click Connect Telegram, " \
+                     "and send me the 8-character code it shows (for example K7M2QX9P).".freeze
     OFFSET_KEY = "telegram_update_offset".freeze
 
+    # { code:, bot_username:, url: }
     def self.start(user, client: Client.new)
-      code = SecureRandom.urlsafe_base64(12)
+      code = Array.new(CODE_LENGTH) { CODE_ALPHABET[SecureRandom.random_number(CODE_ALPHABET.size)] }.join
       user.update!(telegram_link_token: code, telegram_link_expires_at: CODE_TTL.from_now)
-      "https://t.me/#{client.bot_username}?start=#{code}"
+      bot = client.bot_username
+      { code: code, bot_username: bot, url: "https://t.me/#{bot}?start=#{code}" }
     end
 
     def self.poll(client: Client.new) = new(client).poll
@@ -42,10 +52,11 @@ module Telegram
       return false unless message && message.dig("chat", "type") == "private"
 
       chat_id = message.dig("chat", "id").to_s
-      case message["text"].to_s.strip
-      when %r{\A/start\s+(\S+)} then link(Regexp.last_match(1), chat_id, message.dig("from", "username"))
+      text = message["text"].to_s.strip
+      case text
+      when CODE_PATTERN then link(Regexp.last_match(1).upcase, chat_id, message.dig("from", "username"))
       when %r{\A/stop\b} then stop(chat_id)
-      when %r{\A/start\b} then reply(chat_id, "Open NEPSE Trade Journal → Settings → Telegram and use Connect Telegram to link this chat.") && false
+      when %r{\A/start\b} then reply(chat_id, HOW_TO_CONNECT) && false
       else false
       end
     end
@@ -53,7 +64,7 @@ module Telegram
     def link(code, chat_id, username)
       user = User.find_by(telegram_link_token: code)
       unless user && user.telegram_link_expires_at&.future?
-        reply(chat_id, "That link has expired. Use Connect Telegram in the app's Settings again.")
+        reply(chat_id, "That code isn't valid or has expired. Click Connect Telegram in the app's Settings for a new one.")
         return false
       end
 

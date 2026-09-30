@@ -253,10 +253,11 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | # | Steps | Expected |
 | - | ----- | -------- |
 | H12.1 | Without a token: Settings → **Telegram** | "Telegram isn't set up on the server yet…" with setup steps |
-| H12.2 | With a token: **Connect Telegram** | "Open the bot in Telegram" link; the link opens your bot |
-| H12.3 | Press **Start** in the bot, return to Settings | Within a few seconds "Connected as @you"; the bot replies "Connected to NEPSE Trade Journal (your email)" |
+| H12.2 | With a token: **Connect Telegram** | Your bot's @name, an 8-character code with **Copy code**, and an "open it from here" link |
+| H12.3 | In Telegram, send the code to the bot (lower case works too) | Bot replies "Connected to NEPSE Trade Journal (your email)"; Settings shows "Connected as @you" within a few seconds |
+| H12.3b | Send the bot just `/start` | Bot explains how to get and send the code; nothing is linked |
 | H12.4 | **Send test message** | "Test message sent." and the message arrives |
-| H12.5 | Wait 30+ minutes after H12.2 without pressing Start, then press Start | Bot replies the link has expired |
+| H12.5 | Send a code older than 30 minutes, or a made-up one | Bot replies the code isn't valid or has expired |
 | H12.6 | During market hours, a tracked stock moves into its zone | One message: "🟢 SYMBOL is in its entry zone" with price, zone, stop, target, R:R, setup, readiness, trend, RS and any warnings |
 | H12.7 | The same stock leaves and re-enters the zone that day | No second message |
 | H12.8 | After the nightly job (or `bin/rails runner 'TelegramBoardJob.perform_now'`) on a day with new board stocks | One "📋 New on Entry zone now" message listing them; running it again sends nothing |

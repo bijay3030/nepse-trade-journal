@@ -8,10 +8,11 @@ RSpec.describe Telegram::Linker do
     { "update_id" => update_id, "message" => { "text" => text, "chat" => { "id" => chat_id, "type" => type }, "from" => { "username" => "trader" } } }
   end
 
-  it "gives a one-time deep link and links the chat that sends its code" do
-    url = described_class.start(user, client: client)
+  it "gives a one-time code and deep link, and links the chat that sends it" do
+    link = described_class.start(user, client: client)
     code = user.reload.telegram_link_token
-    expect(url).to eq("https://t.me/nepse_journal_bot?start=#{code}")
+    expect(code).to match(/\A[A-HJ-NP-Z2-9]{8}\z/)
+    expect(link).to eq(code: code, bot_username: "nepse_journal_bot", url: "https://t.me/nepse_journal_bot?start=#{code}")
 
     allow(client).to receive(:get_updates).with(offset: nil).and_return([ message("/start #{code}", update_id: 7) ])
     expect(described_class.poll(client: client)).to eq(1)
@@ -24,15 +25,25 @@ RSpec.describe Telegram::Linker do
     expect(described_class.poll(client: client)).to eq(0)
   end
 
+  it "accepts the code sent on its own, in any case, when the deep link lost it" do
+    described_class.start(user, client: client)
+    code = user.reload.telegram_link_token
+    allow(client).to receive(:get_updates).and_return([ message("/start"), message(" #{code.downcase} ", update_id: 2) ])
+
+    expect(described_class.poll(client: client)).to eq(1)
+    expect(user.reload.telegram_chat_id).to eq("42")
+    expect(client).to have_received(:send_message).with("42", /send me the 8-character code/)
+  end
+
   it "rejects an expired or unknown code, and ignores group chats" do
     described_class.start(user, client: client)
     code = user.reload.telegram_link_token
     user.update!(telegram_link_expires_at: 1.minute.ago)
-    allow(client).to receive(:get_updates).and_return([ message("/start #{code}"), message("/start nope", update_id: 2), message("/start #{code}", update_id: 3, type: "group") ])
+    allow(client).to receive(:get_updates).and_return([ message("/start #{code}"), message("ABCD2345", update_id: 2), message("/start #{code}", update_id: 3, type: "group") ])
 
     expect(described_class.poll(client: client)).to eq(0)
     expect(user.reload.telegram_chat_id).to be_nil
-    expect(client).to have_received(:send_message).with("42", /expired/).twice
+    expect(client).to have_received(:send_message).with("42", /isn't valid or has expired/).twice
   end
 
   it "moves a chat to the account that links it last, and unlinks on /stop" do

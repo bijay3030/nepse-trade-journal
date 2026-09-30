@@ -1,9 +1,9 @@
-import { useEffect } from "react"
-import { Send } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Copy, Send } from "lucide-react"
 
 import { Button, Card, CardBody, CardHeader } from "../../components/ui"
 import { apiErrorMessage } from "../watchlist/api"
-import { useTelegramCheck, useTelegramLink, useTelegramStatus, useTelegramTest, useTelegramUnlink, useUpdateTelegram } from "./api"
+import { type TelegramLink, useTelegramCheck, useTelegramLink, useTelegramStatus, useTelegramTest, useTelegramUnlink, useUpdateTelegram } from "./api"
 
 const CHECK_EVERY_MS = 4000
 
@@ -16,6 +16,41 @@ function Switch({ label, help, checked, disabled, onChange }: { label: string; h
       </span>
       <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} className="mt-1 h-4 w-4 accent-ink" />
     </label>
+  )
+}
+
+function ConnectSteps({ link, checking, onCheck }: { link: TelegramLink; checking: boolean; onCheck: () => void }) {
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link.code)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3 text-sm text-slate">
+      <ol className="list-decimal space-y-1 pl-5">
+        <li>
+          In Telegram (phone or computer), open <b className="text-ink">@{link.bot_username}</b>: search for it, or{" "}
+          <a href={link.link_url} target="_blank" rel="noreferrer" className="font-semibold text-ink underline">open it from here</a>.
+        </li>
+        <li>Send the bot this code as a message:</li>
+      </ol>
+      <div className="flex flex-wrap items-center gap-3 pl-5">
+        <code aria-label="Connection code" className="rounded-lg bg-slate/10 px-3 py-2 font-mono text-xl font-bold tracking-[0.25em] text-ink">
+          {link.code}
+        </code>
+        <Button variant="outline" size="sm" onClick={() => void copy()}>
+          <Copy className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
+          {copied ? "Copied" : "Copy code"}
+        </Button>
+      </div>
+      <p className="pl-5">This page connects within a few seconds of the bot getting the code. The code works once and expires in 30 minutes.</p>
+      <Button variant="outline" size="sm" disabled={checking} onClick={onCheck}>I've sent the code</Button>
+    </div>
   )
 }
 
@@ -81,14 +116,7 @@ export function TelegramSettingsCard() {
             </div>
           </>
         ) : link.data ? (
-          <div className="space-y-2 text-sm text-slate">
-            <p>
-              1. <a href={link.data.link_url} target="_blank" rel="noreferrer" className="font-semibold text-ink underline">Open the bot in Telegram</a> and press{" "}
-              <b>Start</b>. 2. Come back here; this connects within a few seconds.
-            </p>
-            <p className="text-xs">The link works once and expires in 30 minutes.</p>
-            <Button variant="outline" size="sm" disabled={check.isPending} onClick={() => checkNow()}>I've pressed Start</Button>
-          </div>
+          <ConnectSteps link={link.data} checking={check.isPending} onCheck={() => checkNow()} />
         ) : (
           <div className="flex flex-wrap items-center gap-3">
             <p className="flex-1 text-sm text-slate">Get a message when a tracked stock enters its zone, and a list of stocks new on Entry zone now after each close.</p>

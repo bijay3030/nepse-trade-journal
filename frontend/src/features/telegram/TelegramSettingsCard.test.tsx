@@ -29,14 +29,16 @@ describe("TelegramSettingsCard", () => {
   it("connects: shows the one-time link, then checks until the chat is linked", async () => {
     mockGet.mockResolvedValue({ data: status })
     mockPost.mockImplementation((path: string) =>
-      Promise.resolve({ data: path === "/telegram/link" ? { ...status, pending: true, link_url: "https://t.me/nepse_bot?start=abc" } : linked }),
+      Promise.resolve({ data: path === "/telegram/link" ? { ...status, pending: true, link_url: "https://t.me/nepse_bot?start=K7M2QX9P", code: "K7M2QX9P", bot_username: "nepse_bot" } : linked }),
     )
     renderWithClient(<TelegramSettingsCard />)
 
     fireEvent.click(await screen.findByRole("button", { name: "Connect Telegram" }))
-    expect(await screen.findByRole("link", { name: "Open the bot in Telegram" })).toHaveAttribute("href", "https://t.me/nepse_bot?start=abc")
+    expect(await screen.findByLabelText("Connection code")).toHaveTextContent("K7M2QX9P")
+    expect(screen.getByText("@nepse_bot")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "open it from here" })).toHaveAttribute("href", "https://t.me/nepse_bot?start=K7M2QX9P")
 
-    fireEvent.click(screen.getByRole("button", { name: "I've pressed Start" }))
+    fireEvent.click(screen.getByRole("button", { name: "I've sent the code" }))
     expect(await screen.findByText(/Connected as @trader/)).toBeInTheDocument()
     expect(mockPost).toHaveBeenCalledWith("/telegram/check")
   })

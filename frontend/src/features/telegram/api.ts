@@ -29,7 +29,10 @@ function useTelegramMutation<TVariables = void, TResult extends TelegramStatus =
   })
 }
 
-export const useTelegramLink = () => useTelegramMutation(() => api.post<TelegramStatus & { link_url: string }>("/telegram/link"))
+/** A one-time code (valid 30 minutes) to send to the bot, and a t.me link that carries it. */
+export type TelegramLink = TelegramStatus & { link_url: string; code: string; bot_username: string }
+
+export const useTelegramLink = () => useTelegramMutation(() => api.post<TelegramLink>("/telegram/link"))
 export const useTelegramCheck = () => useTelegramMutation(() => api.post<TelegramStatus>("/telegram/check"))
 export const useTelegramUnlink = () => useTelegramMutation(() => api.delete<TelegramStatus>("/telegram"))
 export const useTelegramTest = () => useTelegramMutation(() => api.post<TelegramStatus & { sent: boolean }>("/telegram/test"))
