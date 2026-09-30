@@ -12,17 +12,22 @@ module Nepse
 
       def companies = get("/stock/")
       def sectors = get("/sector/")
-      def dividends(symbol) = get("/bonus/", symbol: symbol.to_s.upcase)
+      def dividends(symbol) = get("/bonus/", { symbol: symbol.to_s.upcase })
+      def brokers = get("/broker/")
+
+      # Every trade of one session: symbol, buyer and seller broker numbers,
+      # quantity, rate and amount (~8 MB, ~60k trades).
+      def floorsheet(date) = get("/data/floorsheet/bydate/", { date: date.iso8601 }, timeout: 90)
 
       # Latest fundamentals for one security. Needs Chukul's own sector id.
       def stock_details(symbol, sector_id)
-        get("/data/stock-details/", symbol: symbol.to_s.upcase, sector: sector_id)
+        get("/data/stock-details/", { symbol: symbol.to_s.upcase, sector: sector_id })
       end
 
       # Daily bars for an index or a stock. Chukul stamps each bar at midnight Nepal
       # time of its session, so the session date is the Nepal-time date.
       def history(symbol, from:, to:)
-        response = get("/data/historydata/data/", symbol: symbol, from: from.to_time(:utc).to_i, to: (to + 1).to_time(:utc).to_i)
+        response = get("/data/historydata/data/", { symbol: symbol, from: from.to_time(:utc).to_i, to: (to + 1).to_time(:utc).to_i })
         return response unless response[:success]
 
         data = response[:data]
@@ -43,12 +48,12 @@ module Nepse
 
       private
 
-      def get(path, query = {})
+      def get(path, query = {}, timeout: REQUEST_TIMEOUT)
         response = HTTParty.get(
           "#{BASE_URL}#{path}",
           query: query,
           headers: { "User-Agent" => USER_AGENT, "Accept" => "application/json" },
-          timeout: REQUEST_TIMEOUT
+          timeout: timeout
         )
         return { success: false, error: "HTTP #{response.code}" } unless response.success?
 

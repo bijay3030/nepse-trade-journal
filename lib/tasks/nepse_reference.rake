@@ -32,6 +32,16 @@ namespace :nepse do
       print_result("Indices", Nepse::Reference::IndexHistorySync.call(days: (args[:days].presence || 365).to_i))
     end
 
+    desc "Import the floorsheet (broker flows) for recent sessions not stored yet. Usage: rails \"nepse:data:floorsheet[120]\""
+    task :floorsheet, [ :sessions ] => :environment do |_t, args|
+      sessions = (args[:sessions].presence || 120).to_i
+      print_result("Brokers", Flows::BrokerSync.call)
+      puts "Importing floorsheets for up to #{sessions} sessions (about 3s each)..."
+      result = Flows::Backfill.call(sessions: sessions)
+      puts "Imported #{result[:imported].size} sessions#{result[:imported].any? ? " (#{result[:imported].min}..#{result[:imported].max})" : ''}; failed #{result[:failed].size}"
+      result[:failed].first(10).each { |date, error| puts "  #{date}: #{error}" }
+    end
+
     desc "Rebuild buy-readiness snapshots (indicators first). Usage: rails nepse:data:setups"
     task setups: :environment do
       puts "Recalculating indicators..."
@@ -46,7 +56,7 @@ namespace :nepse do
       puts JSON.pretty_generate(Nepse::Reference::CoverageReport.call)
     end
 
-    desc "Full load: securities, price history for new ones, indices, dividends, fundamentals, then a report"
+    desc "Full load: securities, price history for new ones, indices, dividends, fundamentals, floorsheet, setups, then a report"
     task all: :environment do
       universe = Nepse::Reference::UniverseSync.call
       print_result("Universe", universe)
@@ -57,6 +67,8 @@ namespace :nepse do
       Rake::Task["nepse:data:indices"].invoke
       Rake::Task["nepse:data:dividends"].invoke
       Rake::Task["nepse:data:fundamentals"].invoke
+      Rake::Task["nepse:data:floorsheet"].invoke
+      Rake::Task["nepse:data:setups"].invoke
       Rake::Task["nepse:data:report"].invoke
     end
   end
