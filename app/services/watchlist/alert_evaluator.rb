@@ -47,6 +47,8 @@ module Watchlist
       previous = item.price_state
       current = item.price_state_for(price)
       updates = { price_state: current, last_evaluated_at: Time.current }
+      # Remembered so the end-of-day check can tell a failed breakout from a quiet day.
+      updates[:touched_zone_on] = Nepse::MarketHours.today if %w[in_zone extended].include?(current)
       updates[:status] = STATUS_FOR_STATE.fetch(current) unless WatchlistItem::STICKY_STATUSES.include?(item.status)
 
       alert = nil

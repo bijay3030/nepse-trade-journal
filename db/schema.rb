@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_28_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_30_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -346,6 +346,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_28_120000) do
     t.datetime "last_evaluated_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.date "last_close_on"
+    t.string "last_close_state"
+    t.decimal "last_close_price", precision: 12, scale: 2
+    t.decimal "last_close_relative_volume", precision: 8, scale: 2
+    t.date "touched_zone_on"
     t.index ["status"], name: "index_watchlist_items_on_status"
     t.index ["stock_id"], name: "index_watchlist_items_on_stock_id"
     t.index ["trade_plan_id"], name: "index_watchlist_items_on_trade_plan_id"
