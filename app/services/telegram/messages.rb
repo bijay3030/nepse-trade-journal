@@ -71,7 +71,7 @@ module Telegram
       lines = Array(guards).map { "⚠️ #{GUARD_LABELS.fetch(_1, _1)}" }
       event = CorporateActions::Upcoming.for_stock(stock)
       if event && event[:days_until] <= BOOK_CLOSE_DAYS && event[:bonus_percent].to_f.positive?
-        lines << "⚠️ #{event[:bonus_percent]}% bonus book close #{event[:book_close_on].strftime('%b %-d')}: price and levels will be adjusted"
+        lines << "⚠️ #{format('%g', event[:bonus_percent])}% bonus book close #{event[:book_close_on].strftime('%b %-d')}: price and levels will be adjusted"
       end
       lines
     end

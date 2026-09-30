@@ -45,7 +45,7 @@ RSpec.describe Telegram::Notifier do
       stock.dividends.create!(fiscal_year: "082/083", bonus_percent: 10, book_close_on: Nepse::MarketHours.today + 3, source: "chukul")
 
       described_class.watchlist_alert(zone_alert, client: client)
-      expect(client).to have_received(:send_message).with("42", /10.0% bonus book close .*: price and levels will be adjusted/)
+      expect(client).to have_received(:send_message).with("42", /10% bonus book close .*: price and levels will be adjusted/)
     end
 
     it "unlinks a chat that blocked the bot" do

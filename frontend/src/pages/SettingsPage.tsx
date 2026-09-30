@@ -3,6 +3,7 @@ import { Controller, useForm } from "react-hook-form"
 import { Download, Trash2, Upload } from "lucide-react"
 import { Badge, Button, Card, CardBody, CardHeader, Input, Select } from "../components/ui"
 import { DigestSettingsCard } from "../features/digest/DigestSettingsCard"
+import { TelegramSettingsCard } from "../features/telegram/TelegramSettingsCard"
 
 type SettingsFormValues = {
   name: string
@@ -262,6 +263,8 @@ export function SettingsPage() {
             </Select>
           </CardBody>
         </Card>
+
+        <TelegramSettingsCard />
 
         <DigestSettingsCard />
 
