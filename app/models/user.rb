@@ -17,6 +17,7 @@ class User < ApplicationRecord
   has_many :audit_logs, dependent: :nullify
   has_many :watchlist_items, dependent: :destroy
   has_many :watchlist_alerts, dependent: :delete_all
+  has_many :daily_digests, dependent: :delete_all
 
   validates :jti, presence: true, uniqueness: true
 end

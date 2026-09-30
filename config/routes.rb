@@ -17,6 +17,11 @@ Rails.application.routes.draw do
     namespace :v1 do
       get "market/overview", to: "market#overview"
       get "market/heatmap", to: "market#heatmap"
+      get "digest_preferences", to: "digests#preferences"
+      patch "digest_preferences", to: "digests#update_preferences"
+      resources :digests, only: [ :index, :show ] do
+        post :mark_read, on: :member
+      end
       get "screener", to: "screener#index"
       get "screener/buy_zone", to: "screener#buy_zone"
       get "backtest", to: "backtests#latest"
