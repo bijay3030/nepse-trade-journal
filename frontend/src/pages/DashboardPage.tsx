@@ -5,7 +5,7 @@ export function DashboardPage() {
   return (
     <div className="min-w-0 space-y-10">
       <MarketOverviewPage />
-      <ScreenerPage />
+      <ScreenerPage initialTab="watchlist" />
     </div>
   )
 }

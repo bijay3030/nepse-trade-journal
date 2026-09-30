@@ -12,10 +12,12 @@ import type {
 } from "../features/screener/types"
 import { SETUP_STATE_LABELS } from "../features/screener/types"
 import { Badge, Button, Card, LoadingSpinner } from "../components/ui"
+import { EntryZoneBoard } from "../features/readiness/EntryZoneBoard"
+import { ZONE_LABELS, ZONE_TONE } from "../features/readiness/labels"
 import { AddToWatchlistButton } from "../features/watchlist/AddToWatchlist"
 import { cn } from "../lib/cn"
 
-type TabId = "watchlist" | "breakout"
+type TabId = "entry" | "watchlist" | "breakout"
 
 type Filters = {
   query: string
@@ -119,6 +121,7 @@ function ScreenerTable({
               <th className="py-3 px-4">Symbol</th>
               <th className="py-3 px-4 text-right">Price</th>
               <th className="py-3 px-4 text-right">VCP Score</th>
+              <th className="py-3 px-4">Entry readiness</th>
               <th className="py-3 px-4">Price-action state</th>
               <th className="py-3 px-4 text-right">Volume</th>
               <th className="py-3 px-4 text-right">Pivot</th>
@@ -144,6 +147,16 @@ function ScreenerTable({
                 <td className="py-3 px-4 font-bold"><Link className="rounded text-ink underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink" to={`/screener/${encodeURIComponent(row.symbol)}`}>{row.symbol}</Link></td>
                 <td className="py-3 px-4 text-right font-mono">{formatPrice(row.current_price)}</td>
                 <td className="py-3 px-4 text-right font-mono">{row.vcp_score}</td>
+                <td className="py-3 px-4">
+                  {row.readiness_score === undefined ? (
+                    <span className="text-slate/60">—</span>
+                  ) : (
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono font-bold">{row.readiness_score}</span>
+                      {row.zone_state && <Badge tone={ZONE_TONE[row.zone_state]}>{ZONE_LABELS[row.zone_state]}</Badge>}
+                    </div>
+                  )}
+                </td>
                 <td className="py-3 px-4">
                   <div className="flex flex-col gap-1"><Badge tone={SETUP_TONE[row.setup_state]}>{SETUP_STATE_LABELS[row.setup_state]}</Badge><span className="text-[11px] text-slate">{row.price_action_state.replaceAll("_", " ")}</span></div>
                 </td>
@@ -175,9 +188,9 @@ function ScreenerTable({
   )
 }
 
-export function ScreenerPage() {
+export function ScreenerPage({ initialTab = "entry" }: { initialTab?: TabId } = {}) {
   const { data, isLoading, isError, refetch } = useScreener()
-  const [tab, setTab] = useState<TabId>("watchlist")
+  const [tab, setTab] = useState<TabId>(initialTab)
   const [filters, setFilters] = useState<Filters>(INITIAL_FILTERS)
 
   const results = useMemo(() => data?.results ?? [], [data])
@@ -251,6 +264,7 @@ export function ScreenerPage() {
         <div className="inline-flex rounded-xl border border-mist/80 bg-slate/5 p-1" role="tablist">
           {(
             [
+              { id: "entry", label: "Entry zone now" },
               { id: "watchlist", label: "All setups" },
               { id: "breakout", label: "Breakout Watch" },
             ] as const
@@ -269,11 +283,14 @@ export function ScreenerPage() {
             </button>
           ))}
         </div>
-        <p className="text-xs font-semibold text-slate">
-          {tab === "watchlist" ? `${filteredRows.length} setups` : `${breakoutRows.length} near pivot`}
-        </p>
+        {tab !== "entry" && (
+          <p className="text-xs font-semibold text-slate">
+            {tab === "watchlist" ? `${filteredRows.length} setups` : `${breakoutRows.length} near pivot`}
+          </p>
+        )}
       </div>
 
+      {tab === "entry" ? <EntryZoneBoard /> : (<>
       {(
         <Card className="p-4 bg-white/90 border-slate/15 space-y-4 shadow-sm">
           <div className="relative">
@@ -376,6 +393,7 @@ export function ScreenerPage() {
           showSetupColumn={tab === "breakout"}
         />
       )}
+      </>)}
     </div>
   )
 }

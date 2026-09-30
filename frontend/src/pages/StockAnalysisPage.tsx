@@ -1,25 +1,13 @@
 import { format, parseISO } from "date-fns"
 import { ArrowLeft } from "lucide-react"
+import { useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ComposedChart,
-  Legend,
-  Line,
-  ReferenceArea,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts"
-
 import { Badge, Button, Card, CardBody, CardHeader, LoadingSpinner } from "../components/ui"
 import { useStockAnalysis } from "../features/screener/api"
 import type { PriceLevel, StockAnalysis } from "../features/screener/types"
 import { SETUP_STATE_LABELS } from "../features/screener/types"
+import { CandlestickChart, type ChartLevels } from "../features/readiness/CandlestickChart"
+import { ReadinessCard } from "../features/readiness/ReadinessCard"
 import { AddToWatchlistButton } from "../features/watchlist/AddToWatchlist"
 import { useWatchlist } from "../features/watchlist/api"
 import { formatPrice } from "../features/watchlist/labels"
@@ -47,147 +35,31 @@ function changeTone(change: number): "gain" | "loss" | "neutral" {
 }
 
 function PriceChart({ data, plan }: { data: StockAnalysis; plan?: WatchlistItem }) {
-  const support = data.price_action.support_levels[0]
-  const resistance = data.price_action.resistance_levels[0]
-  // First session on or after the day the stock was added to the watchlist.
-  const addedOn = plan && data.candles.find((candle) => candle.traded_on >= plan.created_at.slice(0, 10))?.traded_on
+  // Your watchlist levels when you track the stock, otherwise the nightly best setup.
+  const readiness = data.readiness
+  const levels = useMemo<ChartLevels | undefined>(() => {
+    if (plan) {
+      return { entryLow: plan.entry_zone_low, entryHigh: plan.entry_zone_high, invalidation: plan.invalidation_price, target: plan.target_price, pivot: plan.pivot_price }
+    }
+    if (readiness?.entry_zone_low) {
+      return { entryLow: readiness.entry_zone_low, entryHigh: readiness.entry_zone_high, invalidation: readiness.invalidation_price, target: readiness.target_price, pivot: readiness.pivot_price }
+    }
+    return undefined
+  }, [plan, readiness])
+  const source = plan ? "your watchlist levels" : readiness?.setup_type ? `the ${readiness.setup_type === "vcp" ? "VCP" : "pullback"} setup found on ${readiness.traded_on}` : null
 
   return (
     <Card>
       <CardHeader
         title="Price &amp; Trend"
         subtitle={
-          plan
-            ? `Your entry zone ${formatPrice(plan.entry_zone_low)}–${formatPrice(plan.entry_zone_high)}, invalidation ${formatPrice(plan.invalidation_price)}${plan.target_price ? `, target ${formatPrice(plan.target_price)}` : ""}`
-            : "Close against moving averages and key levels"
+          levels
+            ? `Entry zone ${formatPrice(levels.entryLow)}–${formatPrice(levels.entryHigh)}, invalidation ${formatPrice(levels.invalidation)}${levels.target ? `, target ${formatPrice(levels.target)}` : ""} (from ${source})`
+            : "Daily candles, volume and moving averages"
         }
       />
       <CardBody>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data.candles} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="4 4" stroke="#d9e0ea" />
-              <XAxis
-                dataKey="traded_on"
-                tickFormatter={(v: string) => format(parseISO(v), "MMM dd")}
-                stroke="#1f2d42"
-                fontSize={12}
-              />
-              <YAxis domain={["auto", "auto"]} stroke="#1f2d42" fontSize={12} width={56} />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(255,255,255,0.8)",
-                  background: "rgba(255,255,255,0.95)",
-                  padding: "0.75rem",
-                  boxShadow: "var(--shadow-panel, 0 8px 24px rgba(16,21,31,0.08))",
-                }}
-                labelFormatter={(v) => format(parseISO(String(v)), "MMM dd, yyyy")}
-              />
-              <Legend />
-              {plan && (
-                <ReferenceArea
-                  y1={plan.entry_zone_low}
-                  y2={plan.entry_zone_high}
-                  fill="#18745a"
-                  fillOpacity={0.16}
-                  stroke="#18745a"
-                  strokeOpacity={0.4}
-                  ifOverflow="extendDomain"
-                  label={{ value: "Entry zone", fill: "#18745a", fontSize: 12, position: "insideLeft" }}
-                />
-              )}
-              {plan && (
-                <ReferenceLine
-                  y={plan.invalidation_price}
-                  stroke="#d64545"
-                  strokeWidth={1.5}
-                  ifOverflow="extendDomain"
-                  label={{ value: "Invalidation", fill: "#d64545", fontSize: 12, position: "insideBottomRight" }}
-                />
-              )}
-              {plan?.target_price != null && (
-                <ReferenceLine
-                  y={plan.target_price}
-                  stroke="#18745a"
-                  strokeWidth={1.5}
-                  ifOverflow="extendDomain"
-                  label={{ value: "Target", fill: "#18745a", fontSize: 12, position: "insideTopRight" }}
-                />
-              )}
-              {addedOn && (
-                <ReferenceLine
-                  x={addedOn}
-                  stroke="#64748b"
-                  strokeDasharray="2 4"
-                  label={{ value: "Added", fill: "#64748b", fontSize: 11, position: "insideTopLeft" }}
-                />
-              )}
-              {data.vcp.pivot_level != null && (
-                <ReferenceLine
-                  y={data.vcp.pivot_level}
-                  stroke="#ff6b2c"
-                  strokeDasharray="4 4"
-                  label={{ value: "Pivot", fill: "#ff6b2c", fontSize: 12, position: "right" }}
-                />
-              )}
-              {support && (
-                <ReferenceLine
-                  y={support.level}
-                  stroke="#18745a"
-                  strokeDasharray="4 4"
-                  label={{ value: "Support", fill: "#18745a", fontSize: 12, position: "insideBottomLeft" }}
-                />
-              )}
-              {resistance && (
-                <ReferenceLine
-                  y={resistance.level}
-                  stroke="#ff6b2c"
-                  strokeDasharray="4 4"
-                  label={{ value: "Resistance", fill: "#ff6b2c", fontSize: 12, position: "insideTopLeft" }}
-                />
-              )}
-              <Line type="monotone" dataKey="close" name="Close" stroke="#003893" strokeWidth={2.5} dot={false} />
-              <Line type="monotone" dataKey="sma_20" name="SMA 20" stroke="#f59e0b" strokeDasharray="4 4" dot={false} />
-              <Line type="monotone" dataKey="sma_50" name="SMA 50" stroke="#1f2d42" strokeDasharray="4 4" dot={false} />
-              <Line type="monotone" dataKey="sma_200" name="SMA 200" stroke="#8b5cf6" strokeDasharray="4 4" dot={false} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
-      </CardBody>
-    </Card>
-  )
-}
-
-function VolumeChart({ data }: { data: StockAnalysis }) {
-  return (
-    <Card>
-      <CardHeader title="Volume" subtitle="Daily traded volume across the analysis window" />
-      <CardBody>
-        <div className="h-40">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data.candles} margin={{ top: 4, right: 16, bottom: 0, left: 0 }}>
-              <CartesianGrid strokeDasharray="4 4" stroke="#d9e0ea" />
-              <XAxis
-                dataKey="traded_on"
-                tickFormatter={(v: string) => format(parseISO(v), "MMM dd")}
-                stroke="#1f2d42"
-                fontSize={11}
-              />
-              <YAxis stroke="#1f2d42" fontSize={11} width={64} />
-              <Tooltip
-                contentStyle={{
-                  borderRadius: "0.75rem",
-                  border: "1px solid rgba(255,255,255,0.8)",
-                  background: "rgba(255,255,255,0.95)",
-                  padding: "0.75rem",
-                }}
-                labelFormatter={(v) => format(parseISO(String(v)), "MMM dd, yyyy")}
-              />
-              <Bar dataKey="volume" name="Volume" fill="#003893" fillOpacity={0.55} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        <CandlestickChart candles={data.candles} levels={levels} contractions={data.vcp.contractions} addedOn={plan?.created_at.slice(0, 10)} />
       </CardBody>
     </Card>
   )
@@ -441,10 +313,11 @@ function StockAnalysisBody({ symbol, onBack }: { symbol: string; onBack: () => v
         </div>
       </header>
 
+      {data.readiness ? <ReadinessCard snapshot={data.readiness} /> : null}
+
        {data.candles.length > 0 ? (
          <>
            <PriceChart data={data} plan={plan} />
-           <VolumeChart data={data} />
          </>
        ) : null}
 

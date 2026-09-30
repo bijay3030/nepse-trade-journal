@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query"
 
 import api from "../../lib/axios"
-import type { MarketOverview, ScreenerResponse, StockAnalysis } from "./types"
+import type { BuyZoneResponse, MarketOverview, ScreenerResponse, StockAnalysis } from "./types"
 
 export function useMarketOverview() {
   return useQuery({
@@ -29,5 +29,14 @@ export function useStockAnalysis(symbol: string) {
     staleTime: 30_000,
     retry: 1,
     enabled: symbol.length > 0,
+  })
+}
+
+export function useBuyZone() {
+  return useQuery({
+    queryKey: ["screener", "buy_zone"],
+    queryFn: async () => (await api.get<BuyZoneResponse>("/screener/buy_zone")).data,
+    staleTime: 60_000,
+    retry: 1,
   })
 }

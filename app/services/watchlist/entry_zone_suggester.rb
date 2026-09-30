@@ -13,14 +13,16 @@ module Watchlist
     SUPPORT_BREAK_PCT = 3.0
     DEFAULT_REWARD_MULTIPLE = 2.0
 
-    def self.call(stock, setup_type, market: nil)
-      new(stock, setup_type, market: market).call
+    # Pass `analysis:` (a Stock::SetupAnalysis#detail hash) to reuse one already computed.
+    def self.call(stock, setup_type, market: nil, analysis: nil)
+      new(stock, setup_type, market: market, analysis: analysis).call
     end
 
-    def initialize(stock, setup_type, market: nil)
+    def initialize(stock, setup_type, market: nil, analysis: nil)
       @stock = stock
       @setup_type = setup_type.to_s
       @market = market
+      @analysis = analysis
     end
 
     def call

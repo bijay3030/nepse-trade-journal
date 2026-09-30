@@ -1,0 +1,62 @@
+require "rails_helper"
+
+RSpec.describe Setups::SnapshotBuilder do
+  let(:day) { Date.new(2026, 9, 28) }
+  let(:analysis) { instance_double(Stock::SetupAnalysis, summary: { symbol: "BANK", vcp_score: 80 }, detail: detail) }
+  let(:detail) do
+    { vcp: { setup_quality_score: 80, is_vcp_setup: true }, price_action: { confidence: 0.7, trend: "uptrend" } }
+  end
+  let(:context) { instance_double(Watchlist::MarketContext, regime: "neutral", nepse_return: 0.0, sector_returns: { "Commercial Banks" => 3.0 }) }
+
+  def stock_with_history(symbol, closes)
+    stock = create(:stock, symbol: symbol, sector: "Commercial Banks")
+    closes.each_with_index do |close, i|
+      date = day - (closes.size - 1 - i)
+      price = create(:stock_daily_price, stock: stock, traded_on: date, close_price: close)
+      next unless i == closes.size - 1
+
+      StockDailyIndicator.create!(stock: stock, stock_daily_price: price, traded_on: date, sma_50: close * 0.95, sma_150: close * 0.9,
+                                  sma_200: close * 0.85, low_52w: close * 0.6, high_52w: close * 1.05)
+    end
+    StockDailyIndicator.create!(stock: stock, traded_on: day - 30, sma_200: closes.last * 0.8)
+    stock
+  end
+
+  before do
+    allow(MarketIndex::Overview).to receive(:new).and_return(instance_double(MarketIndex::Overview, call: { regime_status: "neutral" }))
+    allow(Watchlist::MarketContext).to receive(:call).and_return(context)
+    allow(Stock::SetupAnalysis).to receive(:new).and_return(analysis)
+    allow(Watchlist::EntryZoneSuggester).to receive(:call) do |_stock, type, **|
+      if type == "vcp"
+        { success: true, levels: { entry_zone_low: 195.0, entry_zone_high: 205.0, invalidation_price: 180.0, target_price: 240.0, pivot_price: 195.0 } }
+      else
+        { success: false, error: "No support" }
+      end
+    end
+  end
+
+  it "stores trend, relative strength, the zone and readiness for each stock" do
+    leader = stock_with_history("BANK", Array.new(100) { |i| 100.0 + i * 1.0 }) # ends at 199, inside the zone
+    stock_with_history("LAGGARD", Array.new(100) { 150.0 })
+
+    result = described_class.call
+
+    expect(result).to include(success: true, traded_on: day, stocks: 2, in_buy_zone: [ "BANK" ])
+    snapshot = leader.setup_snapshots.find_by!(traded_on: day)
+    expect(snapshot).to have_attributes(setup_type: "vcp", zone_state: "in_zone", trend_rules_passed: 7, rs_rating: 99, setup_quality: 80, in_buy_zone: true)
+    expect(snapshot.readiness_score).to eq(35 + 24 + 9 + 20)
+    expect(snapshot.entry_zone_low.to_f).to eq(195.0)
+    expect(snapshot.screener_row).to include("symbol" => "BANK")
+    expect(snapshot.trend_checks.size).to eq(8)
+  end
+
+  it "marks a price below invalidation as failed and skips short histories" do
+    create(:stock, symbol: "NEW").tap { |s| create(:stock_daily_price, stock: s, traded_on: day) }
+    stock_with_history("DROP", Array.new(99) { 150.0 } + [ 170.0 ])
+
+    result = described_class.call
+
+    expect(result[:stocks]).to eq(1)
+    expect(StockSetupSnapshot.joins(:stock).find_by!(stocks: { symbol: "DROP" }).zone_state).to eq("failed")
+  end
+end

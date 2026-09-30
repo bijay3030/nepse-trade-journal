@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_30_100000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_30_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -195,6 +195,35 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_100000) do
     t.index ["stock_id"], name: "index_stock_dividends_on_stock_id"
   end
 
+  create_table "stock_setup_snapshots", force: :cascade do |t|
+    t.bigint "stock_id", null: false
+    t.date "traded_on", null: false
+    t.decimal "close_price", precision: 12, scale: 2, null: false
+    t.integer "trend_rules_passed", default: 0, null: false
+    t.jsonb "trend_checks", default: [], null: false
+    t.integer "rs_rating"
+    t.decimal "rs_score", precision: 10, scale: 4
+    t.string "setup_type"
+    t.string "zone_state", null: false
+    t.decimal "entry_zone_low", precision: 12, scale: 2
+    t.decimal "entry_zone_high", precision: 12, scale: 2
+    t.decimal "invalidation_price", precision: 12, scale: 2
+    t.decimal "target_price", precision: 12, scale: 2
+    t.decimal "pivot_price", precision: 12, scale: 2
+    t.decimal "distance_to_zone_pct", precision: 8, scale: 2
+    t.integer "setup_quality", default: 0, null: false
+    t.integer "readiness_score", default: 0, null: false
+    t.jsonb "readiness_components", default: {}, null: false
+    t.boolean "in_buy_zone", default: false, null: false
+    t.jsonb "screener_row", default: {}, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["stock_id", "traded_on"], name: "index_stock_setup_snapshots_on_stock_id_and_traded_on", unique: true
+    t.index ["stock_id"], name: "index_stock_setup_snapshots_on_stock_id"
+    t.index ["traded_on", "in_buy_zone"], name: "index_stock_setup_snapshots_on_traded_on_and_in_buy_zone"
+    t.index ["traded_on", "readiness_score"], name: "index_stock_setup_snapshots_on_traded_on_and_readiness_score"
+  end
+
   create_table "stocks", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -371,6 +400,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_100000) do
   add_foreign_key "stock_daily_indicators", "stocks"
   add_foreign_key "stock_daily_prices", "stocks"
   add_foreign_key "stock_dividends", "stocks"
+  add_foreign_key "stock_setup_snapshots", "stocks"
   add_foreign_key "trade_executions", "trade_plans"
   add_foreign_key "trade_plans", "stocks"
   add_foreign_key "trade_plans", "trading_strategies"

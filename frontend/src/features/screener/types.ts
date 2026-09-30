@@ -79,6 +79,57 @@ export type ScreenerRow = {
   is_pivot_near: boolean
   setup_state: SetupState
   market_regime: MarketRegime
+  /** Present when the screener is served from the nightly snapshots. */
+  readiness_score?: number
+  zone_state?: ZoneState
+  in_buy_zone?: boolean
+  rs_rating?: number | null
+  trend_rules_passed?: number
+  setup_type?: "vcp" | "pullback" | null
+  entry_zone_low?: number | null
+  entry_zone_high?: number | null
+  invalidation_price?: number | null
+}
+
+/** Where the price sits against the best setup's entry zone. */
+export type ZoneState = "too_early" | "in_zone" | "extended" | "failed" | "no_setup"
+
+export type TrendCheck = { key: string; label: string; passed: boolean; detail: string | null }
+
+export type ReadinessComponent = { points: number; max: number }
+
+/** Nightly snapshot for one stock (GET /screener/:symbol -> readiness, GET /screener/buy_zone). */
+export type ReadinessSnapshot = {
+  traded_on: string
+  setup_type: "vcp" | "pullback" | null
+  zone_state: ZoneState
+  in_buy_zone: boolean
+  readiness_score: number
+  readiness_components: {
+    trend: ReadinessComponent
+    setup: ReadinessComponent
+    market: ReadinessComponent
+    sector: ReadinessComponent
+    sector_vs_nepse: number | null
+  }
+  trend_rules_passed: number
+  trend_checks: TrendCheck[]
+  rs_rating: number | null
+  setup_quality: number
+  close_price: number
+  entry_zone_low: number | null
+  entry_zone_high: number | null
+  invalidation_price: number | null
+  target_price: number | null
+  pivot_price: number | null
+  distance_to_zone_pct: number | null
+}
+
+/** GET /screener/buy_zone */
+export type BuyZoneResponse = {
+  traded_on: string | null
+  criteria: { zone_state: ZoneState; min_trend_rules: number; min_readiness: number }
+  results: Array<ReadinessSnapshot & { symbol: string; name: string; sector: string }>
 }
 
 /** GET /screener */
@@ -170,4 +221,6 @@ export type StockAnalysis = {
     sector_trend: TrendState
     relative_strength_rating: "strong" | "neutral" | "weak"
   } | null
+  /** Latest nightly snapshot, or null before the first build. */
+  readiness?: ReadinessSnapshot | null
 }

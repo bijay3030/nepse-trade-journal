@@ -6,6 +6,7 @@ class Stock < ApplicationRecord
   has_many :company_financials, class_name: "StockCompanyFinancial", dependent: :destroy
   has_many :watchlist_items, dependent: :destroy
   has_many :dividends, class_name: "StockDividend", dependent: :destroy
+  has_many :setup_snapshots, class_name: "StockSetupSnapshot", dependent: :delete_all
 
   scope :active, -> { where(is_active: true) }
   scope :by_sector, ->(sector) { where(sector: sector) }

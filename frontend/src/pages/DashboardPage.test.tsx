@@ -13,6 +13,12 @@ vi.mock("../features/watchlist/api", () => ({
 }))
 
 vi.mock("../features/screener/api", () => ({
+  useBuyZone: () => ({
+    data: { traded_on: "2026-09-28", criteria: { zone_state: "in_zone", min_trend_rules: 5, min_readiness: 60 }, results: [] },
+    isLoading: false,
+    isError: false,
+    refetch: vi.fn(),
+  }),
   useMarketOverview: () => ({ data: mockMarketOverview, isLoading: false, isError: false }),
   useScreener: () => ({ data: mockScreener, isLoading: false, isError: false }),
 }))

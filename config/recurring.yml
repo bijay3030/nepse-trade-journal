@@ -22,6 +22,13 @@ shared: &shared
     queue: default
     schedule: "45 10 * * 1-5 UTC"
 
+  # Trend template, relative strength, zones and buy readiness: 4:45 PM Nepal time, Mon-Fri,
+  # after the closing prices and reference data.
+  setup_snapshots:
+    class: BuildSetupSnapshotsJob
+    queue: default
+    schedule: "0 11 * * 1-5 UTC"
+
   # Fundamentals: Saturday 9:45 AM Nepal time (takes about an hour).
   reference_data_weekly:
     class: SyncReferenceDataJob
