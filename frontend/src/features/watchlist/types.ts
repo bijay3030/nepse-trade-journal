@@ -1,4 +1,4 @@
-export type SetupType = "vcp" | "pullback"
+export type SetupType = "vcp" | "pullback" | "ma_pullback" | "base_breakout"
 export type WatchlistStatus = "watching" | "in_zone" | "extended" | "invalidated" | "planned" | "archived"
 export type PriceState = "below_zone" | "in_zone" | "extended" | "invalidated"
 export type AlertKind =
@@ -78,6 +78,8 @@ export type Suggestion =
       setup_type: SetupType
       levels: WatchlistLevels & { target_basis: string }
       snapshot: SetupSnapshot
+      /** For MA pullbacks and flat-base breakouts. */
+      pattern?: { quality: number; details: Record<string, string | number | boolean | null> } | null
     }
   | { success: false; symbol: string; current_price: number; error: string }
 

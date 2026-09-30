@@ -8,6 +8,7 @@ import type { PriceLevel, StockAnalysis } from "../features/screener/types"
 import { SETUP_STATE_LABELS } from "../features/screener/types"
 import { CandlestickChart, type ChartLevels } from "../features/readiness/CandlestickChart"
 import { BrokerFlowCard } from "../features/flows/BrokerFlowCard"
+import { SETUP_TYPE_LABELS } from "../features/readiness/labels"
 import { ReadinessCard } from "../features/readiness/ReadinessCard"
 import { AddToWatchlistButton } from "../features/watchlist/AddToWatchlist"
 import { useWatchlist } from "../features/watchlist/api"
@@ -35,6 +36,11 @@ function changeTone(change: number): "gain" | "loss" | "neutral" {
   return "neutral"
 }
 
+// "Pullback to support" -> "pullback to support"; acronyms like "VCP" stay as they are.
+function inSentence(label: string) {
+  return /^[A-Z]{2}/.test(label) ? label : label.charAt(0).toLowerCase() + label.slice(1)
+}
+
 function PriceChart({ data, plan }: { data: StockAnalysis; plan?: WatchlistItem }) {
   // Your watchlist levels when you track the stock, otherwise the nightly best setup.
   const readiness = data.readiness
@@ -47,7 +53,7 @@ function PriceChart({ data, plan }: { data: StockAnalysis; plan?: WatchlistItem 
     }
     return undefined
   }, [plan, readiness])
-  const source = plan ? "your watchlist levels" : readiness?.setup_type ? `the ${readiness.setup_type === "vcp" ? "VCP" : "pullback"} setup found on ${readiness.traded_on}` : null
+  const source = plan ? "your watchlist levels" : readiness?.setup_type ? `the ${inSentence(SETUP_TYPE_LABELS[readiness.setup_type])} setup found on ${readiness.traded_on}` : null
 
   return (
     <Card>

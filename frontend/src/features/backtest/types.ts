@@ -34,6 +34,7 @@ export type BacktestResults = {
     zone_state: Record<string, GroupStats>
     flow_state: Record<string, GroupStats>
     trend: Record<string, GroupStats>
+    setup_type?: Record<string, GroupStats>
     entry_zone: Record<string, GroupStats>
   }
   trades: {
@@ -52,6 +53,7 @@ export type BacktestResults = {
     profit_factor: number | null
     avg_sessions_held: number | null
     exits: Partial<Record<"stop" | "target" | "time", number>>
+    by_setup_type?: Record<string, { closed: number; win_rate_pct: number; avg_return_pct: number }>
     list: BacktestTrade[]
   }
 }

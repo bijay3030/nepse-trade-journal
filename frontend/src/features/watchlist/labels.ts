@@ -3,11 +3,15 @@ import type { AlertKind, PriceState, SetupType, WatchlistStatus } from "./types"
 export const SETUP_LABELS: Record<SetupType, string> = {
   vcp: "VCP breakout",
   pullback: "Pullback to support",
+  ma_pullback: "Pullback to a rising average",
+  base_breakout: "Flat-base breakout",
 }
 
 export const SETUP_HELP: Record<SetupType, string> = {
   vcp: "Zone from the pivot to 3% above it. Fails below the last contraction's low.",
   pullback: "Zone from the nearest support to 2% above it. Fails 3% below support.",
+  ma_pullback: "Uptrend pulling back to its rising 20- or 50-day average. Zone: the average to 2% above; fails 4% below it.",
+  base_breakout: "Tight 15-60 session base near the 52-week high. Zone: base high to 3% above; fails at the base low (at most 8% down).",
 }
 
 export const STATUS_LABELS: Record<WatchlistStatus, string> = {

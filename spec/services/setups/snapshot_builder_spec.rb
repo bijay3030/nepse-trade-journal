@@ -30,7 +30,7 @@ RSpec.describe Setups::SnapshotBuilder do
       if type == "vcp"
         { success: true, levels: { entry_zone_low: 195.0, entry_zone_high: 205.0, invalidation_price: 180.0, target_price: 240.0, pivot_price: 195.0 } }
       else
-        { success: false, error: "No support" }
+        { success: false, error: "No #{type}" }
       end
     end
   end
@@ -73,5 +73,24 @@ RSpec.describe Setups::SnapshotBuilder do
     expect(result[:traded_on]).to eq(day)
     snapshot = stock.setup_snapshots.sole
     expect(snapshot).to have_attributes(traded_on: day, close_price: 199.0, zone_state: "in_zone")
+  end
+
+  it "uses a newer pattern's own quality and prefers a setup in its zone" do
+    stock = stock_with_history("BANK", Array.new(100) { |i| 100.0 + i * 1.0 }) # ends at 199
+    allow(Watchlist::EntryZoneSuggester).to receive(:call) do |_stock, type, **|
+      case type
+      when "vcp" # price below this zone: too early
+        { success: true, levels: { entry_zone_low: 210.0, entry_zone_high: 216.0, invalidation_price: 190.0, target_price: 250.0, pivot_price: 210.0 } }
+      when "ma_pullback" # price inside this zone
+        { success: true, levels: { entry_zone_low: 196.0, entry_zone_high: 200.0, invalidation_price: 188.0, target_price: 230.0, pivot_price: nil },
+          pattern: { quality: 60, details: {} } }
+      else
+        { success: false, error: "No #{type}" }
+      end
+    end
+
+    described_class.call
+
+    expect(stock.setup_snapshots.sole).to have_attributes(setup_type: "ma_pullback", zone_state: "in_zone", setup_quality: 60)
   end
 end

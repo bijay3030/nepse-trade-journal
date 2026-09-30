@@ -62,4 +62,21 @@ RSpec.describe Watchlist::EntryZoneSuggester do
     expect(suggest("pullback")[:error]).to eq("NABIL has no price history to analyse yet")
     expect(suggest("swing")[:error]).to eq('Unknown setup type "swing"')
   end
+
+  it "builds levels for the newer setup types from Setups::Patterns" do
+    allow(Setups::Patterns).to receive(:base_breakout).and_return(
+      { success: true, zone_low: 580.0, zone_high: 597.4, invalidation: 548.0, pivot: 580.0, quality: 85, details: { base_sessions: 31 } }
+    )
+
+    result = suggest("base_breakout")
+
+    expect(result[:levels]).to include(entry_zone_low: 580.0, entry_zone_high: 597.4, invalidation_price: 548.0, pivot_price: 580.0, target_price: 640.0)
+    expect(result[:pattern]).to eq(quality: 85, details: { base_sessions: 31 })
+  end
+
+  it "explains when a newer pattern doesn't fit" do
+    allow(Setups::Patterns).to receive(:ma_pullback).and_return({ success: false, error: "Not an uptrend above a rising 50-day average" })
+
+    expect(suggest("ma_pullback")[:error]).to eq("Not an uptrend above a rising 50-day average for NABIL. Try another setup or enter levels manually.")
+  end
 end

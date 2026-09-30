@@ -16,9 +16,9 @@ RSpec.describe Backtest::Runner do
     stock
   end
 
-  def signal(stock, day_index, readiness: 70, in_zone: true, **levels)
+  def signal(stock, day_index, readiness: 70, in_zone: true, setup_type: "vcp", **levels)
     StockSetupSnapshot.create!(
-      stock: stock, traded_on: days[day_index], close_price: 100, readiness_score: readiness, zone_state: "in_zone",
+      stock: stock, traded_on: days[day_index], close_price: 100, readiness_score: readiness, zone_state: "in_zone", setup_type: setup_type,
       in_buy_zone: in_zone, trend_rules_passed: 6, flow_state: "accumulation",
       entry_zone_low: 98, entry_zone_high: 103, invalidation_price: levels.fetch(:stop, 95), target_price: levels.fetch(:target, 110)
     )
@@ -91,6 +91,17 @@ RSpec.describe Backtest::Runner do
     expect(result[:groups][:readiness]["0-19"][5][:n]).to eq(1)
     expect(result[:baseline][20][:n]).to eq(2)
     expect(result[:period]).to include(sessions: 2, snapshots: 2, stocks: 1)
+  end
+
+  it "breaks results down by setup type" do
+    bars = flat(3) + [ [ 101, 104, 100, 103 ], [ 104, 111, 103, 110 ] ] + flat(35, 110)
+    signal(stock_with("WIN", bars), 2, setup_type: "base_breakout")
+
+    result = described_class.call(save: false)
+
+    expect(result[:groups][:setup_type].keys).to eq([ "base_breakout" ])
+    expect(result[:trades][:by_setup_type]).to eq("base_breakout" => { closed: 1, win_rate_pct: 100.0, avg_return_pct: result[:trades][:list].first[:return_pct] })
+    expect(result[:trades][:list].first[:setup_type]).to eq("base_breakout")
   end
 
   it "saves the run" do

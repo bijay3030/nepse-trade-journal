@@ -182,6 +182,19 @@ Run `bin/rails "nepse:data:setup_history[120]"` (about 25 minutes, once) and `bi
 | H7.8 | Look-ahead check | `bin/rails runner 'Setups::SnapshotBuilder.call(as_of: Date.new(2026,9,28))'` changes no Sep 28 snapshot values |
 | H7.9 | Session check | No snapshot dates on weekends or holidays (only NEPSE index sessions) |
 
+## H8. Setup types
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H8.1 | Track dialog on any stock | Four setup cards: VCP breakout, Pullback to support, Pullback to a rising average, Flat-base breakout, each with its rule |
+| H8.2 | Choose **Flat-base breakout** on a stock near its 52-week high | Pattern line such as "31-session base, 8% deep"; zone starts at the base high |
+| H8.3 | Choose **Pullback to a rising average** on a downtrending stock | Red "Not an uptrend above a rising 50-day average …"; levels empty |
+| H8.4 | Watchlist card for a flat-base setup | Checklist pattern row "Flat base near the 52-week high"; volume check applies (breakout) |
+| H8.5 | Watchlist card for an MA pullback | Checklist close row "Closed inside the entry zone"; volume check not applicable |
+| H8.6 | **Create plan** for each type | Default strategy: breakouts → Turtle Breakout, pullbacks → Support Bounce |
+| H8.7 | `/backtest` | "By setup type" chart for stocks inside their zone; trade stats per setup type |
+| H8.8 | Stock page for a stock whose best setup is a flat base | Chart subtitle names "the flat-base breakout setup found on …" |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

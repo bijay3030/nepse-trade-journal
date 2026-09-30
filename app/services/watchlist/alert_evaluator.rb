@@ -66,7 +66,7 @@ module Watchlist
         when "invalidated"
           [ "invalidated", "#{symbol} fell to #{fmt(price)}, at or below the #{fmt(item.invalidation_price)} invalidation level. The setup has failed.", nil ]
         when "in_zone"
-          if item.setup_type == "vcp" && previous == "below_zone"
+          if Setups::Types.breakout?(item.setup_type) && previous == "below_zone"
             breakout_alert(item, price)
           else
             [ "entered_zone", "#{symbol} is in its entry zone at #{fmt(price)} (#{zone(item)}).", nil ]

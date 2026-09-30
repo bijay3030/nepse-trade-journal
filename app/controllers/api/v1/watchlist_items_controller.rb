@@ -2,7 +2,6 @@ module Api
   module V1
     class WatchlistItemsController < BaseController
       LEVEL_FIELDS = %i[entry_zone_low entry_zone_high invalidation_price stop_loss_price target_price pivot_price].freeze
-      SETUP_LABELS = { "vcp" => "VCP breakout", "pullback" => "Pullback to support" }.freeze
 
       before_action :set_item, only: %i[update destroy trade_plan]
 
@@ -75,7 +74,7 @@ module Api
           stock: @item.stock,
           trading_strategy: strategy,
           status: "planned",
-          entry_strategy: SETUP_LABELS.fetch(@item.setup_type),
+          entry_strategy: Setups::Types.label(@item.setup_type),
           analysis_type: "technical",
           planned_entry_price: params[:planned_entry_price].presence || @item.entry_zone_low,
           stop_loss_price: params[:stop_loss_price].presence || @item.stop_loss_price || @item.invalidation_price,
@@ -106,7 +105,7 @@ module Api
 
       def default_thesis
         zone = "#{format('%.2f', @item.entry_zone_low)}-#{format('%.2f', @item.entry_zone_high)}"
-        "#{SETUP_LABELS.fetch(@item.setup_type)} on #{@item.stock.symbol}: entry zone #{zone}, " \
+        "#{Setups::Types.label(@item.setup_type)} on #{@item.stock.symbol}: entry zone #{zone}, " \
           "invalidated below #{format('%.2f', @item.invalidation_price)}."
       end
     end

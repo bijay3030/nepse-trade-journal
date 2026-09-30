@@ -85,7 +85,7 @@ export type ScreenerRow = {
   in_buy_zone?: boolean
   rs_rating?: number | null
   trend_rules_passed?: number
-  setup_type?: "vcp" | "pullback" | null
+  setup_type?: "vcp" | "pullback" | "ma_pullback" | "base_breakout" | null
   entry_zone_low?: number | null
   entry_zone_high?: number | null
   invalidation_price?: number | null
@@ -130,7 +130,7 @@ export type ReadinessComponent = { points: number; max: number }
 /** Nightly snapshot for one stock (GET /screener/:symbol -> readiness, GET /screener/buy_zone). */
 export type ReadinessSnapshot = {
   traded_on: string
-  setup_type: "vcp" | "pullback" | null
+  setup_type: "vcp" | "pullback" | "ma_pullback" | "base_breakout" | null
   zone_state: ZoneState
   in_buy_zone: boolean
   readiness_score: number

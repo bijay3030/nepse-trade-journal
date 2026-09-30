@@ -51,7 +51,7 @@ module Watchlist
         elsif close > item.entry_zone_high.to_f
           "above_zone"
         elsif close >= item.entry_zone_low.to_f
-          if item.setup_type == "vcp"
+          if Setups::Types.breakout?(item.setup_type)
             relative_volume.to_f >= CONFIRM_VOLUME_MULTIPLE ? "confirmed" : "unconfirmed"
           else
             "held_zone"

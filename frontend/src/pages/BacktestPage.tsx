@@ -5,7 +5,7 @@ import { Badge, Card, CardBody, CardHeader, LoadingSpinner } from "../components
 import { useBacktest } from "../features/backtest/api"
 import { GroupChart } from "../features/backtest/GroupChart"
 import type { Horizon } from "../features/backtest/types"
-import { FLOW_LABELS, ZONE_LABELS } from "../features/readiness/labels"
+import { FLOW_LABELS, SETUP_TYPE_LABELS, ZONE_LABELS } from "../features/readiness/labels"
 import { cn } from "../lib/cn"
 
 const HORIZONS: Horizon[] = ["5", "10", "20"]
@@ -158,6 +158,14 @@ export function BacktestPage() {
           <CardHeader title="By zone state" subtitle="Where the price sat against the best setup's zone" />
           <CardBody><GroupChart groups={results.groups.zone_state} horizon={horizon} labels={ZONE_LABELS} order={ZONE_ORDER} /></CardBody>
         </Card>
+        {results.groups.setup_type && (
+          <Card>
+            <CardHeader title="By setup type" subtitle="Stocks inside their entry zone, by the setup that put them there" />
+            <CardBody>
+              <GroupChart groups={results.groups.setup_type} horizon={horizon} labels={SETUP_TYPE_LABELS} order={["vcp", "base_breakout", "pullback", "ma_pullback"]} />
+            </CardBody>
+          </Card>
+        )}
         <Card>
           <CardHeader title="By trend template" subtitle="Stocks passing 5+ of the 7 price rules vs the rest" />
           <CardBody><GroupChart groups={results.groups.trend} horizon={horizon} order={["5+ of 7 rules", "under 5"]} /></CardBody>

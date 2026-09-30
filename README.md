@@ -252,8 +252,19 @@ with enough history gets a snapshot:
   50 above 150 and 200, price above the 50-day, 30%+ above the 52-week low, within
   25% of the 52-week high) plus relative strength 70+.
 - **RS rating (1-99):** weighted 3/6/9/12-month performance ranked against all stocks.
-- **Best setup and zone:** the VCP or pullback setup, and whether the price is
-  too early, in the entry zone, extended or failed.
+- **Best setup and zone:** four setup types are tried, and the one whose zone the
+  price is in (or closest to) is kept, with whether the price is too early, in the
+  entry zone, extended or failed:
+
+  | Setup | Zone | Fails |
+  | ----- | ---- | ----- |
+  | VCP breakout | pivot to +3% | below the last contraction's low |
+  | Pullback to support | nearest support to +2% (quality +20 for a bullish candle at support) | 3% below support |
+  | Pullback to a rising average | rising 20-day average (or 50-day if price is under the 20-day) to +2%, in an uptrend above a rising 50-day | 4% below the average |
+  | Flat-base breakout | base high (15-60 sessions, at most 15% deep, within 5% of the 52-week high) to +3% | base low, at most 8% below the pivot |
+
+  Breakout setups (VCP, flat base) need volume to confirm and alert on a break
+  above the pivot; pullback setups are judged by holding their zone.
 - **Broker flow:** from the daily NEPSE floorsheet (every trade with its buying and
   selling broker). Over 20 sessions, the net shares bought by the 5 largest net buyers
   and sold by the 5 largest net sellers, as % of volume; the flow score is the

@@ -9,7 +9,7 @@ import { positionSize } from "./sizing"
 import type { WatchlistItem } from "./types"
 
 const STRATEGIES = ["Turtle Breakout", "Support Bounce", "Sector Rotation", "Dividend Capture"]
-const DEFAULT_STRATEGY = { vcp: "Turtle Breakout", pullback: "Support Bounce" } as const
+const DEFAULT_STRATEGY = { vcp: "Turtle Breakout", pullback: "Support Bounce", ma_pullback: "Support Bounce", base_breakout: "Turtle Breakout" } as const
 
 function PlanForm({ item, createPlan }: { item: WatchlistItem; createPlan: ReturnType<typeof useCreatePlanFromSetup> }) {
   const [entry, setEntry] = useState(String(item.entry_zone_low))

@@ -27,13 +27,22 @@ module Watchlist
 
     private
 
-    def vcp? = @item.setup_type == "vcp"
+    def breakout? = Setups::Types.breakout?(@item.setup_type)
 
     def pattern_check
-      if vcp?
+      case @item.setup_type
+      when "vcp"
         failing = vcp[:qualification_checks].to_a.reject { _1[:passed] }.map { _1[:label] }
         check("pattern", "Qualified VCP", vcp[:is_vcp_setup] ? "pass" : "fail",
               vcp[:is_vcp_setup] ? "Score #{vcp[:setup_quality_score]}, #{vcp[:contraction_sequence_text]}" : "Not met: #{failing.first(3).join('; ').presence || vcp[:classification].to_s.tr('_', ' ')}")
+      when "ma_pullback"
+        result = Setups::Patterns.ma_pullback(candles)
+        detail = result[:success] ? "Near the rising #{result.dig(:details, :anchor)} average (#{result.dig(:details, :anchor_value)})" : result[:error]
+        check("pattern", "Uptrend above a rising average", result[:success] ? "pass" : "fail", detail)
+      when "base_breakout"
+        result = Setups::Patterns.base_breakout(candles)
+        detail = result[:success] ? "#{result.dig(:details, :base_sessions)}-session base, #{result.dig(:details, :base_depth_pct)}% deep" : result[:error]
+        check("pattern", "Flat base near the 52-week high", result[:success] ? "pass" : "fail", detail)
       else
         trend = price_action[:trend]
         check("pattern", "Price-action trend is up", trend == "uptrend" ? "pass" : "fail", "Trend #{trend || 'unknown'}, structure #{price_action[:structure].to_s.tr('_', ' ')}")
@@ -42,16 +51,16 @@ module Watchlist
 
     def close_check
       state = @item.last_close_state
-      label = vcp? ? "Closed above the pivot" : "Closed inside the entry zone"
+      label = breakout? ? "Closed above the pivot" : "Closed inside the entry zone"
       return check("close", label, "pending", "Judged after the 4 PM close") if state.nil?
 
-      passed = vcp? ? %w[confirmed unconfirmed].include?(state) : state == "held_zone"
+      passed = breakout? ? %w[confirmed unconfirmed].include?(state) : state == "held_zone"
       check("close", label, passed ? "pass" : "fail", "#{@item.last_close_on&.strftime('%b %-d')}: closed #{format('%.2f', @item.last_close_price.to_f)} (#{state.tr('_', ' ')})")
     end
 
     def volume_check
       label = "Volume at least #{CloseEvaluator::CONFIRM_VOLUME_MULTIPLE}x average at the close"
-      return check("volume", label, "n/a", "Not used for pullbacks") unless vcp?
+      return check("volume", label, "n/a", "Not used for pullbacks") unless breakout?
       return check("volume", label, "pending", "Judged after the 4 PM close") if @item.last_close_relative_volume.nil?
 
       ratio = @item.last_close_relative_volume.to_f
@@ -99,6 +108,19 @@ module Watchlist
 
     def vcp
       @vcp ||= Vcp::DetectionEngine.call(prices)
+    end
+
+    # The same candle shape Stock::SetupAnalysis produces, for Setups::Patterns.
+    def candles
+      @candles ||= begin
+        indicators = @item.stock.daily_indicators.where(traded_on: prices.map(&:traded_on)).index_by(&:traded_on)
+        prices.map do |price|
+          indicator = indicators[price.traded_on]
+          { traded_on: price.traded_on.iso8601, open: price.open_price.to_f, high: price.high_price.to_f, low: price.low_price.to_f,
+            close: price.close_price.to_f, volume: price.volume, sma_20: indicator&.sma_20&.to_f,
+            sma_50: indicator&.sma_50&.to_f, sma_200: indicator&.sma_200&.to_f }
+        end
+      end
     end
 
     def price_action
