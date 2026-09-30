@@ -9,6 +9,8 @@ import { FLOW_LABELS, ZONE_LABELS } from "../features/readiness/labels"
 import { cn } from "../lib/cn"
 
 const HORIZONS: Horizon[] = ["5", "10", "20"]
+const ZONE_ORDER = ["too_early", "in_zone", "extended", "failed", "no_setup"]
+const FLOW_ORDER = ["accumulation", "neutral", "distribution", "no_data"]
 const EXIT_LABELS = { stop: "Stopped out", target: "Target reached", time: "Time exit (20 sessions)" }
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -56,14 +58,18 @@ export function BacktestPage() {
       <Card>
         <CardHeader
           title="Entry zone now: simulated trades"
-          subtitle={`Each signal enters at the next session's open; exits at the invalidation stop, the target, or after ${parameters.max_hold} sessions. Net of ${parameters.round_trip_cost_pct}% round-trip costs.`}
+          subtitle={`Each signal enters at the next session's open; exits at the invalidation stop, the target, or after ${parameters.max_hold} sessions. Net of ${parameters.round_trip_cost_pct}% round-trip costs. Entries under ${trades.min_risk_pct ?? 1}% above the stop are skipped.`}
         />
         <CardBody>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-            <Stat label="Closed trades" value={String(trades.closed)} hint={trades.open ? `${trades.open} still open` : undefined} />
+            <Stat
+              label="Closed trades"
+              value={String(trades.closed)}
+              hint={[trades.open ? `${trades.open} still open` : null, trades.skipped ? `${trades.skipped} skipped` : null].filter(Boolean).join(", ") || undefined}
+            />
             <Stat label="Win rate" value={fmt(trades.win_rate_pct)} />
             <Stat label="Avg return" value={fmt(trades.avg_return_pct)} hint={`wins ${fmt(trades.avg_win_pct)}, losses ${fmt(trades.avg_loss_pct)}`} />
-            <Stat label="Avg R multiple" value={fmt(trades.avg_r, "R")} />
+            <Stat label="Median R multiple" value={fmt(trades.median_r ?? trades.avg_r, "R")} hint={trades.avg_r === null ? undefined : `average ${trades.avg_r}R`} />
             <Stat label="Profit factor" value={fmt(trades.profit_factor, "")} />
             <Stat label="Avg holding" value={fmt(trades.avg_sessions_held, " sessions")} />
           </div>
@@ -103,7 +109,7 @@ export function BacktestPage() {
                       <td className="py-1.5 text-right font-mono">{trade.entry.toFixed(2)}</td>
                       <td className="py-1.5 text-right font-mono">{trade.exit === undefined ? "open" : trade.exit.toFixed(2)}</td>
                       <td className="py-1.5">{trade.exit_reason ? EXIT_LABELS[trade.exit_reason] : "—"}</td>
-                      <td className={cn("py-1.5 text-right font-mono", (trade.return_pct ?? 0) > 0 ? "text-pine" : "text-ember")}>{fmt(trade.return_pct)}</td>
+                      <td className={cn("py-1.5 text-right font-mono", trade.return_pct === undefined ? "text-slate" : trade.return_pct > 0 ? "text-pine" : "text-ember")}>{fmt(trade.return_pct)}</td>
                       <td className="py-1.5 text-right font-mono">{fmt(trade.r_multiple, "R")}</td>
                       <td className="py-1.5 text-right font-mono">{trade.sessions_held ?? "—"}</td>
                     </tr>
@@ -138,23 +144,23 @@ export function BacktestPage() {
       <div className="grid gap-5 xl:grid-cols-2">
         <Card>
           <CardHeader title="By entry readiness" subtitle="Does a higher score lead to better returns?" />
-          <CardBody><GroupChart groups={results.groups.readiness} horizon={horizon} /></CardBody>
+          <CardBody><GroupChart groups={results.groups.readiness} horizon={horizon} order={parameters.readiness_bands} /></CardBody>
         </Card>
         <Card>
           <CardHeader title="Entry zone now vs everything else" subtitle="The board's criteria against all other snapshots" />
-          <CardBody><GroupChart groups={results.groups.entry_zone} horizon={horizon} /></CardBody>
+          <CardBody><GroupChart groups={results.groups.entry_zone} horizon={horizon} order={["Entry zone now", "Everything else"]} /></CardBody>
         </Card>
         <Card>
           <CardHeader title="By broker flow" subtitle="Accumulation, distribution and neutral over 20 sessions" />
-          <CardBody><GroupChart groups={results.groups.flow_state} horizon={horizon} labels={FLOW_LABELS} /></CardBody>
+          <CardBody><GroupChart groups={results.groups.flow_state} horizon={horizon} labels={FLOW_LABELS} order={FLOW_ORDER} /></CardBody>
         </Card>
         <Card>
           <CardHeader title="By zone state" subtitle="Where the price sat against the best setup's zone" />
-          <CardBody><GroupChart groups={results.groups.zone_state} horizon={horizon} labels={ZONE_LABELS} /></CardBody>
+          <CardBody><GroupChart groups={results.groups.zone_state} horizon={horizon} labels={ZONE_LABELS} order={ZONE_ORDER} /></CardBody>
         </Card>
         <Card>
           <CardHeader title="By trend template" subtitle="Stocks passing 5+ of the 7 price rules vs the rest" />
-          <CardBody><GroupChart groups={results.groups.trend} horizon={horizon} /></CardBody>
+          <CardBody><GroupChart groups={results.groups.trend} horizon={horizon} order={["5+ of 7 rules", "under 5"]} /></CardBody>
         </Card>
       </div>
 

@@ -11,10 +11,14 @@ module Backtest
   #    target (a gap through either exits at that day's open; stop and target on
   #    the same day counts as the stop), or at the close after MAX_HOLD sessions.
   #    Returns are net of a round-trip cost (commission, SEBON fee, DP charge).
+  #    Entries under MIN_RISK_PCT above the stop are skipped and counted.
   class Runner
     HORIZONS = [ 5, 10, 20 ].freeze
     MAX_HOLD = 20
     ROUND_TRIP_COST_PCT = 0.8
+    # Entries less than this far above the stop are skipped: a stop 0.1% away isn't a
+    # tradeable plan, and dividing by that tiny risk makes R multiples meaningless.
+    MIN_RISK_PCT = 1.0
     READINESS_BANDS = { "0-19" => 0..19, "20-39" => 20..39, "40-59" => 40..59, "60+" => 60..100 }.freeze
 
     def self.call(**options) = new(**options).call
@@ -132,6 +136,8 @@ module Backtest
           next unless trade
 
           trades << trade.merge(symbol: symbols[stock_id])
+          next if trade[:status] == "skipped"
+
           busy_until = trade[:exit_on] || Date::Infinity.new
         end
       end
@@ -145,7 +151,10 @@ module Backtest
 
       entry = series[:bars][i + 1][0]
       stop, target = signal[:stop], signal[:target]
-      return unless entry.positive? && entry > stop
+      return unless entry.positive?
+
+      base = { signal_on: signal[:traded_on], entry_on: series[:dates][i + 1], entry: entry.round(2), stop: stop, target: target }
+      return base.merge(status: "skipped") if (entry - stop) / entry * 100 < MIN_RISK_PCT
 
       exit_price = exit_on = reason = nil
       (i + 1..[ i + @max_hold, series[:dates].size - 1 ].min).each do |j|
@@ -163,7 +172,6 @@ module Backtest
         break
       end
 
-      base = { signal_on: signal[:traded_on], entry_on: series[:dates][i + 1], entry: entry.round(2), stop: stop, target: target }
       return base.merge(status: "open") unless exit_price
 
       gross = exit_price / entry - 1
@@ -176,14 +184,19 @@ module Backtest
 
     def trade_stats(trades)
       closed = trades.select { _1[:status] == "closed" }
+      skipped = trades.count { _1[:status] == "skipped" }
+      trades = trades.reject { _1[:status] == "skipped" }
+      r_values = closed.map { _1[:r_multiple] }.sort
       returns = closed.map { _1[:return_pct] }
       wins = returns.select(&:positive?)
       losses = returns.reject(&:positive?)
       {
-        total: trades.size, closed: closed.size, open: trades.size - closed.size,
+        total: trades.size, closed: closed.size, open: trades.size - closed.size, skipped: skipped,
+        min_risk_pct: MIN_RISK_PCT,
         win_rate_pct: closed.empty? ? nil : (wins.size.to_f / closed.size * 100).round(1),
         avg_return_pct: closed.empty? ? nil : (returns.sum / closed.size).round(2),
-        avg_r: closed.empty? ? nil : (closed.sum { _1[:r_multiple] } / closed.size).round(2),
+        avg_r: closed.empty? ? nil : (r_values.sum / closed.size).round(2),
+        median_r: r_values.empty? ? nil : r_values[r_values.size / 2],
         avg_win_pct: wins.empty? ? nil : (wins.sum / wins.size).round(2),
         avg_loss_pct: losses.empty? ? nil : (losses.sum / losses.size).round(2),
         profit_factor: losses.sum.zero? ? nil : (wins.sum / -losses.sum).round(2),

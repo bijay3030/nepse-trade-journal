@@ -5,8 +5,20 @@ import type { GroupStats, Horizon } from "./types"
 const MIN_SAMPLE = 30
 
 // Average forward return and excess over NEPSE per group, with sample sizes.
-export function GroupChart({ groups, horizon, labels = {} }: { groups: Record<string, GroupStats>; horizon: Horizon; labels?: Record<string, string> }) {
-  const rows = Object.entries(groups).map(([key, stats]) => ({
+// Pass `order`: results come back as Postgres jsonb, which reorders object keys.
+export function GroupChart({
+  groups,
+  horizon,
+  labels = {},
+  order,
+}: {
+  groups: Record<string, GroupStats>
+  horizon: Horizon
+  labels?: Record<string, string>
+  order?: string[]
+}) {
+  const keys = order ? [...order.filter((key) => key in groups), ...Object.keys(groups).filter((key) => !order.includes(key))] : Object.keys(groups)
+  const rows = keys.map((key) => [key, groups[key]] as const).map(([key, stats]) => ({
     group: labels[key] ?? key,
     avg: stats[horizon]?.avg_return_pct ?? 0,
     excess: stats[horizon]?.avg_excess_pct ?? 0,

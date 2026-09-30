@@ -17,7 +17,7 @@ export type BacktestTrade = {
   entry: number
   stop: number
   target: number
-  status: "closed" | "open"
+  status: "closed" | "open" | "skipped"
   exit_on?: string
   exit?: number
   exit_reason?: "stop" | "target" | "time"
@@ -40,9 +40,13 @@ export type BacktestResults = {
     total: number
     closed: number
     open: number
+    /** Entries less than min_risk_pct above the stop, not traded. */
+    skipped?: number
+    min_risk_pct?: number
     win_rate_pct: number | null
     avg_return_pct: number | null
     avg_r: number | null
+    median_r?: number | null
     avg_win_pct: number | null
     avg_loss_pct: number | null
     profit_factor: number | null

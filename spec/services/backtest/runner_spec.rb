@@ -61,6 +61,17 @@ RSpec.describe Backtest::Runner do
     expect(stats[:exits]).to eq("time" => 1)
   end
 
+  it "skips an entry less than 1% above the stop and reports the median R" do
+    close_to_stop = flat(3) + [ [ 95.5, 97, 95.4, 96 ] ] + flat(36, 96.0)
+    signal(stock_with("TIGHT", close_to_stop), 2)
+    bars = flat(3) + [ [ 101, 104, 100, 103 ], [ 104, 111, 103, 110 ] ] + flat(35, 110)
+    signal(stock_with("WIN", bars), 2)
+
+    stats = described_class.call(save: false)[:trades]
+
+    expect(stats).to include(total: 1, closed: 1, skipped: 1, median_r: 1.5)
+  end
+
   it "leaves a trade open when the data runs out" do
     signal(stock_with("LATE", flat(40)), 30)
 
