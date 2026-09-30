@@ -1,4 +1,4 @@
-import type { ZoneState } from "../screener/types"
+import type { FlowState, ZoneState } from "../screener/types"
 
 // Neutral wording: the app never labels anything "buy" or "sell".
 export const ZONE_LABELS: Record<ZoneState, string> = {
@@ -24,7 +24,22 @@ export const COMPONENT_LABELS = {
   setup: "Setup quality",
   market: "Market regime",
   sector: "Sector vs NEPSE",
+  flow: "Broker flow",
 } as const
+
+export const FLOW_LABELS: Record<FlowState, string> = {
+  accumulation: "Accumulation",
+  distribution: "Distribution",
+  neutral: "Neutral flow",
+  no_data: "No flow data",
+}
+
+export const FLOW_TONE: Record<FlowState, "neutral" | "gain" | "loss"> = {
+  accumulation: "gain",
+  distribution: "loss",
+  neutral: "neutral",
+  no_data: "neutral",
+}
 
 /** Colour band for a 0-100 readiness score. */
 export function readinessTone(score: number) {

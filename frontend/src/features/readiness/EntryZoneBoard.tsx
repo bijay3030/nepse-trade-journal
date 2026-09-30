@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { Badge, Button, Card, LoadingSpinner } from "../../components/ui"
 import { useBuyZone } from "../screener/api"
 import { AddToWatchlistButton } from "../watchlist/AddToWatchlist"
-import { SETUP_TYPE_LABELS, ZONE_LABELS, ZONE_TONE } from "./labels"
+import { FLOW_LABELS, SETUP_TYPE_LABELS, ZONE_LABELS, ZONE_TONE } from "./labels"
 import { ReadinessGauge } from "./ReadinessGauge"
 
 const price = (value: number | null) => (value === null ? "—" : value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
@@ -54,7 +54,10 @@ export function EntryZoneBoard() {
                   <p className="text-xs text-slate">
                     Zone {price(row.entry_zone_low)}–{price(row.entry_zone_high)} · invalidation {price(row.invalidation_price)}
                   </p>
-                  <p className="text-xs text-slate">Trend {row.trend_rules_passed}/7 · RS {row.rs_rating ?? "—"}</p>
+                  <p className="text-xs text-slate">
+                    Trend {row.trend_rules_passed}/7 · RS {row.rs_rating ?? "—"}
+                    {row.flow_state && row.flow_state !== "no_data" && <> · {FLOW_LABELS[row.flow_state]}</>}
+                  </p>
                   <div className="mt-2"><AddToWatchlistButton symbol={row.symbol} size="sm" /></div>
                 </div>
               </Card>

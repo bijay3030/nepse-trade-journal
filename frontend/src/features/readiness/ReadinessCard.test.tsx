@@ -16,6 +16,14 @@ describe("ReadinessCard", () => {
     expect(within(screen.getByRole("list", { name: "Zone: In entry zone" })).getByText("In entry zone")).toHaveAttribute("aria-current", "step")
   })
 
+  it("shows the broker flow component when the snapshot has one", () => {
+    const base = readinessSnapshot()
+    render(<ReadinessCard snapshot={{ ...base, readiness_components: { ...base.readiness_components, flow: { points: 12, max: 15 } } }} />)
+
+    expect(screen.getByText("Broker flow")).toBeInTheDocument()
+    expect(screen.getByText("12/15")).toBeInTheDocument()
+  })
+
   it("lists every trend-template rule with its result", () => {
     render(<ReadinessCard snapshot={readinessSnapshot()} />)
 

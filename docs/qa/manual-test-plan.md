@@ -150,6 +150,22 @@ Run `bin/rails nepse:data:setups` once (about a minute) if no snapshot exists ye
 | H5.8 | Search the page for "buy" or "sell" | Not found anywhere (neutral wording) |
 | H5.9 | Run the command twice for the same close | Snapshots are replaced, not duplicated |
 
+## H6. Broker flow — `/screener/SYMBOL`
+
+Run `bin/rails "nepse:data:floorsheet[120]"` once (about 7 minutes) if no floorsheet is stored.
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H6.1 | Open `/screener/KBL` → **Broker flow** | Accumulation badge, flow score (e.g. +18.03), four boxes: top buyers / sellers % of volume for 20 and 5 sessions |
+| H6.2 | Bar chart | One green (top buyers' net) and one red (top sellers' net) bar per session for the last 20 sessions; tooltip shows shares |
+| H6.3 | Tables | Top net buyers and sellers with broker number, name, net shares, % of volume, average price paid / received |
+| H6.4 | A thinly traded stock | Amber "Thin trading" note; state shown as neutral |
+| H6.5 | A stock with fewer than 5 sessions of data | "Not enough floorsheet data yet (n of 5 sessions)" |
+| H6.6 | **Entry readiness** card | Score breakdown has a **Broker flow** row out of 15; weights are 30/25/15/15/15 |
+| H6.7 | `/screener` All setups | Readiness column shows an Accumulation / Distribution badge where applicable; Entry zone cards mention the flow |
+| H6.8 | `bin/rails "nepse:data:floorsheet[5]"` twice | Second run imports nothing (already stored) |
+| H6.9 | Compare with market data | For a session, total floorsheet quantity equals the stored market volume (checked: 13,178,128 on 2026-09-28) |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

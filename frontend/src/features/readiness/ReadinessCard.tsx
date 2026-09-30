@@ -11,7 +11,11 @@ const price = (value: number | null) => (value === null ? "—" : value.toLocale
 
 export function ReadinessCard({ snapshot }: { snapshot: ReadinessSnapshot }) {
   const tone = readinessTone(snapshot.readiness_score)
-  const components = (["trend", "setup", "market", "sector"] as const).map((key) => ({ key, ...snapshot.readiness_components[key] }))
+  // Snapshots built before broker flow existed have no flow component.
+  const components = (["trend", "setup", "market", "sector", "flow"] as const).flatMap((key) => {
+    const component = snapshot.readiness_components[key]
+    return component ? [{ key, ...component }] : []
+  })
   const relative = snapshot.readiness_components.sector_vs_nepse
 
   return (
