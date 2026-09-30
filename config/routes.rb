@@ -19,6 +19,12 @@ Rails.application.routes.draw do
       get "market/heatmap", to: "market#heatmap"
       get "digest_preferences", to: "digests#preferences"
       patch "digest_preferences", to: "digests#update_preferences"
+      get "telegram", to: "telegram#show"
+      patch "telegram", to: "telegram#update"
+      delete "telegram", to: "telegram#unlink"
+      post "telegram/link", to: "telegram#link"
+      post "telegram/check", to: "telegram#check"
+      post "telegram/test", to: "telegram#test"
       resources :digests, only: [ :index, :show ] do
         post :mark_read, on: :member
       end

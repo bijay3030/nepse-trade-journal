@@ -10,9 +10,17 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_30_210000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_30_220000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "app_settings", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_app_settings_on_key", unique: true
+  end
 
   create_table "audit_logs", force: :cascade do |t|
     t.bigint "user_id"
@@ -302,6 +310,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_210000) do
     t.index ["symbol"], name: "index_stocks_on_symbol", unique: true
   end
 
+  create_table "telegram_deliveries", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "stock_id", null: false
+    t.string "kind", null: false
+    t.date "traded_on", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["stock_id"], name: "index_telegram_deliveries_on_stock_id"
+    t.index ["user_id", "stock_id", "kind", "traded_on"], name: "index_telegram_deliveries_once_per_day", unique: true
+    t.index ["user_id"], name: "index_telegram_deliveries_on_user_id"
+  end
+
   create_table "trade_executions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -387,9 +407,17 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_210000) do
     t.datetime "updated_at", null: false
     t.boolean "digest_enabled", default: true, null: false
     t.jsonb "digest_sections", default: ["market", "entry_zone", "watchlist"], null: false
+    t.string "telegram_chat_id"
+    t.string "telegram_username"
+    t.string "telegram_link_token"
+    t.datetime "telegram_link_expires_at"
+    t.boolean "telegram_watchlist_alerts", default: true, null: false
+    t.boolean "telegram_board_alerts", default: true, null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["jti"], name: "index_users_on_jti", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    t.index ["telegram_chat_id"], name: "index_users_on_telegram_chat_id"
+    t.index ["telegram_link_token"], name: "index_users_on_telegram_link_token", unique: true
   end
 
   create_table "watchlist_alerts", force: :cascade do |t|
@@ -455,6 +483,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_210000) do
   add_foreign_key "stock_daily_prices", "stocks"
   add_foreign_key "stock_dividends", "stocks"
   add_foreign_key "stock_setup_snapshots", "stocks"
+  add_foreign_key "telegram_deliveries", "stocks"
+  add_foreign_key "telegram_deliveries", "users"
   add_foreign_key "trade_executions", "trade_plans"
   add_foreign_key "trade_plans", "stocks"
   add_foreign_key "trade_plans", "trading_strategies"
