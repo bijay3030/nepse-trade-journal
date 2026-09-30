@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { vi } from "vitest"
 
 import { mockStockAnalysis } from "../features/screener/mockData"
+import { readinessSnapshot } from "../features/readiness/testData"
 import { StockAnalysisPage } from "./StockAnalysisPage"
 
 const mockUseStockAnalysis = vi.fn()
@@ -114,8 +115,21 @@ describe("StockAnalysisPage", () => {
     expect(screen.getByText("Retry")).toBeInTheDocument()
   })
 
+  it("shows entry readiness and uses its zone on the chart when a snapshot exists", () => {
+    mockUseStockAnalysis.mockReturnValue({
+      data: { ...mockStockAnalysis, readiness: readinessSnapshot() },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
+    renderPage()
+
+    expect(screen.getByRole("img", { name: "Entry readiness 68 of 100" })).toBeInTheDocument()
+    expect(screen.getByText(/Entry zone 221.00–227.63, invalidation 207.10, target 250.00 \(from the VCP setup found on 2026-09-28\)/)).toBeInTheDocument()
+  })
+
   it("never renders trading advice words", () => {
-    mockSuccess()
+    mockUseStockAnalysis.mockReturnValue({ data: { ...mockStockAnalysis, readiness: readinessSnapshot() }, isLoading: false, isError: false, refetch: vi.fn() })
     const { container } = renderPage()
     expect(container.textContent).not.toMatch(/\bBUY\b|\bSELL\b/i)
   })
