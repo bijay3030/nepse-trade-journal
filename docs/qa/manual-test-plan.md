@@ -166,6 +166,22 @@ Run `bin/rails "nepse:data:floorsheet[120]"` once (about 7 minutes) if no floors
 | H6.8 | `bin/rails "nepse:data:floorsheet[5]"` twice | Second run imports nothing (already stored) |
 | H6.9 | Compare with market data | For a session, total floorsheet quantity equals the stored market volume (checked: 13,178,128 on 2026-09-28) |
 
+## H7. Backtest — `/backtest`
+
+Run `bin/rails "nepse:data:setup_history[120]"` (about 25 minutes, once) and `bin/rails nepse:data:backtest`.
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H7.1 | Sidebar → **Backtest** | Page with the period, sessions, stocks and snapshot count |
+| H7.2 | **Entry zone now: simulated trades** | Six stat tiles (closed trades, win rate, avg return with wins/losses, avg R, profit factor, avg holding), exit-reason badges, trade table newest first |
+| H7.3 | Fewer than 30 closed trades | Amber "too few to judge" note |
+| H7.4 | Click a symbol in the trade table | Opens its analysis page |
+| H7.5 | Switch 5 / 10 / 20 sessions | All five charts and tables update; the "All snapshots" line changes |
+| H7.6 | Charts | Blue avg return and green vs-NEPSE bars per group; table with samples, avg, win rate, vs NEPSE; groups under 30 samples greyed and marked "small sample" |
+| H7.7 | No backtest yet (fresh database) | "No backtest yet." with the two commands |
+| H7.8 | Look-ahead check | `bin/rails runner 'Setups::SnapshotBuilder.call(as_of: Date.new(2026,9,28))'` changes no Sep 28 snapshot values |
+| H7.9 | Session check | No snapshot dates on weekends or holidays (only NEPSE index sessions) |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

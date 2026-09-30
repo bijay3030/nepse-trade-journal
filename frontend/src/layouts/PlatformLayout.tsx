@@ -20,6 +20,7 @@ import {
   WifiOff,
   X,
   Bookmark,
+  FlaskConical,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
@@ -38,6 +39,7 @@ const navItems = [
   { to: "/trades", label: "Trades", icon: Clock3 },
   { to: "/stocks", label: "Stocks", icon: TrendingUp },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/backtest", label: "Backtest", icon: FlaskConical },
   { to: "/journal", label: "Journal", icon: BookOpenText },
   { to: "/help", label: "Help", icon: HelpCircle },
   { to: "/settings", label: "Settings", icon: Settings },
@@ -180,6 +182,7 @@ export function PlatformLayout() {
     { label: "Stocks", path: "/stocks" },
     { label: "Portfolio", path: "/portfolio" },
     { label: "Analytics", path: "/analytics" },
+    { label: "Backtest", path: "/backtest" },
     { label: "Journal", path: "/journal" },
     { label: "Help Center", path: "/help" },
     { label: "Settings", path: "/settings" },
