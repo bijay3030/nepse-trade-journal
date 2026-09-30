@@ -42,6 +42,11 @@ namespace :nepse do
       result[:failed].first(10).each { |date, error| puts "  #{date}: #{error}" }
     end
 
+    desc "Build the daily digest for every user who has it on (latest snapshot session)"
+    task digest: :environment do
+      puts "Built #{BuildDailyDigestsJob.perform_now} digests"
+    end
+
     desc "Rebuild buy-readiness snapshots (indicators first). Usage: rails nepse:data:setups"
     task setups: :environment do
       puts "Recalculating indicators..."

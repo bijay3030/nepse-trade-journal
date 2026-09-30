@@ -101,6 +101,7 @@ you can use the app straight away.
 | ----------------- | ---------------------- | ----------------------------------------------- |
 | Dashboard         | `/dashboard`           | KPI cards and recent trades                     |
 | Market overview   | `/market`              | NEPSE index trend, breadth, heatmap, sectors    |
+| Daily digest      | `/digest`              | End-of-day summary; card on the dashboard       |
 | VCP screener      | `/screener`            | Setup scores, breakout watch list               |
 | Stock analysis    | `/screener/NABIL`      | Candles, moving averages, levels, VCP breakdown |
 | Watchlist         | `/watchlist`           | Tracked setups, entry zones, alerts             |
@@ -397,6 +398,22 @@ Track a stock toward an entry using a VCP or price-action setup.
 6. **Plan the trade.** **Create plan** opens `/trade/new?watchlist=ID` with the entry,
    stop, target and a thesis filled in, plus position sizing from your account size
    and risk per trade. Saving creates a trade plan and marks the setup **Planned**.
+
+## Daily digest
+
+After the nightly snapshots (4:45 PM Nepal time, Mon-Fri), `BuildDailyDigestsJob` builds
+one digest per user for that session (`Digests::Builder`), with three sections each user
+can switch on or off in **Settings → Daily Digest** (saved to the account):
+
+- **Market summary:** NEPSE close and change, regime, breadth, best and weakest sectors
+- **Entry zone changes:** stocks that joined or left **Entry zone now** since the previous
+  session, and charts held back by the liquidity/circuit guards
+- **Watchlist status:** today's end-of-day verdicts, alerts raised during the session and
+  book closes due within 10 days
+
+Read it at `/digest` (pick an earlier session from the dropdown; opening one marks it
+read) or in the card at the top of the dashboard. Build it by hand with
+`bin/rails nepse:data:digest`. It is in-app only; nothing is emailed.
 
 ## Configuration
 

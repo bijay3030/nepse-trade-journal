@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_30_200000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_30_210000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -44,6 +44,17 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_200000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["broker_no"], name: "index_brokers_on_broker_no", unique: true
+  end
+
+  create_table "daily_digests", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.date "traded_on", null: false
+    t.jsonb "content", default: {}, null: false
+    t.datetime "read_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "traded_on"], name: "index_daily_digests_on_user_id_and_traded_on", unique: true
+    t.index ["user_id"], name: "index_daily_digests_on_user_id"
   end
 
   create_table "daily_journal_versions", force: :cascade do |t|
@@ -374,6 +385,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_200000) do
     t.string "reset_password_token"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "digest_enabled", default: true, null: false
+    t.jsonb "digest_sections", default: ["market", "entry_zone", "watchlist"], null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["jti"], name: "index_users_on_jti", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
@@ -427,6 +440,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_200000) do
   end
 
   add_foreign_key "audit_logs", "users"
+  add_foreign_key "daily_digests", "users"
   add_foreign_key "daily_journal_versions", "daily_journals"
   add_foreign_key "daily_journal_versions", "users"
   add_foreign_key "daily_journals", "users"
