@@ -25,7 +25,7 @@ RSpec.describe SyncMarketPricesJob do
   it "falls back to per-symbol prices when a forced sync fails" do
     allow(Nepse::LivePriceSync).to receive(:call).and_return({ success: false, error: "timeout" })
     expect(Nepse::DailyPriceImporterService).to receive(:call).and_return({ success: true, processed: 2 })
-    expect(Nepse::LivePriceSync).to receive(:broadcast)
+    expect(Nepse::LivePriceSync).to receive(:publish)
 
     expect(described_class.perform_now(true)).to include(success: true, processed: 2)
   end

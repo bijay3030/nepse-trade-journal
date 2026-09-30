@@ -10,6 +10,22 @@ namespace :nepse do
     end
   end
 
+  desc "Backfill daily price history from Merolagani, then recalculate indicators. Usage: rails \"nepse:backfill_history[365,NABIL NICA]\""
+  task :backfill_history, [ :days, :symbols ] => :environment do |_t, args|
+    days = (args[:days].presence || Nepse::HistoryBackfillService::DEFAULT_DAYS).to_i
+    symbols = args[:symbols].to_s.split(/[\s,]+/).presence
+    scope = symbols ? "#{symbols.size} symbols" : "#{Stock.active.count} active stocks"
+    puts "Backfilling #{days} days of history for #{scope} (about #{Nepse::HistoryBackfillService::DEFAULT_DELAY_SECONDS}s per stock)..."
+
+    result = Nepse::HistoryBackfillService.call(symbols: symbols, days: days)
+    puts "Stocks: #{result[:stocks]}, bars written: #{result[:bars]}, stale rows removed: #{result[:removed]}, failed: #{result[:failed].size}"
+    result[:failed].first(10).each { |symbol, error| puts "  #{symbol}: #{error}" }
+
+    puts "Recalculating indicators..."
+    indicators = Indicators::BatchCalculatorService.call(symbols: symbols, recalculate_all: true)
+    puts "Indicators: #{indicators.except(:errors).inspect}"
+  end
+
   desc "Import stock price or fundamental records from CSV"
   task :import_csv, [ :file_path, :type ] => :environment do |_t, args|
     file_path = args[:file_path]

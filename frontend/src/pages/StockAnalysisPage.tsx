@@ -8,6 +8,7 @@ import {
   ComposedChart,
   Legend,
   Line,
+  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -19,6 +20,10 @@ import { Badge, Button, Card, CardBody, CardHeader, LoadingSpinner } from "../co
 import { useStockAnalysis } from "../features/screener/api"
 import type { PriceLevel, StockAnalysis } from "../features/screener/types"
 import { SETUP_STATE_LABELS } from "../features/screener/types"
+import { AddToWatchlistButton } from "../features/watchlist/AddToWatchlist"
+import { useWatchlist } from "../features/watchlist/api"
+import { formatPrice } from "../features/watchlist/labels"
+import type { WatchlistItem } from "../features/watchlist/types"
 import { cn } from "../lib/cn"
 
 const STRUCTURE_LABELS: Record<string, string> = {
@@ -41,13 +46,22 @@ function changeTone(change: number): "gain" | "loss" | "neutral" {
   return "neutral"
 }
 
-function PriceChart({ data }: { data: StockAnalysis }) {
+function PriceChart({ data, plan }: { data: StockAnalysis; plan?: WatchlistItem }) {
   const support = data.price_action.support_levels[0]
   const resistance = data.price_action.resistance_levels[0]
+  // First session on or after the day the stock was added to the watchlist.
+  const addedOn = plan && data.candles.find((candle) => candle.traded_on >= plan.created_at.slice(0, 10))?.traded_on
 
   return (
     <Card>
-      <CardHeader title="Price &amp; Trend" subtitle="Close against moving averages and key levels" />
+      <CardHeader
+        title="Price &amp; Trend"
+        subtitle={
+          plan
+            ? `Your entry zone ${formatPrice(plan.entry_zone_low)}–${formatPrice(plan.entry_zone_high)}, invalidation ${formatPrice(plan.invalidation_price)}${plan.target_price ? `, target ${formatPrice(plan.target_price)}` : ""}`
+            : "Close against moving averages and key levels"
+        }
+      />
       <CardBody>
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
@@ -71,6 +85,44 @@ function PriceChart({ data }: { data: StockAnalysis }) {
                 labelFormatter={(v) => format(parseISO(String(v)), "MMM dd, yyyy")}
               />
               <Legend />
+              {plan && (
+                <ReferenceArea
+                  y1={plan.entry_zone_low}
+                  y2={plan.entry_zone_high}
+                  fill="#18745a"
+                  fillOpacity={0.16}
+                  stroke="#18745a"
+                  strokeOpacity={0.4}
+                  ifOverflow="extendDomain"
+                  label={{ value: "Entry zone", fill: "#18745a", fontSize: 12, position: "insideLeft" }}
+                />
+              )}
+              {plan && (
+                <ReferenceLine
+                  y={plan.invalidation_price}
+                  stroke="#d64545"
+                  strokeWidth={1.5}
+                  ifOverflow="extendDomain"
+                  label={{ value: "Invalidation", fill: "#d64545", fontSize: 12, position: "insideBottomRight" }}
+                />
+              )}
+              {plan?.target_price != null && (
+                <ReferenceLine
+                  y={plan.target_price}
+                  stroke="#18745a"
+                  strokeWidth={1.5}
+                  ifOverflow="extendDomain"
+                  label={{ value: "Target", fill: "#18745a", fontSize: 12, position: "insideTopRight" }}
+                />
+              )}
+              {addedOn && (
+                <ReferenceLine
+                  x={addedOn}
+                  stroke="#64748b"
+                  strokeDasharray="2 4"
+                  label={{ value: "Added", fill: "#64748b", fontSize: 11, position: "insideTopLeft" }}
+                />
+              )}
               {data.vcp.pivot_level != null && (
                 <ReferenceLine
                   y={data.vcp.pivot_level}
@@ -332,6 +384,7 @@ export function StockAnalysisPage() {
 
 function StockAnalysisBody({ symbol, onBack }: { symbol: string; onBack: () => void }) {
   const { data, isLoading, isError, refetch } = useStockAnalysis(symbol)
+  const plan = useWatchlist().data?.find((item) => item.symbol === symbol.toUpperCase() && item.status !== "archived")
 
   if (isLoading) {
     return (
@@ -377,6 +430,7 @@ function StockAnalysisBody({ symbol, onBack }: { symbol: string; onBack: () => v
         <div className="flex items-center gap-2">
           <Badge tone="neutral">{SETUP_STATE_LABELS[data.setup_state]}</Badge>
           <Badge tone="neutral">{data.sector}</Badge>
+          <AddToWatchlistButton symbol={data.symbol} size="sm" />
         </div>
         <div className="ml-auto flex items-baseline gap-2">
           <span className="font-display text-xl font-bold text-ink">Rs. {data.current_price.toLocaleString()}</span>
@@ -389,7 +443,7 @@ function StockAnalysisBody({ symbol, onBack }: { symbol: string; onBack: () => v
 
        {data.candles.length > 0 ? (
          <>
-           <PriceChart data={data} />
+           <PriceChart data={data} plan={plan} />
            <VolumeChart data={data} />
          </>
        ) : null}

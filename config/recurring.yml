@@ -2,18 +2,32 @@
 # (bin/dev starts one inside Puma, or run bin/jobs separately).
 shared: &shared
   # Refresh the market table every 5 minutes. The job skips itself outside
-  # NEPSE trading hours (Sun-Thu, 11:00-15:15 Nepal time).
+  # NEPSE trading hours (Mon-Fri, 11:00-15:15 Nepal time; see Nepse::MarketHours).
   market_price_sync:
     class: SyncMarketPricesJob
     queue: default
     schedule: every 5 minutes
 
-  # End-of-day closing prices: 4:00 PM Nepal time (10:15 UTC), Sun-Thu.
+  # End-of-day closing prices: 4:00 PM Nepal time (10:15 UTC), Mon-Fri.
   daily_nepse_price_fetch:
     class: SyncMarketPricesJob
     args: [ true ]
     queue: default
-    schedule: "15 10 * * 0-4 UTC"
+    schedule: "15 10 * * 1-5 UTC"
+
+  # Securities list, dividends and index history: 4:30 PM Nepal time, Mon-Fri.
+  reference_data_daily:
+    class: SyncReferenceDataJob
+    args: [ "daily" ]
+    queue: default
+    schedule: "45 10 * * 1-5 UTC"
+
+  # Fundamentals: Saturday 9:45 AM Nepal time (takes about an hour).
+  reference_data_weekly:
+    class: SyncReferenceDataJob
+    args: [ "weekly" ]
+    queue: default
+    schedule: "0 4 * * 6 UTC"
 
 production:
   <<: *shared

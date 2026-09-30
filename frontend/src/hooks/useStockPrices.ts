@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import api from "../lib/axios"
+import { isMarketOpen, nextMarketOpen } from "../lib/marketHours"
 import { useStockPricesStore } from "../stores/stockPricesStore"
 
 const EMPTY_SYMBOLS: string[] = []
@@ -28,40 +29,6 @@ function parseNptNow() {
   return new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kathmandu" }))
 }
 
-function nextMarketOpen(nowNpt: Date) {
-  const day = nowNpt.getDay()
-  const minutes = nowNpt.getHours() * 60 + nowNpt.getMinutes()
-
-  const next = new Date(nowNpt)
-  next.setHours(11, 0, 0, 0)
-
-  const isTradingDay = day >= 0 && day <= 4 // Sun-Thu
-
-  if (isTradingDay && minutes < 11 * 60) return next
-
-  if (day >= 0 && day <= 3) {
-    next.setDate(next.getDate() + 1)
-    return next
-  }
-
-  if (day === 4 && minutes >= 15 * 60) {
-    next.setDate(next.getDate() + 3) // Thu -> Sun
-    return next
-  }
-
-  if (day === 5) {
-    next.setDate(next.getDate() + 2) // Fri -> Sun
-    return next
-  }
-
-  if (day === 6) {
-    next.setDate(next.getDate() + 1) // Sat -> Sun
-    return next
-  }
-
-  return next
-}
-
 function formatCountdown(target: Date, now: Date) {
   const diffMs = Math.max(0, target.getTime() - now.getTime())
   const total = Math.floor(diffMs / 1000)
@@ -75,10 +42,7 @@ function formatCountdown(target: Date, now: Date) {
 
 function getMarketSnapshot(): MarketSnapshot {
   const now = parseNptNow()
-  const day = now.getDay()
-  const minutes = now.getHours() * 60 + now.getMinutes()
-  const isTradingDay = day >= 0 && day <= 4 // Sun-Thu
-  const isOpen = isTradingDay && minutes >= 11 * 60 && minutes < 15 * 60
+  const isOpen = isMarketOpen(now)
 
   if (isOpen) {
     return {
