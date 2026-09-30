@@ -32,6 +32,15 @@ namespace :nepse do
       print_result("Indices", Nepse::Reference::IndexHistorySync.call(days: (args[:days].presence || 365).to_i))
     end
 
+    desc "Rebuild buy-readiness snapshots (indicators first). Usage: rails nepse:data:setups"
+    task setups: :environment do
+      puts "Recalculating indicators..."
+      Indicators::BatchCalculatorService.call
+      result = Setups::SnapshotBuilder.call
+      puts "Setups for #{result[:traded_on]}: #{result[:stocks]} stocks, in buy zone: #{Array(result[:in_buy_zone]).join(' ').presence || 'none'}"
+      Array(result[:failed]).first(10).each { |symbol, error| puts "  failed #{symbol}: #{error}" }
+    end
+
     desc "Print how complete the stored data is"
     task report: :environment do
       puts JSON.pretty_generate(Nepse::Reference::CoverageReport.call)
