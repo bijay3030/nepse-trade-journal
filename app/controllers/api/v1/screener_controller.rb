@@ -28,20 +28,27 @@ module Api
         scope = StockSetupSnapshot.where(traded_on: traded_on).joins(:stock).merge(Stock.active).includes(:stock)
         scope = scope.where(in_buy_zone: true) unless ActiveModel::Type::Boolean.new.cast(params[:all])
         snapshots = scope.order(readiness_score: :desc).limit(200).to_a
-        upcoming = CorporateActions::Upcoming.for_stocks(snapshots.map(&:stock_id))
-        rows = snapshots.map do |snapshot|
-          StockSetupSnapshotSerializer.new(snapshot).as_json.merge(
-            symbol: snapshot.stock.symbol, name: snapshot.stock.name, sector: snapshot.stock.sector,
-            next_book_close: upcoming[snapshot.stock_id]
-          )
-        end
+        held_back = StockSetupSnapshot.where(traded_on: traded_on).held_back_by_guards.joins(:stock).merge(Stock.active)
+                                      .includes(:stock).order(readiness_score: :desc).to_a
+        upcoming = CorporateActions::Upcoming.for_stocks((snapshots + held_back).map(&:stock_id))
         render json: {
           traded_on: traded_on&.iso8601,
           criteria: {
-            zone_state: "in_zone", min_trend_rules: Setups::Readiness::MIN_PRICE_RULES, min_readiness: Setups::Readiness::MIN_READINESS
+            zone_state: "in_zone", min_trend_rules: Setups::Readiness::MIN_PRICE_RULES, min_readiness: Setups::Readiness::MIN_READINESS,
+            min_avg_turnover: Setups::Guards::MIN_TURNOVER, circuit_near_pct: Setups::Guards::CIRCUIT_NEAR_PCT
           },
-          results: rows
+          results: snapshots.map { board_row(_1, upcoming) },
+          held_back: held_back.map { board_row(_1, upcoming) }
         }
+      end
+
+      private
+
+      def board_row(snapshot, upcoming)
+        StockSetupSnapshotSerializer.new(snapshot).as_json.merge(
+          symbol: snapshot.stock.symbol, name: snapshot.stock.name, sector: snapshot.stock.sector,
+          next_book_close: upcoming[snapshot.stock_id]
+        )
       end
     end
   end

@@ -16,7 +16,7 @@ module Watchlist
     end
 
     def call
-      checks = [ pattern_check, close_check, volume_check, regime_check, sector_check, risk_reward_check, chasing_check, book_close_check ].compact
+      checks = [ pattern_check, close_check, volume_check, regime_check, sector_check, risk_reward_check, chasing_check, liquidity_check, circuit_check, book_close_check ].compact
       applicable = checks.reject { _1[:status] == "n/a" }
       {
         checks: checks,
@@ -95,6 +95,31 @@ module Watchlist
       price = @item.stock.last_price.to_f
       check("not_extended", "Price not above the entry zone", price <= @item.entry_zone_high.to_f ? "pass" : "fail",
             "#{format('%.2f', price)} vs zone high #{format('%.2f', @item.entry_zone_high.to_f)}")
+    end
+
+    def liquidity_check
+      label = "Average turnover at least NPR #{(Setups::Guards::MIN_TURNOVER / 1_000_000).round(1)}M a day (#{Setups::Guards::WINDOW} sessions)"
+      snapshot = @item.stock.setup_snapshots.order(traded_on: :desc).first
+      return check("liquidity", label, "pending", "Measured in the nightly snapshot") if snapshot&.avg_turnover.nil?
+
+      turnover = snapshot.avg_turnover.to_f
+      check("liquidity", label, turnover >= Setups::Guards::MIN_TURNOVER ? "pass" : "fail",
+            "NPR #{format('%.1f', turnover / 1_000_000)}M a day#{turnover < Setups::Guards::MIN_TURNOVER ? ': thin, a small order can move the price' : ''}")
+    end
+
+    # Uses today's live change, so it also warns during the session.
+    def circuit_check
+      label = "Not at the ±#{Setups::Guards::DAILY_LIMIT_PCT.to_i}% daily limit"
+      change = @item.stock.change_percent
+      return check("circuit", label, "pending", "No price change yet") if change.nil?
+
+      change = change.to_f
+      detail =
+        if change >= Setups::Guards::CIRCUIT_NEAR_PCT then "#{signed(change)}: at the upper circuit, few sellers; wait for another session"
+        elsif change <= -Setups::Guards::CIRCUIT_NEAR_PCT then "#{signed(change)}: at the lower circuit, few buyers; exits may not fill"
+        else "#{signed(change)} today"
+        end
+      check("circuit", label, change.abs < Setups::Guards::CIRCUIT_NEAR_PCT ? "pass" : "fail", detail)
     end
 
     # A bonus book close adjusts the price (and this setup's levels) mid-trade.

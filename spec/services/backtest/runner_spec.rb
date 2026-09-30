@@ -16,10 +16,10 @@ RSpec.describe Backtest::Runner do
     stock
   end
 
-  def signal(stock, day_index, readiness: 70, in_zone: true, setup_type: "vcp", **levels)
+  def signal(stock, day_index, readiness: 70, in_zone: true, setup_type: "vcp", guards: [], **levels)
     StockSetupSnapshot.create!(
       stock: stock, traded_on: days[day_index], close_price: 100, readiness_score: readiness, zone_state: "in_zone", setup_type: setup_type,
-      in_buy_zone: in_zone, trend_rules_passed: 6, flow_state: "accumulation",
+      in_buy_zone: in_zone && guards.empty?, trend_rules_passed: 6, flow_state: "accumulation", guards: guards,
       entry_zone_low: 98, entry_zone_high: 103, invalidation_price: levels.fetch(:stop, 95), target_price: levels.fetch(:target, 110)
     )
   end
@@ -102,6 +102,18 @@ RSpec.describe Backtest::Runner do
     expect(result[:groups][:setup_type].keys).to eq([ "base_breakout" ])
     expect(result[:trades][:by_setup_type]).to eq("base_breakout" => { closed: 1, win_rate_pct: 100.0, avg_return_pct: result[:trades][:list].first[:return_pct] })
     expect(result[:trades][:list].first[:setup_type]).to eq("base_breakout")
+  end
+
+  it "does not trade signals held back by a guard, and reports their forward returns" do
+    signal(stock_with("GOOD", flat(3) + [ [ 101, 104, 100, 103 ], [ 104, 111, 103, 110 ] ] + flat(35, 110)), 2)
+    signal(stock_with("THIN", flat(3) + [ [ 101, 104, 100, 103 ], [ 104, 111, 103, 110 ] ] + flat(35, 110)), 2, guards: [ "thin_volume" ])
+
+    result = described_class.call(save: false)
+
+    expect(result[:trades][:list].map { _1[:symbol] }).to eq([ "GOOD" ])
+    expect(result[:trades][:held_back]).to eq("thin_volume" => 1, "upper_circuit" => 0, "lower_circuit" => 0)
+    expect(result[:groups][:guards]["Passed guards"][5][:n]).to eq(1)
+    expect(result[:groups][:guards]["thin_volume"][5][:n]).to eq(1)
   end
 
   it "saves the run" do
