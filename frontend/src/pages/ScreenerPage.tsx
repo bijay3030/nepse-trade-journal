@@ -12,6 +12,7 @@ import type {
 } from "../features/screener/types"
 import { SETUP_STATE_LABELS } from "../features/screener/types"
 import { Badge, Button, Card, LoadingSpinner } from "../components/ui"
+import { BookCloseBadge } from "../features/corporate/BookCloseBadge"
 import { EntryZoneBoard } from "../features/readiness/EntryZoneBoard"
 import { FLOW_LABELS, FLOW_TONE, ZONE_LABELS, ZONE_TONE } from "../features/readiness/labels"
 import { AddToWatchlistButton } from "../features/watchlist/AddToWatchlist"
@@ -154,6 +155,7 @@ function ScreenerTable({
                     <div className="flex flex-col gap-1">
                       <span className="font-mono font-bold">{row.readiness_score}</span>
                       {row.zone_state && <Badge tone={ZONE_TONE[row.zone_state]}>{ZONE_LABELS[row.zone_state]}</Badge>}
+                      {row.next_book_close?.bonus_percent ? <BookCloseBadge bookClose={row.next_book_close} /> : null}
                       {row.flow_state && row.flow_state !== "no_data" && row.flow_state !== "neutral" && (
                         <Badge tone={FLOW_TONE[row.flow_state]}>{FLOW_LABELS[row.flow_state]}</Badge>
                       )}

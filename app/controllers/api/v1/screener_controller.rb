@@ -11,7 +11,14 @@ module Api
         snapshot = stock.setup_snapshots.order(traded_on: :desc).first
         render json: Stock::SetupAnalysis.new(stock, market: market).detail.merge(
           readiness: snapshot && StockSetupSnapshotSerializer.new(snapshot).as_json,
-          broker_flow: Flows::AccumulationAnalyzer.call(stock)
+          broker_flow: Flows::AccumulationAnalyzer.call(stock),
+          corporate_actions: {
+            upcoming: CorporateActions::Upcoming.for_stock(stock),
+            history: stock.dividends.latest_first.limit(10).map do |dividend|
+              { fiscal_year: dividend.fiscal_year, cash_percent: dividend.cash_percent&.to_f, bonus_percent: dividend.bonus_percent&.to_f,
+                total_percent: dividend.total_percent&.to_f, book_close_on: dividend.book_close_on, agm_on: dividend.agm_on }
+            end
+          }
         )
       end
 
@@ -20,9 +27,12 @@ module Api
         traded_on = StockSetupSnapshot.maximum(:traded_on)
         scope = StockSetupSnapshot.where(traded_on: traded_on).joins(:stock).merge(Stock.active).includes(:stock)
         scope = scope.where(in_buy_zone: true) unless ActiveModel::Type::Boolean.new.cast(params[:all])
-        rows = scope.order(readiness_score: :desc).limit(200).map do |snapshot|
+        snapshots = scope.order(readiness_score: :desc).limit(200).to_a
+        upcoming = CorporateActions::Upcoming.for_stocks(snapshots.map(&:stock_id))
+        rows = snapshots.map do |snapshot|
           StockSetupSnapshotSerializer.new(snapshot).as_json.merge(
-            symbol: snapshot.stock.symbol, name: snapshot.stock.name, sector: snapshot.stock.sector
+            symbol: snapshot.stock.symbol, name: snapshot.stock.name, sector: snapshot.stock.sector,
+            next_book_close: upcoming[snapshot.stock_id]
           )
         end
         render json: {

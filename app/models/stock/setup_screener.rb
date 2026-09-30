@@ -15,7 +15,8 @@ class Stock::SetupScreener
 
     market = MarketIndex::Overview.new.call
     snapshots = StockSetupSnapshot.where(traded_on: traded_on).joins(:stock).merge(Stock.active).includes(:stock).order("stocks.symbol")
-    results = snapshots.map { |snapshot| snapshot.screener_row.symbolize_keys.merge(readiness(snapshot)) }
+    upcoming = CorporateActions::Upcoming.for_stocks(snapshots.map(&:stock_id))
+    results = snapshots.map { |snapshot| snapshot.screener_row.symbolize_keys.merge(readiness(snapshot), next_book_close: upcoming[snapshot.stock_id]) }
     { traded_on: traded_on.iso8601, market_regime: market[:regime_status], sectors: results.map { |row| row[:sector] }.uniq.sort, results: results }
   end
 

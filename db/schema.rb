@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_30_160000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_30_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -222,6 +222,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_160000) do
     t.string "source", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "history_refreshed_at"
     t.index ["stock_id", "fiscal_year"], name: "index_stock_dividends_on_stock_id_and_fiscal_year", unique: true
     t.index ["stock_id"], name: "index_stock_dividends_on_stock_id"
   end
@@ -414,6 +415,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_160000) do
     t.decimal "last_close_price", precision: 12, scale: 2
     t.decimal "last_close_relative_volume", precision: 8, scale: 2
     t.date "touched_zone_on"
+    t.jsonb "level_adjustments", default: [], null: false
     t.index ["status"], name: "index_watchlist_items_on_status"
     t.index ["stock_id"], name: "index_watchlist_items_on_stock_id"
     t.index ["trade_plan_id"], name: "index_watchlist_items_on_trade_plan_id"

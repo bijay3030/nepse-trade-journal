@@ -4,6 +4,7 @@ module Watchlist
   # It describes the setup against fixed rules; it is not a recommendation.
   class EntryChecklist
     MIN_RISK_REWARD = 2.0
+    BOOK_CLOSE_DAYS = 10
 
     def self.call(item, context: MarketContext.call)
       new(item, context).call
@@ -15,7 +16,7 @@ module Watchlist
     end
 
     def call
-      checks = [ pattern_check, close_check, volume_check, regime_check, sector_check, risk_reward_check, chasing_check ].compact
+      checks = [ pattern_check, close_check, volume_check, regime_check, sector_check, risk_reward_check, chasing_check, book_close_check ].compact
       applicable = checks.reject { _1[:status] == "n/a" }
       {
         checks: checks,
@@ -94,6 +95,20 @@ module Watchlist
       price = @item.stock.last_price.to_f
       check("not_extended", "Price not above the entry zone", price <= @item.entry_zone_high.to_f ? "pass" : "fail",
             "#{format('%.2f', price)} vs zone high #{format('%.2f', @item.entry_zone_high.to_f)}")
+    end
+
+    # A bonus book close adjusts the price (and this setup's levels) mid-trade.
+    def book_close_check
+      label = "No bonus book close in the next #{BOOK_CLOSE_DAYS} days"
+      upcoming = CorporateActions::Upcoming.for_stock(@item.stock)
+      return check("book_close", label, "pass", "None announced") if upcoming.nil? || upcoming[:days_until] > BOOK_CLOSE_DAYS
+
+      date = upcoming[:book_close_on].strftime("%b %-d")
+      if upcoming[:bonus_percent].to_f.positive?
+        check("book_close", label, "fail", "#{upcoming[:bonus_percent]}% bonus, book close #{date}")
+      else
+        check("book_close", label, "pass", "Cash dividend only (#{upcoming[:cash_percent].to_f}%), book close #{date}")
+      end
     end
 
     def check(key, label, status, detail)

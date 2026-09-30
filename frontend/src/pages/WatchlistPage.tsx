@@ -22,6 +22,7 @@ import {
 } from "../features/watchlist/labels"
 import { LevelFields } from "../features/watchlist/LevelFields"
 import { draftToLevels, levelsToDraft, type LevelDraft } from "../features/watchlist/levels"
+import { BookCloseBadge } from "../features/corporate/BookCloseBadge"
 import { EntryChecklistPanel } from "../features/watchlist/EntryChecklistPanel"
 import { PriceLadder } from "../features/watchlist/PriceLadder"
 import type { WatchlistItem } from "../features/watchlist/types"
@@ -114,6 +115,7 @@ function WatchlistCard({ item }: { item: WatchlistItem }) {
                 {item.symbol}
               </Link>
               <Badge tone={STATUS_TONE[item.status]}>{STATUS_LABELS[item.status]}</Badge>
+            {item.next_book_close && <BookCloseBadge bookClose={item.next_book_close} />}
               <span className="text-xs font-semibold text-slate">{SETUP_LABELS[item.setup_type]}</span>
             </div>
             <p className="truncate text-xs text-slate">{item.name} · {item.sector}</p>
@@ -155,6 +157,11 @@ function WatchlistCard({ item }: { item: WatchlistItem }) {
           </dl>
         )}
 
+        {item.level_adjustments && item.level_adjustments.length > 0 && (
+          <p className="mt-2 text-xs text-slate">
+            Levels adjusted for {item.level_adjustments.map((adjustment) => `a ${adjustment.bonus_percent}% bonus (book close ${adjustment.book_close_on})`).join(" and ")}.
+          </p>
+        )}
         {!archived && <EntryChecklistPanel checklist={item.checklist} />}
 
         <p className="mt-3 rounded-lg bg-slate/5 px-3 py-2 text-xs text-slate">

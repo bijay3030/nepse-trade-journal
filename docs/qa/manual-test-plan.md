@@ -195,6 +195,19 @@ Run `bin/rails "nepse:data:setup_history[120]"` (about 25 minutes, once) and `bi
 | H8.7 | `/backtest` | "By setup type" chart for stocks inside their zone; trade stats per setup type |
 | H8.8 | Stock page for a stock whose best setup is a flat base | Chart subtitle names "the flat-base breakout setup found on …" |
 
+## H9. Corporate actions
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H9.1 | `/screener/NABIL` → **Corporate actions** | Upcoming book close (date, days, FY, bonus/cash, AGM); amber with the price-adjustment note when a bonus is due; dividend history table |
+| H9.2 | Stock with nothing due | "No book close announced in the next 45 days." |
+| H9.3 | `/screener` All setups and **Entry zone now** | Amber "Book close Oct 2 · 10% bonus" badge on stocks with a bonus book close due |
+| H9.4 | Watchlist card for a stock with a book close due | Badge next to the status; checklist rule "No bonus book close in the next 10 days" ✗ for a bonus within 10 days, ✓ with a note for cash-only |
+| H9.5 | Daily job 5 days before a bonus book close | One "Book close soon" alert (not repeated next day) |
+| H9.6 | Daily job on/after a bonus book close | Levels divided by (1 + bonus%), note "Levels adjusted for a 10% bonus (book close …)" on the card, one "Levels adjusted" alert; no separate "book close soon" alert that same day |
+| H9.7 | A stock whose bonus book close was 1-10 days ago | Its chart shows no fake drop after the daily job (history re-fetched) |
+| H9.8 | Broker flow tables at a medium window width | Tables stack, columns don't overlap |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

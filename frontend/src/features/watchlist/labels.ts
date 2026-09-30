@@ -49,6 +49,8 @@ export const ALERT_LABELS: Record<AlertKind, string> = {
   close_unconfirmed: "Close, low volume",
   close_failed: "Failed at close",
   close_in_zone: "Held zone at close",
+  book_close_soon: "Book close soon",
+  levels_adjusted: "Levels adjusted",
 }
 
 export const ALERT_TONE: Record<AlertKind, "neutral" | "gain" | "loss"> = {
@@ -61,6 +63,8 @@ export const ALERT_TONE: Record<AlertKind, "neutral" | "gain" | "loss"> = {
   close_unconfirmed: "neutral",
   close_failed: "loss",
   close_in_zone: "gain",
+  book_close_soon: "neutral",
+  levels_adjusted: "neutral",
 }
 
 export function formatPrice(value: number | null | undefined) {

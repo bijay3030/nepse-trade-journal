@@ -7,6 +7,7 @@ import { useStockAnalysis } from "../features/screener/api"
 import type { PriceLevel, StockAnalysis } from "../features/screener/types"
 import { SETUP_STATE_LABELS } from "../features/screener/types"
 import { CandlestickChart, type ChartLevels } from "../features/readiness/CandlestickChart"
+import { CorporateActionsCard } from "../features/corporate/CorporateActionsCard"
 import { BrokerFlowCard } from "../features/flows/BrokerFlowCard"
 import { SETUP_TYPE_LABELS } from "../features/readiness/labels"
 import { ReadinessCard } from "../features/readiness/ReadinessCard"
@@ -326,6 +327,7 @@ function StockAnalysisBody({ symbol, onBack }: { symbol: string; onBack: () => v
          <>
            <PriceChart data={data} plan={plan} />
            {data.broker_flow ? <BrokerFlowCard flow={data.broker_flow} /> : null}
+           {data.corporate_actions ? <CorporateActionsCard upcoming={data.corporate_actions.upcoming} history={data.corporate_actions.history} /> : null}
          </>
        ) : null}
 

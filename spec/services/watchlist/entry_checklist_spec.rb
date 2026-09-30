@@ -20,7 +20,7 @@ RSpec.describe Watchlist::EntryChecklist do
     result = described_class.call(item, context: context)
 
     expect(result[:checks].map { _1[:status] }).to all(eq("pass"))
-    expect(result).to include(passed: 7, total: 7, all_passed: true)
+    expect(result).to include(passed: 8, total: 8, all_passed: true)
     expect(result[:checks].find { _1[:key] == "sector" }[:detail]).to eq("Commercial Banks +0.80% vs NEPSE -1.20%")
   end
 
@@ -50,7 +50,7 @@ RSpec.describe Watchlist::EntryChecklist do
     allow(PriceAction::AnalyzerService).to receive(:call).and_return({ trend: "uptrend", structure: "higher_high_higher_low" })
 
     expect(statuses).to include("pattern" => "pass", "close" => "pass", "volume" => "n/a")
-    expect(described_class.call(item, context: context)[:total]).to eq(6)
+    expect(described_class.call(item, context: context)[:total]).to eq(7)
   end
 
   it "marks the sector check not applicable without a sector index" do
@@ -79,5 +79,26 @@ RSpec.describe Watchlist::EntryChecklist do
     expect(checks["pattern"]).to include(status: "fail", detail: "Not an uptrend above a rising 50-day average")
     expect(checks["close"][:label]).to eq("Closed inside the entry zone")
     expect(checks["volume"][:status]).to eq("n/a")
+  end
+
+  describe "book close rule" do
+    let(:today) { Nepse::MarketHours.today }
+
+    def book_close_check = described_class.call(item, context: context)[:checks].find { _1[:key] == "book_close" }
+
+    it "fails when a bonus book close is within 10 days" do
+      stock.dividends.create!(fiscal_year: "082/083", bonus_percent: 10, cash_percent: 5, book_close_on: today + 4, source: "chukul")
+
+      expect(book_close_check).to include(status: "fail", detail: "10.0% bonus, book close #{(today + 4).strftime('%b %-d')}")
+    end
+
+    it "passes a cash-only book close with a note, and a bonus further away" do
+      stock.dividends.create!(fiscal_year: "082/083", bonus_percent: 0, cash_percent: 12, book_close_on: today + 3, source: "chukul")
+      expect(book_close_check).to include(status: "pass", detail: "Cash dividend only (12.0%), book close #{(today + 3).strftime('%b %-d')}")
+
+      StockDividend.delete_all
+      stock.dividends.create!(fiscal_year: "082/083", bonus_percent: 10, book_close_on: today + 20, source: "chukul")
+      expect(book_close_check).to include(status: "pass", detail: "None announced")
+    end
   end
 end

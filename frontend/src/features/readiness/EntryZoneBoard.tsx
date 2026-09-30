@@ -2,6 +2,7 @@ import { Link } from "react-router-dom"
 
 import { Badge, Button, Card, LoadingSpinner } from "../../components/ui"
 import { useBuyZone } from "../screener/api"
+import { BookCloseBadge } from "../corporate/BookCloseBadge"
 import { AddToWatchlistButton } from "../watchlist/AddToWatchlist"
 import { FLOW_LABELS, SETUP_TYPE_LABELS, ZONE_LABELS, ZONE_TONE } from "./labels"
 import { ReadinessGauge } from "./ReadinessGauge"
@@ -58,6 +59,7 @@ export function EntryZoneBoard() {
                     Trend {row.trend_rules_passed}/7 · RS {row.rs_rating ?? "—"}
                     {row.flow_state && row.flow_state !== "no_data" && <> · {FLOW_LABELS[row.flow_state]}</>}
                   </p>
+                  {row.next_book_close && <BookCloseBadge bookClose={row.next_book_close} className="mt-1" />}
                   <div className="mt-2"><AddToWatchlistButton symbol={row.symbol} size="sm" /></div>
                 </div>
               </Card>

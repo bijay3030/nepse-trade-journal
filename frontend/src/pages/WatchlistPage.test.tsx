@@ -65,6 +65,17 @@ describe("WatchlistPage", () => {
     expect(await screen.findByText("All conditions met")).toBeInTheDocument()
   })
 
+  it("shows an upcoming book close and past level adjustments", async () => {
+    mockApi([watchlistItem({
+      next_book_close: { fiscal_year: "082/083", book_close_on: "2026-10-02", days_until: 2, cash_percent: 5, bonus_percent: 10, agm_on: null },
+      level_adjustments: [{ fiscal_year: "081/082", bonus_percent: 12, factor: 0.892857, book_close_on: "2026-01-05" }],
+    })])
+    renderWithClient(<WatchlistPage />)
+
+    expect(await screen.findByText("Book close Oct 2 · 10% bonus, 5% cash")).toBeInTheDocument()
+    expect(screen.getByText("Levels adjusted for a 12% bonus (book close 2026-01-05).")).toBeInTheDocument()
+  })
+
   it("lists alerts and marks them read", async () => {
     renderWithClient(<WatchlistPage />)
 

@@ -1,3 +1,5 @@
+import type { BookClose, DividendRow } from "../corporate/types"
+
 // Shared API contract for the market analysis dashboard.
 // Backend endpoints (Rails, /api/v1) must serialize exactly these shapes.
 
@@ -90,6 +92,7 @@ export type ScreenerRow = {
   entry_zone_high?: number | null
   invalidation_price?: number | null
   flow_state?: FlowState | null
+  next_book_close?: BookClose | null
 }
 
 export type FlowState = "accumulation" | "distribution" | "neutral" | "no_data"
@@ -162,7 +165,7 @@ export type ReadinessSnapshot = {
 export type BuyZoneResponse = {
   traded_on: string | null
   criteria: { zone_state: ZoneState; min_trend_rules: number; min_readiness: number }
-  results: Array<ReadinessSnapshot & { symbol: string; name: string; sector: string }>
+  results: Array<ReadinessSnapshot & { symbol: string; name: string; sector: string; next_book_close?: BookClose | null }>
 }
 
 /** GET /screener */
@@ -257,4 +260,5 @@ export type StockAnalysis = {
   /** Latest nightly snapshot, or null before the first build. */
   readiness?: ReadinessSnapshot | null
   broker_flow?: BrokerFlow
+  corporate_actions?: { upcoming: BookClose | null; history: DividendRow[] }
 }
