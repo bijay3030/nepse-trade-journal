@@ -84,4 +84,12 @@ RSpec.describe Watchlist::AlertEvaluator do
     expect { described_class.initial_state!(fresh) }.not_to change(WatchlistAlert, :count)
     expect(fresh.reload).to have_attributes(price_state: "in_zone", status: "in_zone")
   end
+
+  it "raises breakout alerts for a flat-base breakout too" do
+    item.update!(setup_type: "base_breakout")
+    with_average_volume(10_000)
+    move_to(505, volume: 18_000)
+
+    expect(item.alerts.last.kind).to eq("breakout_confirmed")
+  end
 end

@@ -7,7 +7,7 @@ module Setups
   # rating is the one field computed from current data; the backtest doesn't use it.)
   class SnapshotBuilder
     MIN_SESSIONS = 60
-    SETUP_TYPES = %w[vcp pullback].freeze
+    SETUP_TYPES = Types::ALL
     # Which setup represents the stock when both have zones: one in its zone first.
     ZONE_PRIORITY = { "in_zone" => 0, "too_early" => 1, "extended" => 2, "failed" => 3 }.freeze
 
@@ -111,7 +111,7 @@ module Setups
         {
           type: type,
           zone_state: zone_state(close, levels),
-          quality: quality(type, detail),
+          quality: quality(type, detail, suggestion),
           levels: {
             entry_zone_low: levels[:entry_zone_low], entry_zone_high: levels[:entry_zone_high],
             invalidation_price: levels[:invalidation_price], target_price: levels[:target_price],
@@ -134,14 +134,20 @@ module Setups
     end
 
     # 0-100. VCP: its quality score, discounted when the pattern doesn't qualify.
-    # Pullback: price-action confidence, halved outside an uptrend.
-    def quality(type, detail)
-      if type == "vcp"
+    # Pullback: price-action confidence, halved outside an uptrend, plus 20 for a
+    # bullish candle at support. MA pullback and base breakout: Setups::Patterns quality.
+    def quality(type, detail, suggestion)
+      case type
+      when "vcp"
         score = detail.dig(:vcp, :setup_quality_score).to_i
         detail.dig(:vcp, :is_vcp_setup) ? score : (score * 0.6).round
-      else
+      when "pullback"
         confidence = (detail.dig(:price_action, :confidence).to_f * 100).round
-        detail.dig(:price_action, :trend) == "uptrend" ? confidence : (confidence * 0.5).round
+        confidence = (confidence * 0.5).round unless detail.dig(:price_action, :trend) == "uptrend"
+        bounce = Patterns.bullish_candle_at?(detail[:candles].last, suggestion.dig(:levels, :entry_zone_low))
+        [ confidence + (bounce ? 20 : 0), 100 ].min
+      else
+        suggestion.dig(:pattern, :quality).to_i
       end
     end
   end

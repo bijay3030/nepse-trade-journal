@@ -58,4 +58,26 @@ RSpec.describe Watchlist::EntryChecklist do
 
     expect(statuses["sector"]).to eq("n/a")
   end
+
+  it "checks the pattern and treats a base breakout like a breakout" do
+    item.update!(setup_type: "base_breakout")
+    allow(Setups::Patterns).to receive(:base_breakout).and_return({ success: true, details: { base_sessions: 31, base_depth_pct: 8.0 } })
+
+    checks = described_class.call(item, context: context)[:checks].index_by { _1[:key] }
+
+    expect(checks["pattern"]).to include(label: "Flat base near the 52-week high", status: "pass", detail: "31-session base, 8.0% deep")
+    expect(checks["close"][:label]).to eq("Closed above the pivot")
+    expect(checks["volume"][:status]).to eq("pending")
+  end
+
+  it "treats an MA pullback like a pullback" do
+    item.update!(setup_type: "ma_pullback")
+    allow(Setups::Patterns).to receive(:ma_pullback).and_return({ success: false, error: "Not an uptrend above a rising 50-day average" })
+
+    checks = described_class.call(item, context: context)[:checks].index_by { _1[:key] }
+
+    expect(checks["pattern"]).to include(status: "fail", detail: "Not an uptrend above a rising 50-day average")
+    expect(checks["close"][:label]).to eq("Closed inside the entry zone")
+    expect(checks["volume"][:status]).to eq("n/a")
+  end
 end

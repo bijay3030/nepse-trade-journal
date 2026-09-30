@@ -32,7 +32,7 @@ module Backtest
     def call
       snapshots = StockSetupSnapshot.order(:traded_on).pluck(
         :stock_id, :traded_on, :close_price, :readiness_score, :zone_state, :flow_state, :trend_rules_passed,
-        :in_buy_zone, :entry_zone_low, :entry_zone_high, :invalidation_price, :target_price
+        :in_buy_zone, :entry_zone_low, :entry_zone_high, :invalidation_price, :target_price, :setup_type
       ).map { |row| snapshot_hash(row) }
       sessions = Setups::HistoryBuilder.sessions.to_set
       snapshots.select! { sessions.include?(_1[:traded_on]) }
@@ -55,7 +55,7 @@ module Backtest
     private
 
     def snapshot_hash(row)
-      keys = %i[stock_id traded_on close readiness zone_state flow_state trend_rules in_buy_zone entry_low entry_high stop target]
+      keys = %i[stock_id traded_on close readiness zone_state flow_state trend_rules in_buy_zone entry_low entry_high stop target setup_type]
       keys.zip(row).to_h.tap do |snap|
         %i[close entry_low entry_high stop target].each { snap[_1] = snap[_1]&.to_f }
       end
@@ -116,6 +116,8 @@ module Backtest
       {
         readiness: READINESS_BANDS.to_h { |band, range| [ band, by_horizon(snapshots.select { range.cover?(_1[:readiness].to_i) }) ] },
         zone_state: snapshots.group_by { _1[:zone_state] }.sort.to_h.transform_values { by_horizon(_1) },
+        # Setup type of the stocks inside their entry zone (where the type drives the signal).
+        setup_type: snapshots.select { _1[:zone_state] == "in_zone" }.group_by { _1[:setup_type] || "none" }.sort.to_h.transform_values { by_horizon(_1) },
         flow_state: snapshots.group_by { _1[:flow_state] || "no_data" }.sort.to_h.transform_values { by_horizon(_1) },
         trend: { "5+ of 7 rules" => by_horizon(snapshots.select { _1[:trend_rules].to_i >= 5 }),
                  "under 5" => by_horizon(snapshots.select { _1[:trend_rules].to_i < 5 }) },
@@ -135,7 +137,7 @@ module Backtest
           trade = simulate(signal)
           next unless trade
 
-          trades << trade.merge(symbol: symbols[stock_id])
+          trades << trade.merge(symbol: symbols[stock_id], setup_type: signal[:setup_type])
           next if trade[:status] == "skipped"
 
           busy_until = trade[:exit_on] || Date::Infinity.new
@@ -202,6 +204,10 @@ module Backtest
         profit_factor: losses.sum.zero? ? nil : (wins.sum / -losses.sum).round(2),
         avg_sessions_held: closed.empty? ? nil : (closed.sum { _1[:sessions_held] }.to_f / closed.size).round(1),
         exits: closed.map { _1[:exit_reason] }.tally,
+        by_setup_type: closed.group_by { _1[:setup_type] }.transform_values do |group|
+          { closed: group.size, win_rate_pct: (group.count { _1[:return_pct].positive? }.to_f / group.size * 100).round(1),
+            avg_return_pct: (group.sum { _1[:return_pct] } / group.size).round(2) }
+        end,
         list: trades.last(200)
       }
     end

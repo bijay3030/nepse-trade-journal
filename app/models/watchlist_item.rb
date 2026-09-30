@@ -1,7 +1,7 @@
 # A stock the user is tracking toward an entry, with its entry zone and the
 # level at which the setup is considered failed.
 class WatchlistItem < ApplicationRecord
-  SETUP_TYPES = %w[vcp pullback].freeze
+  SETUP_TYPES = Setups::Types::ALL
   STATUSES = %w[watching in_zone extended invalidated planned archived].freeze
   PRICE_STATES = %w[below_zone in_zone extended invalidated].freeze
   # Statuses the price no longer changes: the user has acted, or the setup failed.

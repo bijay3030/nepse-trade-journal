@@ -56,4 +56,11 @@ RSpec.describe Watchlist::CloseEvaluator do
 
     expect { described_class.call }.not_to change(WatchlistAlert, :count)
   end
+
+  it "judges an MA pullback by holding its zone" do
+    item.update!(setup_type: "ma_pullback")
+    close_at(505, volume: 7_000)
+
+    expect(item.last_close_state).to eq("held_zone")
+  end
 end

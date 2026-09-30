@@ -6,6 +6,7 @@ module Watchlist
   #           below the low of the last (tightest) contraction.
   # pullback: buy near the closest support, up to 2% above it. The setup fails
   #           3% below support.
+  # ma_pullback, base_breakout: see Setups::Patterns.
   # The target is the nearest resistance above the zone, or 2R when there is none.
   class EntryZoneSuggester
     BREAKOUT_ZONE_PCT = 3.0
@@ -27,13 +28,17 @@ module Watchlist
     end
 
     def call
-      return failure("Unknown setup type #{@setup_type.inspect}") unless WatchlistItem::SETUP_TYPES.include?(@setup_type)
+      return failure("Unknown setup type #{@setup_type.inspect}") unless Setups::Types::ALL.include?(@setup_type)
       return failure("#{@stock.symbol} has no price history to analyse yet") if analysis[:candles].blank?
 
-      levels = @setup_type == "vcp" ? vcp_levels : pullback_levels
+      levels, pattern = case @setup_type
+                        when "vcp" then [ vcp_levels, nil ]
+                        when "pullback" then [ pullback_levels, nil ]
+                        else pattern_levels
+                        end
       return levels if levels[:success] == false
 
-      { success: true, setup_type: @setup_type, levels: levels, snapshot: snapshot }
+      { success: true, setup_type: @setup_type, levels: levels, pattern: pattern, snapshot: snapshot }
     end
 
     private
@@ -61,6 +66,15 @@ module Watchlist
         invalidation: support * (1 - SUPPORT_BREAK_PCT / 100),
         pivot: nil
       )
+    end
+
+    # Levels and quality from Setups::Patterns for the newer setup types.
+    def pattern_levels
+      result = Setups::Patterns.public_send(@setup_type, analysis[:candles])
+      return [ failure("#{result[:error]} for #{@stock.symbol}. Try another setup or enter levels manually."), nil ] unless result[:success]
+
+      levels = build_levels(zone_low: result[:zone_low], zone_high: result[:zone_high], invalidation: result[:invalidation], pivot: result[:pivot])
+      [ levels, result.slice(:quality, :details) ]
     end
 
     def build_levels(zone_low:, zone_high:, invalidation:, pivot:)
