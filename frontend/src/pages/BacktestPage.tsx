@@ -5,12 +5,13 @@ import { Badge, Card, CardBody, CardHeader, LoadingSpinner } from "../components
 import { useBacktest } from "../features/backtest/api"
 import { GroupChart } from "../features/backtest/GroupChart"
 import type { Horizon } from "../features/backtest/types"
-import { FLOW_LABELS, SETUP_TYPE_LABELS, ZONE_LABELS } from "../features/readiness/labels"
+import { FLOW_LABELS, GUARD_LABELS, SETUP_TYPE_LABELS, ZONE_LABELS } from "../features/readiness/labels"
 import { cn } from "../lib/cn"
 
 const HORIZONS: Horizon[] = ["5", "10", "20"]
 const ZONE_ORDER = ["too_early", "in_zone", "extended", "failed", "no_setup"]
 const FLOW_ORDER = ["accumulation", "neutral", "distribution", "no_data"]
+const GUARD_ORDER = ["Passed guards", "thin_volume", "upper_circuit", "lower_circuit"]
 const EXIT_LABELS = { stop: "Stopped out", target: "Target reached", time: "Time exit (20 sessions)" }
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -43,6 +44,7 @@ export function BacktestPage() {
 
   const { results, parameters } = data
   const trades = results.trades
+  const heldBack = Object.values(trades.held_back ?? {}).reduce((sum, count) => sum + (count ?? 0), 0)
   const period = results.period
 
   return (
@@ -65,7 +67,11 @@ export function BacktestPage() {
             <Stat
               label="Closed trades"
               value={String(trades.closed)}
-              hint={[trades.open ? `${trades.open} still open` : null, trades.skipped ? `${trades.skipped} skipped` : null].filter(Boolean).join(", ") || undefined}
+              hint={[
+                trades.open ? `${trades.open} still open` : null,
+                trades.skipped ? `${trades.skipped} skipped` : null,
+                heldBack ? `${heldBack} held back by guards` : null,
+              ].filter(Boolean).join(", ") || undefined}
             />
             <Stat label="Win rate" value={fmt(trades.win_rate_pct)} />
             <Stat label="Avg return" value={fmt(trades.avg_return_pct)} hint={`wins ${fmt(trades.avg_win_pct)}, losses ${fmt(trades.avg_loss_pct)}`} />
@@ -164,6 +170,12 @@ export function BacktestPage() {
             <CardBody>
               <GroupChart groups={results.groups.setup_type} horizon={horizon} labels={SETUP_TYPE_LABELS} order={["vcp", "base_breakout", "pullback", "ma_pullback"]} />
             </CardBody>
+          </Card>
+        )}
+        {results.groups.guards && (
+          <Card>
+            <CardHeader title="By tradability guard" subtitle="Charts meeting the entry rules: passed every guard, or held back by thin volume or a circuit" />
+            <CardBody><GroupChart groups={results.groups.guards} horizon={horizon} labels={GUARD_LABELS} order={GUARD_ORDER} /></CardBody>
           </Card>
         )}
         <Card>

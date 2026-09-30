@@ -1,4 +1,4 @@
-import type { FlowState, ZoneState } from "../screener/types"
+import type { FlowState, Guard, ZoneState } from "../screener/types"
 
 // Neutral wording: the app never labels anything "buy" or "sell".
 export const ZONE_LABELS: Record<ZoneState, string> = {
@@ -44,6 +44,23 @@ export const FLOW_TONE: Record<FlowState, "neutral" | "gain" | "loss"> = {
   distribution: "loss",
   neutral: "neutral",
   no_data: "neutral",
+}
+
+export const GUARD_LABELS: Record<Guard, string> = {
+  thin_volume: "Thin volume",
+  upper_circuit: "At upper circuit",
+  lower_circuit: "At lower circuit",
+}
+
+export const GUARD_DETAILS: Record<Guard, string> = {
+  thin_volume: "Low average turnover: a small order can move the price and fills may be poor.",
+  upper_circuit: "Closed near the +10% daily limit: few sellers, and the next open often gaps. Wait for another session.",
+  lower_circuit: "Closed near the -10% daily limit: few buyers, so exits and stops may not fill.",
+}
+
+/** "NPR 34.1M" for a turnover in rupees. */
+export function formatTurnover(value: number) {
+  return `NPR ${(value / 1_000_000).toFixed(1)}M`
 }
 
 /** Colour band for a 0-100 readiness score. */

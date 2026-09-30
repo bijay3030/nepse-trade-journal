@@ -3,7 +3,8 @@ import { CheckCircle2, XCircle } from "lucide-react"
 import { Badge, Card, CardBody, CardHeader } from "../../components/ui"
 import { cn } from "../../lib/cn"
 import type { ReadinessSnapshot } from "../screener/types"
-import { COMPONENT_LABELS, SETUP_TYPE_LABELS, ZONE_LABELS, ZONE_TONE, readinessTone } from "./labels"
+import { GuardBadges } from "./GuardBadges"
+import { COMPONENT_LABELS, GUARD_DETAILS, SETUP_TYPE_LABELS, ZONE_LABELS, ZONE_TONE, formatTurnover, readinessTone } from "./labels"
 import { ReadinessGauge } from "./ReadinessGauge"
 import { ZoneLadder } from "./ZoneLadder"
 
@@ -28,6 +29,7 @@ export function ReadinessCard({ snapshot }: { snapshot: ReadinessSnapshot }) {
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={ZONE_TONE[snapshot.zone_state]}>{ZONE_LABELS[snapshot.zone_state]}</Badge>
               {snapshot.in_buy_zone && <Badge tone="gain">Meets entry-zone criteria</Badge>}
+              <GuardBadges guards={snapshot.guards} />
               <span className={cn("text-sm font-semibold", tone.text)}>{tone.label} readiness</span>
             </div>
             <p className="mt-1 text-sm text-slate">
@@ -37,7 +39,11 @@ export function ReadinessCard({ snapshot }: { snapshot: ReadinessSnapshot }) {
             <p className="text-sm text-slate">
               RS rating <b className="text-ink">{snapshot.rs_rating ?? "—"}</b> · trend rules <b className="text-ink">{snapshot.trend_rules_passed}/7</b>
               {snapshot.distance_to_zone_pct !== null && snapshot.zone_state === "too_early" && <> · {snapshot.distance_to_zone_pct.toFixed(2)}% below the zone</>}
+              {snapshot.avg_turnover != null && <> · turnover <b className="text-ink">{formatTurnover(snapshot.avg_turnover)}</b>/day</>}
             </p>
+            {snapshot.guards?.map((guard) => (
+              <p key={guard} className="mt-1 text-xs text-ember">{GUARD_DETAILS[guard]} Kept off the Entry zone now board.</p>
+            ))}
           </div>
         </div>
 

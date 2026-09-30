@@ -39,4 +39,13 @@ describe("ReadinessCard", () => {
     expect(screen.queryByText("Meets entry-zone criteria")).not.toBeInTheDocument()
     expect(container.textContent).not.toMatch(/\bBUY\b|\bSELL\b/i)
   })
+
+  it("shows turnover and explains a guard that keeps the stock off the board", () => {
+    render(<ReadinessCard snapshot={{ ...readinessSnapshot(), in_buy_zone: false, avg_turnover: 1_500_000, guards: ["thin_volume"] }} />)
+
+    expect(screen.getByText("Thin volume")).toBeInTheDocument()
+    expect(screen.getByText("NPR 1.5M")).toBeInTheDocument()
+    expect(screen.getByText(/a small order can move the price.*Kept off the Entry zone now board/)).toBeInTheDocument()
+    expect(screen.queryByText("Meets entry-zone criteria")).not.toBeInTheDocument()
+  })
 })
