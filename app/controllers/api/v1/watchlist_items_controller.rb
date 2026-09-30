@@ -9,7 +9,7 @@ module Api
       def index
         items = current_user.watchlist_items.includes(:stock).order(updated_at: :desc)
         items = items.tracked unless ActiveModel::Type::Boolean.new.cast(params[:include_archived])
-        render json: items, each_serializer: WatchlistItemSerializer
+        render json: items, each_serializer: WatchlistItemSerializer, context: Watchlist::MarketContext.call
       end
 
       # Previews suggested levels before adding a stock.

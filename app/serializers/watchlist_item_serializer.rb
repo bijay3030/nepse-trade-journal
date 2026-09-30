@@ -3,7 +3,8 @@ class WatchlistItemSerializer < ActiveModel::Serializer
 
   attributes :id, :symbol, :name, :sector, :setup_type, :status, :price_state, *PRICE_FIELDS,
              :current_price, :change_percent, :price_updated_at, :distance_to_zone_pct, :risk_reward,
-             :setup_snapshot, :notes, :trade_plan_id, :last_evaluated_at, :created_at
+             :setup_snapshot, :notes, :trade_plan_id, :last_evaluated_at, :created_at,
+             :last_close_on, :last_close_state, :last_close_price, :last_close_relative_volume, :checklist
 
   # Decimals are sent as numbers, not strings.
   PRICE_FIELDS.each do |field|
@@ -18,4 +19,11 @@ class WatchlistItemSerializer < ActiveModel::Serializer
   def price_updated_at = object.stock.last_updated
   def distance_to_zone_pct = object.distance_to_zone_pct
   def risk_reward = object.risk_reward
+  def last_close_price = object.last_close_price&.to_f
+  def last_close_relative_volume = object.last_close_relative_volume&.to_f
+
+  # Pass a shared Watchlist::MarketContext as `context:` when serializing many items.
+  def checklist
+    Watchlist::EntryChecklist.call(object, context: instance_options[:context] || Watchlist::MarketContext.call)
+  end
 end
