@@ -15,6 +15,20 @@ shared: &shared
     queue: default
     schedule: "15 10 * * 1-5 UTC"
 
+  # Securities list, dividends and index history: 4:30 PM Nepal time, Mon-Fri.
+  reference_data_daily:
+    class: SyncReferenceDataJob
+    args: [ "daily" ]
+    queue: default
+    schedule: "45 10 * * 1-5 UTC"
+
+  # Fundamentals: Saturday 9:45 AM Nepal time (takes about an hour).
+  reference_data_weekly:
+    class: SyncReferenceDataJob
+    args: [ "weekly" ]
+    queue: default
+    schedule: "0 4 * * 6 UTC"
+
 production:
   <<: *shared
 
