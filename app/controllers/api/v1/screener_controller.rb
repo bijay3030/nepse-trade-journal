@@ -10,7 +10,8 @@ module Api
         market = MarketIndex::Overview.new.call
         snapshot = stock.setup_snapshots.order(traded_on: :desc).first
         render json: Stock::SetupAnalysis.new(stock, market: market).detail.merge(
-          readiness: snapshot && StockSetupSnapshotSerializer.new(snapshot).as_json
+          readiness: snapshot && StockSetupSnapshotSerializer.new(snapshot).as_json,
+          broker_flow: Flows::AccumulationAnalyzer.call(stock)
         )
       end
 
