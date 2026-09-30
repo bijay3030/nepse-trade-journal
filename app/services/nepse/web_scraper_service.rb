@@ -28,7 +28,7 @@ module Nepse
         success: result[:success],
         source: "Sharesansar",
         processed: result[:processed].to_i,
-        created: 0,
+        created: Array(result[:created_symbols]).size,
         date: Date.current,
         rejected_symbols: result[:rejected_symbols] || []
       }

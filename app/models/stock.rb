@@ -72,6 +72,40 @@ class Stock < ApplicationRecord
     update(market_cap: calculated_cap)
   end
 
+  def previous_close_before(date)
+    daily_prices.where("traded_on < ?", date).order(traded_on: :desc).pick(:close_price)&.to_f
+  end
+
+  # Applies a quote from NepsePriceService. Fields the source did not provide are
+  # left untouched instead of being overwritten with zeros.
+  def apply_live_quote!(price_data, traded_on: Date.current)
+    last_price = price_data[:last_price].to_f
+    return false unless last_price.positive?
+
+    previous_close = price_data[:previous_close] || previous_close_before(traded_on)
+    change_percent = price_data[:change_percent]
+    if change_percent.nil? && previous_close.to_f.positive?
+      change_percent = (((last_price - previous_close) / previous_close) * 100).round(2)
+    end
+
+    updates = { last_price: last_price, last_updated: Time.current }
+    updates[:change_percent] = change_percent unless change_percent.nil?
+    updates[:volume] = price_data[:volume] unless price_data[:volume].nil?
+    update!(updates)
+    recalculate_market_cap!
+    true
+  end
+
+  def quote_payload
+    {
+      symbol: symbol,
+      last_price: last_price.to_f,
+      change_percent: change_percent.to_f,
+      volume: volume.to_i,
+      last_updated: last_updated
+    }
+  end
+
   def price_payload
     {
       id: id,

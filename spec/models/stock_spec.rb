@@ -136,4 +136,29 @@ RSpec.describe Stock, type: :model do
       expect { stock.recalculate_market_cap! }.not_to change { stock.reload.market_cap }
     end
   end
+
+  describe "#apply_live_quote!" do
+    let(:stock) { create(:stock, last_price: 500.0, change_percent: 2.0, volume: 8_000) }
+
+    it "updates the price and derives change from the previous close" do
+      create(:stock_daily_price, stock: stock, traded_on: Date.current - 1, close_price: 500.0)
+
+      stock.apply_live_quote!({ last_price: 525.0, change_percent: nil, volume: nil })
+
+      expect(stock.reload.last_price.to_f).to eq(525.0)
+      expect(stock.change_percent.to_f).to eq(5.0)
+      expect(stock.volume).to eq(8_000)
+    end
+
+    it "keeps the stored change when there is no previous close to compare with" do
+      stock.apply_live_quote!({ last_price: 525.0, change_percent: nil, volume: nil })
+
+      expect(stock.reload.change_percent.to_f).to eq(2.0)
+    end
+
+    it "ignores quotes without a usable price" do
+      expect(stock.apply_live_quote!({ last_price: nil })).to be(false)
+      expect(stock.reload.last_price.to_f).to eq(500.0)
+    end
+  end
 end

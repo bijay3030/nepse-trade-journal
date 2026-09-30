@@ -61,16 +61,24 @@ module Nepse
 
     def sync_market
       response = market_client.fetch
-      return { success: false, error: response[:error], processed: 0, rejected_symbols: [] } unless response[:success]
+      return { success: false, error: response[:error], processed: 0, created_symbols: [], rejected_symbols: [] } unless response[:success]
 
       processed = 0
+      created_symbols = []
       rejected_symbols = []
 
       Array(response[:rows]).each do |row|
-        stock = Stock.find_by(symbol: row[:symbol].to_s.upcase)
+        symbol = row[:symbol].to_s.upcase
+        stock = Stock.find_by(symbol: symbol)
+
         unless stock
-          rejected_symbols << row[:symbol].to_s.upcase
-          next
+          stock = create_listed_stock(symbol)
+          if stock
+            created_symbols << symbol
+          else
+            rejected_symbols << symbol
+            next
+          end
         end
 
         persist_market_row(stock, row)
@@ -81,11 +89,12 @@ module Nepse
         success: true,
         total_rows: Array(response[:rows]).size,
         processed: processed,
+        created_symbols: created_symbols,
         rejected_symbols: rejected_symbols
       }
     rescue StandardError => e
       Rails.logger.error("Nepse::StockBasicsSyncService market sync error: #{e.message}")
-      { success: false, error: e.message, processed: processed || 0, rejected_symbols: rejected_symbols || [] }
+      { success: false, error: e.message, processed: processed || 0, created_symbols: created_symbols || [], rejected_symbols: rejected_symbols || [] }
     end
 
     def sync_fundamentals
@@ -130,6 +139,30 @@ module Nepse
     private
 
     attr_reader :traded_on, :market_client, :company_client, :fundamentals_failure_threshold, :request_delay_seconds
+
+    # The market table has no company name or sector, so new listings start with
+    # placeholders that the fundamentals sync fills in later.
+    def create_listed_stock(symbol)
+      return if symbol.blank?
+
+      Stock.create!(
+        symbol: symbol,
+        name: symbol,
+        sector: "Others",
+        security_type: inferred_security_type(symbol),
+        last_updated: Time.current
+      )
+    rescue ActiveRecord::RecordInvalid => e
+      Rails.logger.warn("Nepse::StockBasicsSyncService could not add #{symbol}: #{e.message}")
+      nil
+    end
+
+    def inferred_security_type(symbol)
+      return "Debenture" if symbol.match?(%r{\d{2}/\d{2}\z}) || symbol.match?(/D\d{2}\z/)
+      return "Promoter Share" if symbol.end_with?("PO")
+
+      "Equity"
+    end
 
     def persist_market_row(stock, row)
       previous_last_price = stock.last_price.to_f

@@ -32,6 +32,7 @@ Rails.application.routes.draw do
 
       post "data_imports/seed_master", to: "data_imports#seed_master"
       post "data_imports/sync_daily_prices", to: "data_imports#sync_daily_prices"
+      post "data_imports/sync_market", to: "data_imports#sync_market"
       post "data_imports/import_csv", to: "data_imports#import_csv"
 
       resources :trade_plans, only: [:index, :create, :show, :destroy] do

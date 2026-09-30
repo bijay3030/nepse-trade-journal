@@ -77,15 +77,7 @@ module Api
       def refresh_price_data!(stocks)
         stocks.each do |stock|
           price_data = NepsePriceService.new(stock.symbol).fetch_current
-          next unless price_data
-
-          stock.update(
-            last_price: price_data[:last_price],
-            change_percent: price_data[:change_percent],
-            volume: price_data[:volume],
-            last_updated: Time.current
-          )
-          stock.recalculate_market_cap!
+          stock.apply_live_quote!(price_data) if price_data
         end
       end
     end

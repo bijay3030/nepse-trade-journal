@@ -31,7 +31,7 @@ RSpec.describe Nepse::StockBasicsSyncService do
       result
     end
 
-    it "persists market data into stocks and stock_daily_prices while rejecting unknown symbols" do
+    it "persists market data into stocks and stock_daily_prices and adds new listings" do
       seeded_stock = create(
         :stock,
         symbol: "NABIL",
@@ -98,8 +98,11 @@ RSpec.describe Nepse::StockBasicsSyncService do
       expect(daily_price.close_price.to_f).to eq(540.0)
       expect(daily_price.previous_close.to_f).to eq(500.0)
       expect(daily_price.total_trades).to eq(130)
-      expect(Stock.find_by(symbol: "UNKNOWN")).to be_nil
-      expect(result[:market]).to include(processed: 1, rejected_symbols: [ "UNKNOWN" ])
+      new_listing = Stock.find_by!(symbol: "UNKNOWN")
+      expect(new_listing).to have_attributes(name: "UNKNOWN", sector: "Others", security_type: "Equity", is_active: true)
+      expect(new_listing.last_price.to_f).to eq(100.0)
+      expect(StockDailyPrice.find_by!(stock: new_listing, traded_on: traded_on).close_price.to_f).to eq(100.0)
+      expect(result[:market]).to include(processed: 2, created_symbols: [ "UNKNOWN" ], rejected_symbols: [])
     end
 
     it "preserves existing stored values when market fields are missing or unparsable" do
@@ -451,6 +454,26 @@ RSpec.describe Nepse::StockBasicsSyncService do
         company_client: company_client,
         fundamentals_failure_threshold: fundamentals_failure_threshold,
         request_delay_seconds: 0.25
+      )
+    end
+  end
+
+  describe ".sync_market" do
+    it "infers the security type of new listings from the symbol" do
+      market_client = instance_double(Nepse::Source::SharesansarMarketClient)
+      rows = %w[NICAD85/86 SBID83 GBBLPO NEWCO].map do |symbol|
+        { symbol: symbol, last_price: 100.0, previous_close: 100.0, traded_on: Date.new(2026, 9, 27) }
+      end
+      allow(market_client).to receive(:fetch).and_return({ success: true, rows: rows })
+
+      result = described_class.sync_market(traded_on: Date.new(2026, 9, 27), market_client: market_client)
+
+      expect(result).to include(success: true, processed: 4, created_symbols: %w[NICAD85/86 SBID83 GBBLPO NEWCO])
+      expect(Stock.where(symbol: rows.map { _1[:symbol] }).pluck(:symbol, :security_type).to_h).to eq(
+        "NICAD85/86" => "Debenture",
+        "SBID83" => "Debenture",
+        "GBBLPO" => "Promoter Share",
+        "NEWCO" => "Equity"
       )
     end
   end
