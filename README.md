@@ -286,6 +286,27 @@ A stock is listed under **Entry zone now** when the price is inside the zone, at
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
 
+## Corporate actions (book closes and bonus shares)
+
+A bonus issue lowers the share price mechanically on the book close (a 10% bonus
+divides it by 1.10). Without handling it, levels and charts would read that as a
+breakdown. Using the stored dividend data (Chukul, with book-close and AGM dates):
+
+- **Upcoming book closes** (next 45 days) show on the stock page's **Corporate
+  actions** card with the dividend history, and as a badge on watchlist cards, the
+  Entry zone board and the screener (bonus book closes are highlighted).
+- **Entry checklist:** "No bonus book close in the next 10 days" fails when one is
+  due; cash-only book closes pass with a note.
+- **Watchlist:** a "Book close soon" alert 5 days ahead; after a bonus book close the
+  item's zone, invalidation, stop, target and pivot are divided by (1 + bonus%) and a
+  "Levels adjusted" alert is sent (once per book close; bonuses before the item was
+  added are ignored).
+- **Price history:** 1-10 days after a bonus book close the stock's bonus-adjusted
+  history is re-fetched from Merolagani and its indicators recalculated, so charts,
+  moving averages and patterns don't see a fake drop.
+
+These run in the daily 4:30 PM job. Right-share issues aren't covered yet (no free source found).
+
 ## Backtest
 
 `/backtest` shows how the app's signals would have played out, using snapshots

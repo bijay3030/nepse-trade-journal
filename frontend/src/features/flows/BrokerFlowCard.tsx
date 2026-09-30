@@ -16,7 +16,8 @@ function BrokerTable({ title, brokers, side }: { title: string; brokers: FlowBro
       {brokers.length === 0 ? (
         <p className="mt-2 text-sm text-slate">None in this window.</p>
       ) : (
-        <table className="mt-2 w-full text-sm">
+        <div className="mt-2 overflow-x-auto">
+        <table className="w-full min-w-[26rem] text-sm">
           <thead className="text-left text-xs text-slate">
             <tr>
               <th className="py-1 font-medium">Broker</th>
@@ -39,6 +40,7 @@ function BrokerTable({ title, brokers, side }: { title: string; brokers: FlowBro
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   )
@@ -108,7 +110,7 @@ export function BrokerFlowCard({ flow }: { flow: BrokerFlow }) {
         </div>
         <p className="mt-1 text-xs text-slate">Green: net shares of the window's top 5 buyers each day. Red: the top 5 sellers.</p>
 
-        <div className="mt-5 grid gap-6 lg:grid-cols-2">
+        <div className="mt-5 grid gap-6 2xl:grid-cols-2">
           <BrokerTable title="Top net buyers" brokers={flow.top_buyers} side="buy" />
           <BrokerTable title="Top net sellers" brokers={flow.top_sellers} side="sell" />
         </div>
