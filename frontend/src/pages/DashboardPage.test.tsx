@@ -12,6 +12,10 @@ vi.mock("../features/watchlist/api", () => ({
   apiErrorMessage: () => "",
 }))
 
+vi.mock("../features/market/api", () => ({
+  useMarketHeatmap: () => ({ data: { as_of: null, stocks: 0, unsized: 0, sectors: [] }, isLoading: false, isError: false, refetch: vi.fn() }),
+}))
+
 vi.mock("../features/screener/api", () => ({
   useBuyZone: () => ({
     data: { traded_on: "2026-09-28", criteria: { zone_state: "in_zone", min_trend_rules: 5, min_readiness: 60 }, results: [] },

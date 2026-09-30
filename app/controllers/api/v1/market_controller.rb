@@ -4,6 +4,10 @@ module Api
       def overview
         render json: MarketIndex::Overview.new.call
       end
+
+      def heatmap
+        render json: MarketIndex::Heatmap.new.call
+      end
     end
   end
 end

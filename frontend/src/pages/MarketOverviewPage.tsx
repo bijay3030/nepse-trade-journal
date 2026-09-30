@@ -11,6 +11,7 @@ import {
 } from "recharts"
 
 import { Badge, Button, Card, CardBody, CardHeader, LoadingSpinner, StatCard } from "../components/ui"
+import { MarketHeatmap } from "../features/market/MarketHeatmap"
 import { useMarketOverview } from "../features/screener/api"
 import type { MarketRegime, SectorOverviewRow } from "../features/screener/types"
 import { cn } from "../lib/cn"
@@ -189,6 +190,8 @@ export function MarketOverviewPage() {
           </div>
         </CardBody>
       </Card>
+
+      <MarketHeatmap />
 
       <Card>
         <CardHeader title="Sector Overview" subtitle="Performance and breadth by sector." />

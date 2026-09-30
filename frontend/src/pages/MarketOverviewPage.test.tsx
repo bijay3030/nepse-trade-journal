@@ -4,6 +4,10 @@ import { mockMarketOverview } from "../features/screener/mockData"
 import { MarketOverviewPage } from "./MarketOverviewPage"
 
 const mockUseMarketOverview = vi.fn()
+vi.mock("../features/market/api", () => ({
+  useMarketHeatmap: () => ({ data: { as_of: null, stocks: 0, unsized: 0, sectors: [] }, isLoading: false, isError: false, refetch: vi.fn() }),
+}))
+
 vi.mock("../features/screener/api", () => ({ useMarketOverview: () => mockUseMarketOverview() }))
 
 describe("MarketOverviewPage", () => {

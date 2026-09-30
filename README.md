@@ -100,7 +100,7 @@ you can use the app straight away.
 | Page              | URL                    | What to check                                   |
 | ----------------- | ---------------------- | ----------------------------------------------- |
 | Dashboard         | `/dashboard`           | KPI cards and recent trades                     |
-| Market overview   | `/market`              | NEPSE index trend, breadth, sectors             |
+| Market overview   | `/market`              | NEPSE index trend, breadth, heatmap, sectors    |
 | VCP screener      | `/screener`            | Setup scores, breakout watch list               |
 | Stock analysis    | `/screener/NABIL`      | Candles, moving averages, levels, VCP breakdown |
 | Watchlist         | `/watchlist`           | Tracked setups, entry zones, alerts             |
@@ -118,6 +118,7 @@ Quick API checks:
 curl http://localhost:3000/api/v1/stocks | head -c 500
 curl "http://localhost:3000/api/v1/stocks/current_prices?symbols=NABIL,NICA"
 curl http://localhost:3000/api/v1/market/overview | head -c 500
+curl http://localhost:3000/api/v1/market/heatmap | head -c 500
 ```
 
 ### Running the tests
