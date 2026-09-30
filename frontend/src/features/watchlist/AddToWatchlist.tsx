@@ -1,5 +1,6 @@
 import { BookmarkCheck, BookmarkPlus, X } from "lucide-react"
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { Link } from "react-router-dom"
 
 import { Button, Textarea } from "../../components/ui"
@@ -43,7 +44,9 @@ export function AddToWatchlistDialog({ symbol, onClose }: { symbol: string; onCl
     })
   }
 
-  return (
+  // Rendered into <body> so a transformed or scrolling ancestor (e.g. the screener
+  // table) can't turn the fixed overlay into one positioned far down the page.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-0 sm:items-center sm:p-4" onClick={onClose}>
       <div
         role="dialog"
@@ -175,7 +178,8 @@ export function AddToWatchlistDialog({ symbol, onClose }: { symbol: string; onCl
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

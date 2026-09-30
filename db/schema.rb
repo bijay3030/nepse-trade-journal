@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_27_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_28_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -90,6 +90,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_27_120000) do
     t.decimal "change_percent", precision: 8, scale: 2, default: "0.0", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "sector"
+    t.string "source"
     t.index ["symbol"], name: "index_market_indices_on_symbol", unique: true
   end
 
@@ -118,6 +120,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_27_120000) do
     t.decimal "npl_ratio", precision: 6, scale: 2, default: "0.0", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "field_sources", default: {}, null: false
+    t.decimal "roa", precision: 8, scale: 2
+    t.decimal "distributable_profit_per_share", precision: 10, scale: 2
     t.index ["stock_id", "fiscal_year", "quarter"], name: "index_financials_on_stock_fy_quarter", unique: true
     t.index ["stock_id"], name: "index_stock_company_financials_on_stock_id"
   end
@@ -174,6 +179,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_27_120000) do
     t.index ["traded_on"], name: "index_stock_daily_prices_on_traded_on"
   end
 
+  create_table "stock_dividends", force: :cascade do |t|
+    t.bigint "stock_id", null: false
+    t.string "fiscal_year", null: false
+    t.decimal "cash_percent", precision: 8, scale: 2
+    t.decimal "bonus_percent", precision: 8, scale: 2
+    t.decimal "total_percent", precision: 8, scale: 2
+    t.date "announced_on"
+    t.date "book_close_on"
+    t.date "agm_on"
+    t.string "source", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["stock_id", "fiscal_year"], name: "index_stock_dividends_on_stock_id_and_fiscal_year", unique: true
+    t.index ["stock_id"], name: "index_stock_dividends_on_stock_id"
+  end
+
   create_table "stocks", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
@@ -193,6 +214,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_27_120000) do
     t.boolean "is_active", default: true, null: false
     t.text "description"
     t.string "company_website"
+    t.jsonb "field_sources", default: {}, null: false
+    t.integer "chukul_id"
+    t.integer "chukul_sector_id"
+    t.index ["chukul_id"], name: "index_stocks_on_chukul_id", unique: true
     t.index ["is_active"], name: "index_stocks_on_is_active"
     t.index ["sector"], name: "index_stocks_on_sector"
     t.index ["security_type"], name: "index_stocks_on_security_type"
@@ -340,6 +365,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_27_120000) do
   add_foreign_key "stock_daily_indicators", "stock_daily_prices"
   add_foreign_key "stock_daily_indicators", "stocks"
   add_foreign_key "stock_daily_prices", "stocks"
+  add_foreign_key "stock_dividends", "stocks"
   add_foreign_key "trade_executions", "trade_plans"
   add_foreign_key "trade_plans", "stocks"
   add_foreign_key "trade_plans", "trading_strategies"

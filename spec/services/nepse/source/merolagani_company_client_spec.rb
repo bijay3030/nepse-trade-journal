@@ -199,4 +199,35 @@ RSpec.describe Nepse::Source::MerolaganiCompanyClient do
       )
     end
   end
+
+  describe "#parse_details" do
+    let(:html) do
+      <<~HTML
+        <table id="accordion">
+          <tr><th>Sector</th><td>Commercial Banks</td></tr>
+          <tr><th>Shares Outstanding</th><td>270,569,970.00</td></tr>
+          <tr><th>52 Weeks High - Low</th><td>581.00-485.00</td></tr>
+          <tr><th>EPS</th><td>28.36 <span>(FY:082-083, Q:4)</span></td></tr>
+          <tr><th>% Dividend</th><td>10.80 <span>(FY:082-083)</span></td></tr>
+          <tr><th>% Bonus</th><td>5.00 <span>(FY:082-083)</span></td></tr>
+        </table>
+        <div id="dividend-panel"><table>
+          <tr><th>#</th><th>Fiscal Year</th><th>Value</th></tr>
+          <tr><td>1.</td><td>10.80%</td><td>(FY: 082-083)</td></tr>
+          <tr><td>2.</td><td>12.50%</td><td>(FY: 081-082)</td></tr>
+        </table></div>
+        <div id="bonus-panel"><table><tr><th>#</th><th>Value</th><th>Fiscal Year</th></tr></table></div>
+      HTML
+    end
+
+    it "reads EPS with its period, the 52-week range and dividend history" do
+      result = described_class.new.parse_details("nabil", html)
+
+      expect(result[:fundamentals]).to include(eps: 28.36, fiscal_year: "082/083", quarter: "Q4", listed_shares: 270_569_970)
+      expect(result).to include(high_52w: 581.0, low_52w: 485.0)
+      expect(result[:cash_dividends]).to eq([ { fiscal_year: "082/083", percent: 10.8 }, { fiscal_year: "081/082", percent: 12.5 } ])
+      # The bonus panel is empty, so the summary row supplies the latest bonus.
+      expect(result[:bonus_shares]).to eq([ { fiscal_year: "082/083", percent: 5.0 } ])
+    end
+  end
 end

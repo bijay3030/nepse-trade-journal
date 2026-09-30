@@ -43,6 +43,8 @@ describe("AddToWatchlistButton", () => {
 
     await userEvent.click(await screen.findByRole("button", { name: "Add NABIL to watchlist" }))
     await waitFor(() => expect(screen.getByLabelText("Zone low")).toHaveValue(570))
+    // Portalled to <body>, so a scrolling table around the button can't misplace it.
+    expect(screen.getByRole("dialog").parentElement?.parentElement).toBe(document.body)
     expect(screen.getByText("12% -> 7% -> 4%")).toBeInTheDocument()
     expect(screen.getByText("3.18R")).toBeInTheDocument()
     expect(screen.queryByText(/Not a qualified VCP/)).not.toBeInTheDocument()
