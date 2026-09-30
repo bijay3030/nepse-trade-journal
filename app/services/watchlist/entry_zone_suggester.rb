@@ -23,6 +23,7 @@ module Watchlist
       @setup_type = setup_type.to_s
       @market = market
       @analysis = analysis
+      @precomputed = !analysis.nil?
     end
 
     def call
@@ -102,7 +103,11 @@ module Watchlist
       }
     end
 
+    # With a precomputed analysis, its close is used, so a past-date analysis never
+    # sees today's live price. Otherwise the live price, falling back to the close.
     def current_price
+      return analysis[:current_price].to_f if @precomputed
+
       live = @stock.last_price.to_f
       live.positive? ? live : analysis[:current_price].to_f
     end

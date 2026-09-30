@@ -6,10 +6,13 @@ class Stock::SetupAnalysis
     pivot_proximity: ["Pivot proximity", 20]
   }.freeze
 
-  def initialize(stock, market:)
+  # as_of: analyse as of a past session, ignoring later prices (for backtests).
+  def initialize(stock, market:, as_of: nil)
     @stock = stock
     @market = market
-    @prices = stock.daily_prices.sort_by(&:traded_on).last(200)
+    prices = stock.daily_prices.sort_by(&:traded_on)
+    prices = prices.select { _1.traded_on <= as_of } if as_of
+    @prices = prices.last(200)
     @indicators = stock.daily_indicators.index_by(&:traded_on)
   end
 

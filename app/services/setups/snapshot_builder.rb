@@ -1,7 +1,10 @@
 module Setups
-  # Builds one StockSetupSnapshot per active equity for the latest session:
-  # relative strength across all stocks, the trend template, the VCP and pullback
-  # setups with their zones, and the buy-readiness score. Runs after the close.
+  # Builds one StockSetupSnapshot per active equity for the latest session (or a
+  # past one with as_of:): relative strength across all stocks, the trend template,
+  # the VCP and pullback setups with their zones, broker flow, and the readiness
+  # score. Runs after the close. Past sessions use only data up to that day, so the
+  # backtest sees what the app would have shown then. (The screener row's liquidity
+  # rating is the one field computed from current data; the backtest doesn't use it.)
   class SnapshotBuilder
     MIN_SESSIONS = 60
     SETUP_TYPES = %w[vcp pullback].freeze
@@ -10,16 +13,23 @@ module Setups
 
     def self.call(**options) = new(**options).call
 
-    def initialize(symbols: nil)
+    # stocks: preloaded stocks (with daily_prices and daily_indicators) to reuse
+    # across many sessions, as Setups::HistoryBuilder does.
+    def initialize(symbols: nil, as_of: nil, stocks: nil)
       @symbols = Array(symbols).map { _1.to_s.upcase }.presence
+      @as_of = as_of
+      @preloaded = stocks
     end
 
     def call
-      traded_on = StockDailyPrice.joins(:stock).merge(Stock.active.where(security_type: "Equity")).maximum(:traded_on)
+      prices = StockDailyPrice.joins(:stock).merge(Stock.active.where(security_type: "Equity"))
+      prices = prices.where("traded_on <= ?", @as_of) if @as_of
+      traded_on = prices.maximum(:traded_on)
       return { success: false, error: "No stock prices stored" } unless traded_on
 
-      market = MarketIndex::Overview.new.call
-      context = Watchlist::MarketContext.call
+      @traded_on = traded_on
+      market = MarketIndex::Overview.new.call(as_of: traded_on)
+      context = Watchlist::MarketContext.call(as_of: traded_on)
       stocks = eligible_stocks(traded_on)
       ratings = RelativeStrength.ratings(stocks.to_h { [ _1.id, RelativeStrength.score(closes(_1)) ] })
       flows = Flows::AccumulationAnalyzer.for_stocks(stocks.map(&:id), as_of: traded_on)
@@ -39,14 +49,17 @@ module Setups
 
     # Stocks with enough history that traded in the latest session.
     def eligible_stocks(traded_on)
-      scope = Stock.active.where(security_type: "Equity").includes(:daily_prices, :daily_indicators).order(:symbol)
-      scope = scope.where(symbol: @symbols) if @symbols
-      scope.select do |stock|
-        stock.daily_prices.size >= MIN_SESSIONS && stock.daily_prices.any? { _1.traded_on == traded_on }
+      stocks = @preloaded || begin
+        scope = Stock.active.where(security_type: "Equity").includes(:daily_prices, :daily_indicators).order(:symbol)
+        @symbols ? scope.where(symbol: @symbols).to_a : scope.to_a
+      end
+      stocks.select do |stock|
+        stock.daily_prices.count { _1.traded_on <= traded_on } >= MIN_SESSIONS && stock.daily_prices.any? { _1.traded_on == traded_on }
       end
     end
 
-    def closes(stock) = stock.daily_prices.sort_by(&:traded_on).map(&:close_price)
+    # Closes up to the session being built, never later ones.
+    def closes(stock) = stock.daily_prices.select { _1.traded_on <= @traded_on }.sort_by(&:traded_on).map(&:close_price)
 
     def build(stock, traded_on, market, context, ratings, flow)
       close = stock.daily_prices.find { _1.traded_on == traded_on }.close_price.to_f
@@ -57,7 +70,7 @@ module Setups
       rs_rating = ratings[stock.id]
       trend = TrendTemplate.call(close: close, indicator: latest, month_ago: month_ago, rs_rating: rs_rating)
 
-      analysis = Stock::SetupAnalysis.new(stock, market: market)
+      analysis = Stock::SetupAnalysis.new(stock, market: market, as_of: traded_on)
       detail = analysis.detail
       setup = best_setup(stock, detail, close, market)
 

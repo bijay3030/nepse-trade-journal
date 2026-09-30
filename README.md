@@ -275,6 +275,30 @@ A stock is listed under **Entry zone now** when the price is inside the zone, at
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
 
+## Backtest
+
+`/backtest` shows how the app's signals would have played out, using snapshots
+rebuilt for past sessions from only the data available on each day (no look-ahead;
+an as-of rebuild of the latest session matches the nightly build exactly).
+
+- **Simulated trades** for every "Entry zone now" signal, one open trade per stock:
+  enter at the next session's open; exit at the invalidation stop, the target (a gap
+  through either exits at that day's open; both on one day counts as the stop), or at
+  the close after 20 sessions. Net of 0.8% round-trip costs. Win rate, average
+  return, average R, profit factor, holding time and exit reasons.
+- **Forward returns** after 5, 10 and 20 sessions, with the excess over NEPSE, by
+  readiness band, entry-zone flag, broker flow, zone state and trend-template rules,
+  with sample sizes (groups under 30 samples are marked).
+
+```bash
+bin/rails "nepse:data:setup_history[120]"   # past snapshots, ~12s a session (once)
+bin/rails nepse:data:backtest               # run and save; also runs nightly at 4:45 PM
+```
+
+Only NEPSE index sessions count; stray price rows on other dates are ignored. Caveats
+(short, mostly weak-market period; overlapping daily samples; today's listings only;
+idealised fills) are listed on the page.
+
 ## Watchlist and entry zones
 
 Track a stock toward an entry using a VCP or price-action setup.

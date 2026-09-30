@@ -1,9 +1,12 @@
 class MarketIndex::Overview
-  def call
+  # as_of: evaluate as of a past session, using only data up to that day.
+  def call(as_of: nil)
     index = MarketIndex.find_by(symbol: "NEPSE")
     # Only sessions that also have stock prices, so breadth is never measured on an
     # index-only day (e.g. today's index bar before the stock sync has run).
-    last_priced = StockDailyPrice.maximum(:traded_on)
+    priced = StockDailyPrice.all
+    priced = priced.where("traded_on <= ?", as_of) if as_of
+    last_priced = priced.maximum(:traded_on)
     sessions = index&.histories
     sessions = sessions&.where(traded_on: ..last_priced) if last_priced
     history = sessions&.order(traded_on: :desc)&.limit(200)&.to_a&.reverse || []
