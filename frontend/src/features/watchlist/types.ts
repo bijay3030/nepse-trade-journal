@@ -1,7 +1,22 @@
 export type SetupType = "vcp" | "pullback"
 export type WatchlistStatus = "watching" | "in_zone" | "extended" | "invalidated" | "planned" | "archived"
 export type PriceState = "below_zone" | "in_zone" | "extended" | "invalidated"
-export type AlertKind = "entered_zone" | "breakout_confirmed" | "breakout_low_volume" | "extended" | "invalidated"
+export type AlertKind =
+  | "entered_zone"
+  | "breakout_confirmed"
+  | "breakout_low_volume"
+  | "extended"
+  | "invalidated"
+  | "close_confirmed"
+  | "close_unconfirmed"
+  | "close_failed"
+  | "close_in_zone"
+
+export type CheckStatus = "pass" | "fail" | "pending" | "n/a"
+
+export type ChecklistItem = { key: string; label: string; status: CheckStatus; detail: string | null }
+
+export type EntryChecklist = { checks: ChecklistItem[]; passed: number; total: number; all_passed: boolean }
 
 export type WatchlistLevels = {
   entry_zone_low: number
@@ -48,6 +63,11 @@ export type WatchlistItem = WatchlistLevels & {
   trade_plan_id: number | null
   last_evaluated_at: string | null
   created_at: string
+  last_close_on: string | null
+  last_close_state: string | null
+  last_close_price: number | null
+  last_close_relative_volume: number | null
+  checklist: EntryChecklist
 }
 
 export type Suggestion =

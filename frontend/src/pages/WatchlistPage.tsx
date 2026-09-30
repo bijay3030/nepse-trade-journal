@@ -22,6 +22,7 @@ import {
 } from "../features/watchlist/labels"
 import { LevelFields } from "../features/watchlist/LevelFields"
 import { draftToLevels, levelsToDraft, type LevelDraft } from "../features/watchlist/levels"
+import { EntryChecklistPanel } from "../features/watchlist/EntryChecklistPanel"
 import { PriceLadder } from "../features/watchlist/PriceLadder"
 import type { WatchlistItem } from "../features/watchlist/types"
 import { cn } from "../lib/cn"
@@ -153,6 +154,8 @@ function WatchlistCard({ item }: { item: WatchlistItem }) {
             <div><dt className="text-xs text-slate">Risk:reward</dt><dd className="font-mono font-semibold text-ink">{item.risk_reward === null ? "—" : `${item.risk_reward}R`}</dd></div>
           </dl>
         )}
+
+        {!archived && <EntryChecklistPanel checklist={item.checklist} />}
 
         <p className="mt-3 rounded-lg bg-slate/5 px-3 py-2 text-xs text-slate">
           Added {new Date(item.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at {formatPrice(item.price_at_add)}

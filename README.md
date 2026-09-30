@@ -250,7 +250,11 @@ Track a stock toward an entry using a VCP or price-action setup.
 
    The target is the nearest resistance at least 1R above the zone, or 2R when there
    is none. Every level can be edited before adding. The dialog warns when the
-   pattern does not qualify as a VCP (score below 60 or contractions not shrinking).
+   pattern does not qualify as a VCP. A qualified VCP has 2-4 contractions, the first
+   8-35% deep, each at most 80% as deep as the one before, the last at most 10%, a
+   base of at least 15 trading days, lower average daily volume in the last
+   contraction than the first, and a score of 60+. Swings are measured with a
+   threshold of twice the stock's median daily range (3-8%).
 2. **Watch it.** `/watchlist` shows each setup's price against its zone on a price
    ladder, the levels, risk:reward, and a snapshot of the analysis from the day it was
    added. The stock's chart on `/screener/SYMBOL` shows the zone, invalidation and
@@ -265,7 +269,15 @@ Track a stock toward an entry using a VCP or price-action setup.
      until you choose **Reset setup**.
 
    Alerts appear on `/watchlist` and as a count next to **Watchlist** in the sidebar.
-4. **Plan the trade.** **Create plan** opens `/trade/new?watchlist=ID` with the entry,
+4. **Check the entry.** Each card has an **Entry checklist**: qualified VCP (or an
+   uptrend for pullbacks), closed above the pivot / inside the zone, volume at least
+   1.5x average at the close, market regime not weak, sector index beating NEPSE over
+   20 sessions, risk:reward at least 2R, and price not above the zone. Each rule shows
+   met, not met, waiting or not applicable. These are rule checks, not advice.
+5. **End-of-day verdict.** After the 4 PM close sync each setup is judged on the close
+   and full-day volume: **Close confirmed**, **Close, low volume**, **Failed at close**
+   (reached the zone but closed below it) or **Held zone at close** (pullbacks).
+6. **Plan the trade.** **Create plan** opens `/trade/new?watchlist=ID` with the entry,
    stop, target and a thesis filled in, plus position sizing from your account size
    and risk per trade. Saving creates a trade plan and marks the setup **Planned**.
 
