@@ -134,6 +134,22 @@ To force it outside the schedule (after the close only): `bin/rails runner 'Sync
 | H4.1 | `/screener` → sort/filter by VCP score | Few stocks qualify (3 on 2026-09-30 in a weak market); contraction sequences are short (2-4 steps) and shrinking |
 | H4.2 | Track dialog for a stock with a long noisy pattern | "Not a qualified VCP yet" warning |
 
+## H5. Entry readiness — `/screener` and `/screener/SYMBOL`
+
+Run `bin/rails nepse:data:setups` once (about a minute) if no snapshot exists yet.
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H5.1 | Open `/screener` | Opens on **Entry zone now**: cards with a readiness gauge, "In entry zone", setup type, close, zone, invalidation, trend x/7, RS (5 stocks on 2026-09-28: KBL, PCBL, SHIVM, SANIMA, BHCL) |
+| H5.2 | Read the line above the cards | States the criteria: in zone, 5 of 7 trend rules, readiness 60+, and the close date |
+| H5.3 | **All setups** tab | New "Entry readiness" column: score and zone badge per row; loads in under a second |
+| H5.4 | Dashboard | Still shows the All setups table (not the entry board) |
+| H5.5 | Click a symbol, e.g. KBL | **Entry readiness** card: gauge, zone ladder with the current step outlined, score breakdown (e.g. 31/35, 14/30, 3/15, 20/20), 8 trend-template rules with ✓/✗ and numbers |
+| H5.6 | **Price & Trend** chart | Candles with volume, 50/200-day lines, shaded entry zone, Target / Pivot / Invalidation lines with price labels, T1, T2… markers; drag to pan, scroll to zoom |
+| H5.7 | Track the stock, then reopen its page | Chart subtitle says "(from your watchlist levels)" and an "Added" marker appears |
+| H5.8 | Search the page for "buy" or "sell" | Not found anywhere (neutral wording) |
+| H5.9 | Run the command twice for the same close | Snapshots are replaced, not duplicated |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

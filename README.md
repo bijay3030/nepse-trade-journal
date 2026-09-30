@@ -232,10 +232,37 @@ Notes:
 | `bin/rails nepse:data:dividends` | Dividend and bonus history |
 | `bin/rails "nepse:data:fundamentals[NABIL NICA]"` | Fundamentals (all securities if no symbols; ~5s each) |
 | `bin/rails nepse:data:all` | Everything above, then a report |
+| `bin/rails nepse:data:setups` | Rebuild entry-readiness snapshots (indicators first) |
 | `bin/rails nepse:data:report` | How complete the data is, per field |
 
 Schedule (with `bin/dev`): securities, dividends and index history daily at 4:30 PM
 Nepal time; fundamentals on Saturday morning.
+
+## Entry readiness (every stock)
+
+After each close (4:45 PM Nepal time, or `bin/rails nepse:data:setups`) every equity
+with enough history gets a snapshot:
+
+- **Trend template:** seven moving-average and 52-week rules for a stage-2 uptrend
+  (price above the 150- and 200-day averages, 150 above 200, 200 rising for a month,
+  50 above 150 and 200, price above the 50-day, 30%+ above the 52-week low, within
+  25% of the 52-week high) plus relative strength 70+.
+- **RS rating (1-99):** weighted 3/6/9/12-month performance ranked against all stocks.
+- **Best setup and zone:** the VCP or pullback setup, and whether the price is
+  too early, in the entry zone, extended or failed.
+- **Entry readiness (0-100):** trend template 35 + setup quality 30 + market regime 15 +
+  sector index vs NEPSE 20.
+
+A stock is listed under **Entry zone now** when the price is inside the zone, at least
+5 of 7 trend rules pass and readiness is 60+. Where to see it:
+
+- `/screener`, **Entry zone now** tab (default), plus a readiness column on **All setups**
+- `/screener/SYMBOL`: the **Entry readiness** card and a candlestick chart with volume,
+  50/200-day averages, the entry-zone band, invalidation / target / pivot lines and
+  contraction markers (your watchlist levels when you track the stock)
+
+These are rule checks on stored data, not recommendations; the app never labels
+anything buy or sell.
 
 ## Watchlist and entry zones
 
