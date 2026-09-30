@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Watchlist::EntryChecklist do
-  let(:stock) { create(:stock, symbol: "NABIL", sector: "Commercial Banks", last_price: 505.0) }
+  let(:stock) { create(:stock, symbol: "NABIL", sector: "Commercial Banks", last_price: 505.0, change_percent: 1.2) }
   # Zone 500-515, invalidation/stop 470, target 560 => 2R.
   let(:item) { create(:watchlist_item, stock: stock) }
   let(:context) { instance_double(Watchlist::MarketContext, regime: "neutral", nepse_return: -1.2, sector_returns: { "Commercial Banks" => 0.8 }) }
@@ -10,7 +10,10 @@ RSpec.describe Watchlist::EntryChecklist do
       qualification_checks: [ { label: "Volume drying up", passed: true } ] }
   end
 
-  before { allow(Vcp::DetectionEngine).to receive(:call).and_return(vcp) }
+  before do
+    allow(Vcp::DetectionEngine).to receive(:call).and_return(vcp)
+    StockSetupSnapshot.create!(stock: stock, traded_on: Date.new(2026, 9, 29), close_price: 505, zone_state: "in_zone", avg_turnover: 34_000_000)
+  end
 
   def statuses = described_class.call(item, context: context)[:checks].to_h { [ _1[:key], _1[:status] ] }
 
@@ -20,7 +23,7 @@ RSpec.describe Watchlist::EntryChecklist do
     result = described_class.call(item, context: context)
 
     expect(result[:checks].map { _1[:status] }).to all(eq("pass"))
-    expect(result).to include(passed: 8, total: 8, all_passed: true)
+    expect(result).to include(passed: 10, total: 10, all_passed: true)
     expect(result[:checks].find { _1[:key] == "sector" }[:detail]).to eq("Commercial Banks +0.80% vs NEPSE -1.20%")
   end
 
@@ -50,7 +53,7 @@ RSpec.describe Watchlist::EntryChecklist do
     allow(PriceAction::AnalyzerService).to receive(:call).and_return({ trend: "uptrend", structure: "higher_high_higher_low" })
 
     expect(statuses).to include("pattern" => "pass", "close" => "pass", "volume" => "n/a")
-    expect(described_class.call(item, context: context)[:total]).to eq(7)
+    expect(described_class.call(item, context: context)[:total]).to eq(9)
   end
 
   it "marks the sector check not applicable without a sector index" do
@@ -79,6 +82,32 @@ RSpec.describe Watchlist::EntryChecklist do
     expect(checks["pattern"]).to include(status: "fail", detail: "Not an uptrend above a rising 50-day average")
     expect(checks["close"][:label]).to eq("Closed inside the entry zone")
     expect(checks["volume"][:status]).to eq("n/a")
+  end
+
+  describe "liquidity and circuit rules" do
+    def checks = described_class.call(item, context: context)[:checks].index_by { _1[:key] }
+
+    it "reports turnover and today's change when both are fine" do
+      expect(checks["liquidity"]).to include(status: "pass", detail: "NPR 34.0M a day")
+      expect(checks["circuit"]).to include(status: "pass", detail: "+1.20% today")
+    end
+
+    it "fails thin turnover and a stock at either circuit" do
+      StockSetupSnapshot.update_all(avg_turnover: 1_200_000)
+      stock.update!(change_percent: 9.8)
+
+      expect(checks["liquidity"]).to include(status: "fail", detail: "NPR 1.2M a day: thin, a small order can move the price")
+      expect(checks["circuit"]).to include(status: "fail", detail: "+9.80%: at the upper circuit, few sellers; wait for another session")
+
+      stock.update!(change_percent: -10)
+      expect(checks["circuit"][:detail]).to eq("-10.00%: at the lower circuit, few buyers; exits may not fill")
+    end
+
+    it "waits for the nightly snapshot before judging liquidity" do
+      StockSetupSnapshot.delete_all
+
+      expect(checks["liquidity"][:status]).to eq("pending")
+    end
   end
 
   describe "book close rule" do

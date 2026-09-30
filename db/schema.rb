@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_30_180000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_30_200000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -253,6 +253,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_180000) do
     t.string "flow_state"
     t.decimal "flow_score", precision: 8, scale: 2
     t.jsonb "flow", default: {}, null: false
+    t.decimal "avg_turnover", precision: 18, scale: 2
+    t.decimal "change_pct", precision: 8, scale: 2
+    t.jsonb "guards", default: [], null: false
     t.index ["stock_id", "traded_on"], name: "index_stock_setup_snapshots_on_stock_id_and_traded_on", unique: true
     t.index ["stock_id"], name: "index_stock_setup_snapshots_on_stock_id"
     t.index ["traded_on", "in_buy_zone"], name: "index_stock_setup_snapshots_on_traded_on_and_in_buy_zone"

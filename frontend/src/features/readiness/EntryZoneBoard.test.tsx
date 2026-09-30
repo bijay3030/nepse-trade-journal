@@ -31,6 +31,33 @@ describe("EntryZoneBoard", () => {
     expect(screen.getByText(/at least 5 of 7 trend rules and readiness 60\+/)).toBeInTheDocument()
   })
 
+  it("states the tradability guards and lists charts they held back", async () => {
+    mockGet.mockImplementation((path: string) =>
+      Promise.resolve({
+        data: path === "/watchlist_items" ? [] : {
+          traded_on: "2026-09-28",
+          criteria: { ...criteria, min_avg_turnover: 2_000_000, circuit_near_pct: 9.5 },
+          results: [],
+          held_back: [
+            { ...readinessSnapshot(), symbol: "THIN", name: "Thin Hydro", sector: "Hydro Power", in_buy_zone: false, guards: ["thin_volume"], avg_turnover: 1_240_000 },
+            { ...readinessSnapshot(), symbol: "JUMP", name: "Jump Finance", sector: "Finance", in_buy_zone: false, guards: ["upper_circuit"], change_pct: 9.96 },
+          ],
+        },
+      }),
+    )
+    renderWithClient(<EntryZoneBoard />)
+
+    const section = await screen.findByRole("region", { name: "Held back by guards" })
+    expect(section).toHaveTextContent("Held back by guards (2)")
+    expect(section).toHaveTextContent("THIN")
+    expect(section).toHaveTextContent("Thin volume")
+    expect(section).toHaveTextContent("NPR 1.2M a day")
+    expect(section).toHaveTextContent("At upper circuit")
+    expect(section).toHaveTextContent("+9.96% on the day")
+    expect(screen.getByText(/average turnover NPR 2.0M\+ a day, and a daily move under ±9.5%/)).toBeInTheDocument()
+    expect(screen.queryByRole("article")).not.toBeInTheDocument()
+  })
+
   it("explains an empty list", async () => {
     mockGet.mockResolvedValue({ data: { traded_on: "2026-09-28", criteria, results: [] } })
     renderWithClient(<EntryZoneBoard />)

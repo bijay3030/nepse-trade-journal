@@ -92,6 +92,7 @@ export type ScreenerRow = {
   entry_zone_high?: number | null
   invalidation_price?: number | null
   flow_state?: FlowState | null
+  guards?: Guard[]
   next_book_close?: BookClose | null
 }
 
@@ -122,6 +123,9 @@ export type BrokerFlow = {
   top_sellers: FlowBroker[]
   daily: Array<{ traded_on: string; top_buyers_net: number; top_sellers_net: number; volume: number }>
 }
+
+/** Tradability guards (Setups::Guards) that keep a qualifying chart off the board. */
+export type Guard = "thin_volume" | "upper_circuit" | "lower_circuit"
 
 /** Where the price sits against the best setup's entry zone. */
 export type ZoneState = "too_early" | "in_zone" | "extended" | "failed" | "no_setup"
@@ -159,13 +163,28 @@ export type ReadinessSnapshot = {
   target_price: number | null
   pivot_price: number | null
   distance_to_zone_pct: number | null
+  /** Average daily turnover (NPR) over 20 sessions; missing on older snapshots. */
+  avg_turnover?: number | null
+  /** Close-to-close change on the snapshot's session. */
+  change_pct?: number | null
+  guards?: Guard[]
 }
+
+export type BuyZoneRow = ReadinessSnapshot & { symbol: string; name: string; sector: string; next_book_close?: BookClose | null }
 
 /** GET /screener/buy_zone */
 export type BuyZoneResponse = {
   traded_on: string | null
-  criteria: { zone_state: ZoneState; min_trend_rules: number; min_readiness: number }
-  results: Array<ReadinessSnapshot & { symbol: string; name: string; sector: string; next_book_close?: BookClose | null }>
+  criteria: {
+    zone_state: ZoneState
+    min_trend_rules: number
+    min_readiness: number
+    min_avg_turnover?: number
+    circuit_near_pct?: number
+  }
+  results: BuyZoneRow[]
+  /** Charts meeting the rules that a tradability guard kept off the board. */
+  held_back?: BuyZoneRow[]
 }
 
 /** GET /screener */

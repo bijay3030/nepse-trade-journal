@@ -2,8 +2,9 @@ module Setups
   # Builds one StockSetupSnapshot per active equity for the latest session (or a
   # past one with as_of:): relative strength across all stocks, the trend template,
   # the VCP and pullback setups with their zones, broker flow, and the readiness
-  # score. Runs after the close. Past sessions use only data up to that day, so the
-  # backtest sees what the app would have shown then. (The screener row's liquidity
+  # score, and the tradability guards (Setups::Guards), which keep a stock off the
+  # board. Runs after the close. Past sessions use only data up to that day, so
+  # the backtest sees what the app would have shown then. (The screener row's liquidity
   # rating is the one field computed from current data; the backtest doesn't use it.)
   class SnapshotBuilder
     MIN_SESSIONS = 60
@@ -28,6 +29,7 @@ module Setups
       return { success: false, error: "No stock prices stored" } unless traded_on
 
       @traded_on = traded_on
+      @sessions = prices.distinct.where("traded_on <= ?", traded_on).order(traded_on: :desc).limit(Guards::WINDOW).pluck(:traded_on)
       market = MarketIndex::Overview.new.call(as_of: traded_on)
       context = Watchlist::MarketContext.call(as_of: traded_on)
       stocks = eligible_stocks(traded_on)
@@ -80,6 +82,11 @@ module Setups
         flow_score: flow[:score]
       )
 
+      avg_turnover = Guards.avg_turnover(stock.daily_prices, @sessions)
+      change_pct = Guards.change_pct(stock.daily_prices, traded_on)
+      guards = Guards.call(avg_turnover: avg_turnover, change_pct: change_pct)
+      qualifies = Readiness.in_buy_zone?(zone_state: setup[:zone_state], price_rules_passed: trend[:price_rules_passed], score: readiness[:score])
+
       snapshot = StockSetupSnapshot.find_or_initialize_by(stock: stock, traded_on: traded_on)
       snapshot.update!(
         close_price: close,
@@ -92,7 +99,10 @@ module Setups
         setup_quality: setup[:quality],
         readiness_score: readiness[:score],
         readiness_components: readiness[:components],
-        in_buy_zone: Readiness.in_buy_zone?(zone_state: setup[:zone_state], price_rules_passed: trend[:price_rules_passed], score: readiness[:score]),
+        in_buy_zone: qualifies && guards.empty?,
+        avg_turnover: avg_turnover&.round(2),
+        change_pct: change_pct,
+        guards: guards,
         screener_row: analysis.summary,
         flow_state: flow[:state],
         flow_score: flow[:score],

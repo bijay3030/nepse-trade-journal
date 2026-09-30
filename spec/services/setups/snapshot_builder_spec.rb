@@ -8,11 +8,11 @@ RSpec.describe Setups::SnapshotBuilder do
   end
   let(:context) { instance_double(Watchlist::MarketContext, regime: "neutral", nepse_return: 0.0, sector_returns: { "Commercial Banks" => 3.0 }) }
 
-  def stock_with_history(symbol, closes)
+  def stock_with_history(symbol, closes, turnover: 5_050_000.0)
     stock = create(:stock, symbol: symbol, sector: "Commercial Banks")
     closes.each_with_index do |close, i|
       date = day - (closes.size - 1 - i)
-      price = create(:stock_daily_price, stock: stock, traded_on: date, close_price: close)
+      price = create(:stock_daily_price, stock: stock, traded_on: date, close_price: close, turnover: turnover)
       next unless i == closes.size - 1
 
       StockDailyIndicator.create!(stock: stock, stock_daily_price: price, traded_on: date, sma_50: close * 0.95, sma_150: close * 0.9,
@@ -50,6 +50,19 @@ RSpec.describe Setups::SnapshotBuilder do
     expect(snapshot.entry_zone_low.to_f).to eq(195.0)
     expect(snapshot.screener_row).to include("symbol" => "BANK")
     expect(snapshot.trend_checks.size).to eq(8)
+    expect(snapshot).to have_attributes(guards: [], avg_turnover: 5_050_000, change_pct: 0.51)
+  end
+
+  it "keeps a qualifying chart off the board when a tradability guard fails" do
+    thin = stock_with_history("THIN", Array.new(100) { |i| 100.0 + i * 1.0 }, turnover: 1_000_000)
+    jump = stock_with_history("JUMP", Array.new(99) { |i| 100.0 + i * 0.8 } + [ 200.0 ]) # +12.1% into the zone
+
+    result = described_class.call
+
+    expect(result[:in_buy_zone]).to eq([])
+    expect(thin.setup_snapshots.sole).to have_attributes(zone_state: "in_zone", guards: [ "thin_volume" ], in_buy_zone: false)
+    expect(jump.setup_snapshots.sole).to have_attributes(zone_state: "in_zone", guards: [ "upper_circuit" ], in_buy_zone: false)
+    expect(StockSetupSnapshot.held_back_by_guards.count).to eq(2)
   end
 
   it "marks a price below invalidation as failed and skips short histories" do

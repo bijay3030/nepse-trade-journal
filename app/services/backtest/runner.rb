@@ -5,8 +5,11 @@ module Backtest
   #
   # 1. Forward returns: for each snapshot, the close-to-close return after 5, 10
   #    and 20 sessions and NEPSE's return over the same sessions, grouped by
-  #    readiness band, zone state, broker flow, trend rules and the entry-zone flag.
+  #    readiness band, zone state, broker flow, trend rules, the entry-zone flag,
+  #    and, for charts meeting the entry rules, which tradability guard held them back.
   # 2. Trades: every "Entry zone now" signal, one open trade per stock at a time.
+  #    Signals held back by a guard (Setups::Guards: thin volume, near a circuit)
+  #    are not traded and are counted.
   #    Entry at the next session's open; exit at the invalidation stop or the
   #    target (a gap through either exits at that day's open; stop and target on
   #    the same day counts as the stop), or at the close after MAX_HOLD sessions.
@@ -32,7 +35,7 @@ module Backtest
     def call
       snapshots = StockSetupSnapshot.order(:traded_on).pluck(
         :stock_id, :traded_on, :close_price, :readiness_score, :zone_state, :flow_state, :trend_rules_passed,
-        :in_buy_zone, :entry_zone_low, :entry_zone_high, :invalidation_price, :target_price, :setup_type
+        :in_buy_zone, :entry_zone_low, :entry_zone_high, :invalidation_price, :target_price, :setup_type, :guards
       ).map { |row| snapshot_hash(row) }
       sessions = Setups::HistoryBuilder.sessions.to_set
       snapshots.select! { sessions.include?(_1[:traded_on]) }
@@ -55,7 +58,7 @@ module Backtest
     private
 
     def snapshot_hash(row)
-      keys = %i[stock_id traded_on close readiness zone_state flow_state trend_rules in_buy_zone entry_low entry_high stop target setup_type]
+      keys = %i[stock_id traded_on close readiness zone_state flow_state trend_rules in_buy_zone entry_low entry_high stop target setup_type guards]
       keys.zip(row).to_h.tap do |snap|
         %i[close entry_low entry_high stop target].each { snap[_1] = snap[_1]&.to_f }
       end
@@ -122,8 +125,20 @@ module Backtest
         trend: { "5+ of 7 rules" => by_horizon(snapshots.select { _1[:trend_rules].to_i >= 5 }),
                  "under 5" => by_horizon(snapshots.select { _1[:trend_rules].to_i < 5 }) },
         entry_zone: { "Entry zone now" => by_horizon(snapshots.select { _1[:in_buy_zone] }),
-                      "Everything else" => by_horizon(snapshots.reject { _1[:in_buy_zone] }) }
+                      "Everything else" => by_horizon(snapshots.reject { _1[:in_buy_zone] }) },
+        guards: guard_groups(snapshots)
       }
+    end
+
+    # Charts that met the entry rules, split by whether a guard held them back.
+    def guard_groups(snapshots)
+      qualified = snapshots.select { qualifies?(_1) }
+      { "Passed guards" => by_horizon(qualified.select { _1[:guards].empty? }) }
+        .merge(Setups::Guards::ALL.to_h { |guard| [ guard, by_horizon(qualified.select { _1[:guards].include?(guard) }) ] })
+    end
+
+    def qualifies?(snap)
+      Setups::Readiness.in_buy_zone?(zone_state: snap[:zone_state], price_rules_passed: snap[:trend_rules].to_i, score: snap[:readiness].to_i)
     end
 
     def trades(snapshots)
@@ -143,7 +158,9 @@ module Backtest
           busy_until = trade[:exit_on] || Date::Infinity.new
         end
       end
-      trade_stats(trades.sort_by { _1[:signal_on] })
+      trade_stats(trades.sort_by { _1[:signal_on] }).merge(
+        held_back: Setups::Guards::ALL.to_h { |guard| [ guard, snapshots.count { qualifies?(_1) && _1[:guards].include?(guard) } ] }
+      )
     end
 
     def simulate(signal)

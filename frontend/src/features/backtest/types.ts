@@ -36,6 +36,8 @@ export type BacktestResults = {
     trend: Record<string, GroupStats>
     setup_type?: Record<string, GroupStats>
     entry_zone: Record<string, GroupStats>
+    /** Charts meeting the entry rules: passed all guards, or held back by each guard. */
+    guards?: Record<string, GroupStats>
   }
   trades: {
     total: number
@@ -43,6 +45,8 @@ export type BacktestResults = {
     open: number
     /** Entries less than min_risk_pct above the stop, not traded. */
     skipped?: number
+    /** Signals kept off the board by each tradability guard, not traded. */
+    held_back?: Partial<Record<"thin_volume" | "upper_circuit" | "lower_circuit", number>>
     min_risk_pct?: number
     win_rate_pct: number | null
     avg_return_pct: number | null

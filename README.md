@@ -274,7 +274,20 @@ with enough history gets a snapshot:
   sector index vs NEPSE 15 + broker flow 15.
 
 A stock is listed under **Entry zone now** when the price is inside the zone, at least
-5 of 7 trend rules pass and readiness is 60+. Where to see it:
+5 of 7 trend rules pass and readiness is 60+, **and it passes the tradability guards**
+(`Setups::Guards`, measured point in time in the nightly snapshot):
+
+| Guard | Rule | Why |
+| ----- | ---- | --- |
+| Thin volume | Average daily turnover over the last 20 NEPSE sessions under NPR 2M (`NEPSE_MIN_TURNOVER`); sessions the stock didn't trade count as 0 | A small order moves the price; fills are poor |
+| At upper circuit | Closed +9.5% or more (NEPSE's daily limit is ±10%) | Few sellers, the next open often gaps; wait for another session |
+| At lower circuit | Closed -9.5% or less | Few buyers; stops and exits may not fill |
+
+A stock that fails a guard keeps its readiness and zone, shows a badge in the screener
+and on its readiness card, and is listed under **Held back by guards** below the board.
+The watchlist entry checklist has matching rules: average turnover (from the nightly
+snapshot) and "not at the ±10% daily limit" (from today's live change, so it also warns
+during the session). The backtest doesn't trade held-back signals. Where to see it:
 
 - `/screener`, **Entry zone now** tab (default), plus a readiness column on **All setups**
 - `/screener/SYMBOL`: a **Broker flow** card (state, flow score, 5- and 20-session
@@ -392,6 +405,7 @@ All environment variables are optional in development.
 | `VITE_CABLE_URL`               | Frontend WebSocket URL (default derived from the API URL). |
 | `NEPSE_TRADING_DAYS`           | Trading weekdays, 0 = Sunday (default `1,2,3,4,5`, Mon–Fri). |
 | `VITE_NEPSE_TRADING_DAYS`      | Same setting for the frontend's market-open badge.         |
+| `NEPSE_MIN_TURNOVER`           | Liquidity guard: min average daily turnover in NPR (default `2000000`). |
 
 ## Project layout
 
