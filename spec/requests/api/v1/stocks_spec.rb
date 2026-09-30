@@ -41,5 +41,16 @@ RSpec.describe "Api::V1::Stocks", type: :request do
       expect(json.first["quarter"]).to eq("Q4")
       expect(json.first["eps"]).to eq(25.5)
     end
+
+    it "includes ROA, distributable profit per share and where each value came from" do
+      financial.update!(roa: 1.15, distributable_profit_per_share: -54.95, field_sources: { "eps" => { "source" => "chukul", "at" => "2026-09-28T10:45:00Z" } })
+
+      get "/api/v1/stocks/NABIL/financials", headers: auth_headers
+
+      expect(JSON.parse(response.body).first).to include(
+        "roa" => 1.15, "distributable_profit_per_share" => -54.95,
+        "field_sources" => { "eps" => { "source" => "chukul", "at" => "2026-09-28T10:45:00Z" } }
+      )
+    end
   end
 end

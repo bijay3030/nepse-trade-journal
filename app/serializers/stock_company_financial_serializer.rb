@@ -1,7 +1,7 @@
 class StockCompanyFinancialSerializer < ActiveModel::Serializer
   attributes :id, :fiscal_year, :quarter, :reported_on, :eps, :pe_ratio,
              :book_value, :pb_ratio, :roe, :net_profit, :paid_up_capital,
-             :reserve_and_surplus, :npl_ratio
+             :reserve_and_surplus, :npl_ratio, :roa, :distributable_profit_per_share, :field_sources
 
   def eps
     object.eps.to_f
@@ -37,5 +37,14 @@ class StockCompanyFinancialSerializer < ActiveModel::Serializer
 
   def npl_ratio
     object.npl_ratio.to_f
+  end
+
+  def roa
+    object.roa&.to_f
+  end
+
+  # Not the dividend paid; see StockDividend for dividends.
+  def distributable_profit_per_share
+    object.distributable_profit_per_share&.to_f
   end
 end
