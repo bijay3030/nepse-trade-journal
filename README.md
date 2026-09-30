@@ -56,9 +56,13 @@ prices for them (see [Getting the latest stock prices](#getting-the-latest-stock
 bin/rails nepse:sync_market
 ```
 
-The market sync adds any listed stock it hasn't seen before. The market table has
-no company names or sectors, so new listings start with the symbol as the name and
-the sector "Others" until `bin/rails nepse:sync_fundamentals` fills them in.
+Then load the reference data: every listed security with its real name, sector and
+type, NEPSE and sector index history, dividends and fundamentals (about an hour,
+mostly waiting on Merolagani). See [Stock data sources](#stock-data-sources).
+
+```bash
+bin/rails nepse:data:all
+```
 
 VCP and price-action analysis need months of daily history, which the market sync
 does not provide. Load about a year of it once (this takes roughly 30–45 minutes
@@ -197,6 +201,41 @@ is running (`bin/dev`, or `bin/jobs` on its own). Market holidays are not modell
 yet, so on a holiday the job simply re-reads the previous session's prices.
 
 ---
+
+## Stock data sources
+
+All sources are free and need no account. For each field the first source that has
+a value wins, and the source and time are stored in the record's `field_sources`.
+
+| Data | 1st source | Fallback |
+| ---- | ---------- | -------- |
+| Listed securities: name, sector, type, listed/delisted | Chukul company list | — |
+| Live and daily prices | Sharesansar market table | per-symbol price API |
+| Daily price history (1 year) | Merolagani chart data | — |
+| NEPSE and 12 sector index history | Chukul | Merolagani |
+| EPS, P/E, P/B, book value, net profit, paid-up capital, ROE, ROA, distributable profit per share | Chukul stock details | Merolagani company page |
+| Shares outstanding, 52-week range | Merolagani company page | Chukul |
+| Cash dividend and bonus history, book-close and AGM dates | Chukul | Merolagani |
+
+Notes:
+- `distributable_profit_per_share` is what Chukul labels "DPS". It can be negative
+  and is **not** the dividend paid; dividends are in `stock_dividends`.
+- Promoter shares and debentures publish no fundamentals and are skipped by the
+  fundamentals sync. Mutual funds get shares outstanding only (their pages show NAV).
+- NEPSE's official API needs a token and NepseAlpha blocks automated requests, so
+  neither is used. Chukul's API is undocumented; requests are rate-limited.
+
+| Command | What it does |
+| ------- | ------------ |
+| `bin/rails nepse:data:universe` | Add and correct listed securities |
+| `bin/rails "nepse:data:indices[365]"` | Index history for the last N days |
+| `bin/rails nepse:data:dividends` | Dividend and bonus history |
+| `bin/rails "nepse:data:fundamentals[NABIL NICA]"` | Fundamentals (all securities if no symbols; ~5s each) |
+| `bin/rails nepse:data:all` | Everything above, then a report |
+| `bin/rails nepse:data:report` | How complete the data is, per field |
+
+Schedule (with `bin/dev`): securities, dividends and index history daily at 4:30 PM
+Nepal time; fundamentals on Saturday morning.
 
 ## Watchlist and entry zones
 
