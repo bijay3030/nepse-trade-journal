@@ -32,6 +32,20 @@ RSpec.describe "VCP screener", type: :request do
     expect(body.fetch("price_action")).to include("support_levels" => be_an(Array), "resistance_levels" => be_an(Array))
   end
 
+  it "includes the RS line against NEPSE and the readiness history" do
+    nepse = create(:market_index, symbol: "NEPSE")
+    30.times { |day| create(:market_index_history, market_index: nepse, traded_on: Date.new(2026, 8, 1) + day, index_value: 2000) }
+    StockSetupSnapshot.create!(stock: stock, traded_on: Date.new(2026, 8, 30), close_price: 114.5, zone_state: "too_early", readiness_score: 45)
+
+    get "/api/v1/screener/NABIL"
+    body = JSON.parse(response.body)
+
+    expect(body["rs_line"]["points"].size).to eq(30)
+    expect(body["rs_line"]["points"].first).to include("value" => 100.0)
+    expect(body["rs_line"]["change"]).to include("20" => be > 0, "60" => nil)
+    expect(body["readiness_history"]).to eq([ { "traded_on" => "2026-08-30", "score" => 45, "zone_state" => "too_early", "in_buy_zone" => false } ])
+  end
+
   it "returns 404 for an unknown symbol" do
     get "/api/v1/screener/UNKNOWN"
     expect(response).to have_http_status(:not_found)
