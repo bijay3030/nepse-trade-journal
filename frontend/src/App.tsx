@@ -14,6 +14,7 @@ const StocksPage = lazy(async () => import("./pages/StocksPage").then((m) => ({ 
 const TradesPage = lazy(async () => import("./pages/TradesPage").then((m) => ({ default: m.TradesPage })))
 const MarketOverviewPage = lazy(async () => import("./pages/MarketOverviewPage").then((m) => ({ default: m.MarketOverviewPage })))
 const ScreenerPage = lazy(async () => import("./pages/ScreenerPage").then((m) => ({ default: m.ScreenerPage })))
+const DigestPage = lazy(async () => import("./pages/DigestPage").then((m) => ({ default: m.DigestPage })))
 const BacktestPage = lazy(async () => import("./pages/BacktestPage").then((m) => ({ default: m.BacktestPage })))
 const WatchlistPage = lazy(async () => import("./pages/WatchlistPage").then((m) => ({ default: m.WatchlistPage })))
 const StockAnalysisPage = lazy(async () => import("./pages/StockAnalysisPage").then((m) => ({ default: m.StockAnalysisPage })))
@@ -37,6 +38,7 @@ function App() {
           <Route path="screener" element={<ScreenerPage />} />
           <Route path="screener/:symbol" element={<StockAnalysisPage />} />
           <Route path="watchlist" element={<WatchlistPage />} />
+          <Route path="digest" element={<DigestPage />} />
           <Route path="backtest" element={<BacktestPage />} />
           <Route path="trade/new" element={<TradeNewPage />} />
           <Route path="portfolio" element={<PortfolioPage />} />

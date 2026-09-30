@@ -5,6 +5,7 @@ import {
   Briefcase,
   ChevronDown,
   Clock3,
+  Newspaper,
   HelpCircle,
   LayoutDashboard,
   Activity,
@@ -32,6 +33,7 @@ import { cn } from "../lib/cn"
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/market", label: "Market Overview", icon: Activity },
+  { to: "/digest", label: "Daily Digest", icon: Newspaper },
   { to: "/screener", label: "VCP Screener", icon: ScanSearch },
   { to: "/watchlist", label: "Watchlist", icon: Bookmark },
   { to: "/trade/new", label: "New Trade", icon: PlusCircle },
@@ -175,6 +177,7 @@ export function PlatformLayout() {
   const commandItems = [
     { label: "Dashboard", path: "/dashboard" },
     { label: "Market Overview", path: "/market" },
+    { label: "Daily Digest", path: "/digest" },
     { label: "VCP Screener", path: "/screener" },
     { label: "Watchlist", path: "/watchlist" },
     { label: "New Trade", path: "/trade/new" },

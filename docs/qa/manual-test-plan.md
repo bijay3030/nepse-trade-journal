@@ -232,6 +232,20 @@ Run `bin/rails "nepse:data:setup_history[120]"` (about 25 minutes, once) and `bi
 | H10.7 | `/backtest` | Trades summary hint includes "n held back by guards" when any; **By tradability guard** chart compares "Passed guards" with each guard |
 | H10.8 | Terminal: `NEPSE_MIN_TURNOVER=5000000 bin/rails nepse:data:setups` | More stocks flagged thin (about 100 vs 47 at 2M); reset by running it again without the variable |
 
+## H11. Daily digest — `/digest`, dashboard, settings
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H11.1 | Terminal: `bin/rails nepse:data:digest` | "Built N digests" (one per user with the digest on) |
+| H11.2 | `/dashboard` | "Daily digest · <day>" card at the top with a headline (e.g. "NEPSE -0.91%"), counts, a **New** badge until opened, and **Open digest** |
+| H11.3 | Sidebar → **Daily Digest** | Market summary (index, change, regime, breadth, best/weakest sectors, no "Corporate Debentures"), Entry zone changes (Joined / Left with reason / Held back), Watchlist status (verdicts, alerts, book closes within 10 days) |
+| H11.4 | Stock symbols in the digest | Link to `/screener/SYMBOL` |
+| H11.5 | Reopen `/dashboard` after viewing the digest | **New** badge gone |
+| H11.6 | Settings → Daily Digest → untick **Market summary**, run H11.1 again, reopen `/digest` | Market section missing; the other two remain |
+| H11.7 | Settings → untick **Build a daily digest** | Section switches greyed out; H11.1 skips you |
+| H11.8 | After a few sessions | The **Session** dropdown lists earlier digests, "(new)" on unread ones |
+| H11.9 | Search the digest for "buy" or "sell" | Not found |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

@@ -12,6 +12,10 @@ vi.mock("../features/watchlist/api", () => ({
   apiErrorMessage: () => "",
 }))
 
+vi.mock("../features/digest/api", () => ({
+  useDigest: () => ({ data: undefined, isLoading: false, isError: true }),
+}))
+
 vi.mock("../features/market/api", () => ({
   useMarketHeatmap: () => ({ data: { as_of: null, stocks: 0, unsized: 0, sectors: [] }, isLoading: false, isError: false, refetch: vi.fn() }),
 }))
