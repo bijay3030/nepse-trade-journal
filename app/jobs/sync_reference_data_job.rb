@@ -15,6 +15,9 @@ class SyncReferenceDataJob < ApplicationJob
       end
       log("universe", universe)
       log("dividends", Nepse::Reference::DividendSync.call)
+      # Book-close warnings and bonus adjustments for watchlist levels and price history.
+      log("watchlist corporate actions", CorporateActions::WatchlistUpdater.call)
+      log("bonus history refresh", CorporateActions::HistoryRefresh.call)
       log("indices", Nepse::Reference::IndexHistorySync.call(days: 14))
       # Floorsheet for any recent sessions not stored yet (normally just today's).
       log("brokers", Flows::BrokerSync.call)
