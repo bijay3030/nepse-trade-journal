@@ -22,10 +22,11 @@ module Setups
       context = Watchlist::MarketContext.call
       stocks = eligible_stocks(traded_on)
       ratings = RelativeStrength.ratings(stocks.to_h { [ _1.id, RelativeStrength.score(closes(_1)) ] })
+      flows = Flows::AccumulationAnalyzer.for_stocks(stocks.map(&:id), as_of: traded_on)
 
       summary = { success: true, traded_on: traded_on, stocks: 0, in_buy_zone: [], failed: {} }
       stocks.each do |stock|
-        build(stock, traded_on, market, context, ratings)
+        build(stock, traded_on, market, context, ratings, flows[stock.id] || Flows::AccumulationAnalyzer.empty)
         summary[:stocks] += 1
       rescue StandardError => e
         summary[:failed][stock.symbol] = e.message
@@ -47,7 +48,7 @@ module Setups
 
     def closes(stock) = stock.daily_prices.sort_by(&:traded_on).map(&:close_price)
 
-    def build(stock, traded_on, market, context, ratings)
+    def build(stock, traded_on, market, context, ratings, flow)
       close = stock.daily_prices.find { _1.traded_on == traded_on }.close_price.to_f
       indicators = stock.daily_indicators.sort_by(&:traded_on)
       latest = indicators.reverse.find { _1.traded_on <= traded_on }
@@ -62,7 +63,8 @@ module Setups
 
       readiness = Readiness.call(
         trend_passed: trend[:passed], setup_quality: setup[:quality], regime: context.regime,
-        sector_return: context.sector_returns[stock.sector], nepse_return: context.nepse_return
+        sector_return: context.sector_returns[stock.sector], nepse_return: context.nepse_return,
+        flow_score: flow[:score]
       )
 
       snapshot = StockSetupSnapshot.find_or_initialize_by(stock: stock, traded_on: traded_on)
@@ -79,6 +81,9 @@ module Setups
         readiness_components: readiness[:components],
         in_buy_zone: Readiness.in_buy_zone?(zone_state: setup[:zone_state], price_rules_passed: trend[:price_rules_passed], score: readiness[:score]),
         screener_row: analysis.summary,
+        flow_state: flow[:state],
+        flow_score: flow[:score],
+        flow: flow.except(:daily),
         **setup.fetch(:levels, {})
       )
     end

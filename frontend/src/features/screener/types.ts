@@ -89,6 +89,35 @@ export type ScreenerRow = {
   entry_zone_low?: number | null
   entry_zone_high?: number | null
   invalidation_price?: number | null
+  flow_state?: FlowState | null
+}
+
+export type FlowState = "accumulation" | "distribution" | "neutral" | "no_data"
+
+export type FlowBroker = {
+  broker_no: string
+  name: string | null
+  net_quantity: number
+  bought: number
+  sold: number
+  avg_buy_price: number | null
+  avg_sell_price: number | null
+  share_pct: number
+}
+
+export type FlowWindow = { sessions: number; volume: number; top_buyers_pct: number; top_sellers_pct: number; score: number }
+
+/** GET /screener/:symbol -> broker_flow (Flows::AccumulationAnalyzer). */
+export type BrokerFlow = {
+  state: FlowState
+  score: number | null
+  /** Under NPR 20M turnover in 20 sessions: state held at neutral. */
+  thin_trading?: boolean
+  sessions: number
+  windows: Partial<Record<"5" | "20", FlowWindow>>
+  top_buyers: FlowBroker[]
+  top_sellers: FlowBroker[]
+  daily: Array<{ traded_on: string; top_buyers_net: number; top_sellers_net: number; volume: number }>
 }
 
 /** Where the price sits against the best setup's entry zone. */
@@ -110,12 +139,16 @@ export type ReadinessSnapshot = {
     setup: ReadinessComponent
     market: ReadinessComponent
     sector: ReadinessComponent
+    flow?: ReadinessComponent
     sector_vs_nepse: number | null
+    flow_score?: number | null
   }
   trend_rules_passed: number
   trend_checks: TrendCheck[]
   rs_rating: number | null
   setup_quality: number
+  flow_state?: FlowState | null
+  flow_score?: number | null
   close_price: number
   entry_zone_low: number | null
   entry_zone_high: number | null
@@ -223,4 +256,5 @@ export type StockAnalysis = {
   } | null
   /** Latest nightly snapshot, or null before the first build. */
   readiness?: ReadinessSnapshot | null
+  broker_flow?: BrokerFlow
 }

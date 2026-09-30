@@ -216,6 +216,7 @@ a value wins, and the source and time are stored in the record's `field_sources`
 | EPS, P/E, P/B, book value, net profit, paid-up capital, ROE, ROA, distributable profit per share | Chukul stock details | Merolagani company page |
 | Shares outstanding, 52-week range | Merolagani company page | Chukul |
 | Cash dividend and bonus history, book-close and AGM dates | Chukul | Merolagani |
+| Floorsheet (every trade with buyer and seller broker), broker names | Chukul | — |
 
 Notes:
 - `distributable_profit_per_share` is what Chukul labels "DPS". It can be negative
@@ -232,11 +233,14 @@ Notes:
 | `bin/rails nepse:data:dividends` | Dividend and bonus history |
 | `bin/rails "nepse:data:fundamentals[NABIL NICA]"` | Fundamentals (all securities if no symbols; ~5s each) |
 | `bin/rails nepse:data:all` | Everything above, then a report |
+| `bin/rails "nepse:data:floorsheet[120]"` | Floorsheet for recent sessions not stored yet (~3s each) |
 | `bin/rails nepse:data:setups` | Rebuild entry-readiness snapshots (indicators first) |
 | `bin/rails nepse:data:report` | How complete the data is, per field |
 
-Schedule (with `bin/dev`): securities, dividends and index history daily at 4:30 PM
-Nepal time; fundamentals on Saturday morning.
+Schedule (with `bin/dev`): securities, dividends, index history, broker names and the
+day's floorsheet daily at 4:30 PM Nepal time; entry readiness at 4:45 PM; fundamentals
+on Saturday morning. The floorsheet is stored as daily totals per stock and broker
+(~13k rows a day).
 
 ## Entry readiness (every stock)
 
@@ -250,14 +254,21 @@ with enough history gets a snapshot:
 - **RS rating (1-99):** weighted 3/6/9/12-month performance ranked against all stocks.
 - **Best setup and zone:** the VCP or pullback setup, and whether the price is
   too early, in the entry zone, extended or failed.
-- **Entry readiness (0-100):** trend template 35 + setup quality 30 + market regime 15 +
-  sector index vs NEPSE 20.
+- **Broker flow:** from the daily NEPSE floorsheet (every trade with its buying and
+  selling broker). Over 20 sessions, the net shares bought by the 5 largest net buyers
+  and sold by the 5 largest net sellers, as % of volume; the flow score is the
+  difference. +10 or more is **accumulation**, -10 or less **distribution**, otherwise
+  neutral. Stocks with under NPR 20M turnover in the window stay neutral (thin trading).
+- **Entry readiness (0-100):** trend template 30 + setup quality 25 + market regime 15 +
+  sector index vs NEPSE 15 + broker flow 15.
 
 A stock is listed under **Entry zone now** when the price is inside the zone, at least
 5 of 7 trend rules pass and readiness is 60+. Where to see it:
 
 - `/screener`, **Entry zone now** tab (default), plus a readiness column on **All setups**
-- `/screener/SYMBOL`: the **Entry readiness** card and a candlestick chart with volume,
+- `/screener/SYMBOL`: a **Broker flow** card (state, flow score, 5- and 20-session
+  figures, daily net shares of the top buyers and sellers, top brokers with names and
+  average prices), the **Entry readiness** card and a candlestick chart with volume,
   50/200-day averages, the entry-zone band, invalidation / target / pivot lines and
   contraction markers (your watchlist levels when you track the stock)
 

@@ -8,6 +8,7 @@ class StockSetupSnapshot < ApplicationRecord
 
   validates :traded_on, presence: true, uniqueness: { scope: :stock_id }
   validates :zone_state, inclusion: { in: ZONE_STATES }
+  validates :flow_state, inclusion: { in: %w[accumulation distribution neutral no_data] }, allow_nil: true
 
   scope :latest_session, -> { where(traded_on: maximum(:traded_on)) }
 end

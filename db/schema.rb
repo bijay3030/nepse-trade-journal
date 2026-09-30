@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_30_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_30_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -26,6 +26,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_120000) do
     t.index ["action"], name: "index_audit_logs_on_action"
     t.index ["auditable_type", "auditable_id"], name: "index_audit_logs_on_auditable_type_and_auditable_id"
     t.index ["user_id"], name: "index_audit_logs_on_user_id"
+  end
+
+  create_table "brokers", force: :cascade do |t|
+    t.string "broker_no", null: false
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["broker_no"], name: "index_brokers_on_broker_no", unique: true
   end
 
   create_table "daily_journal_versions", force: :cascade do |t|
@@ -102,6 +110,19 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_120000) do
     t.string "name", null: false
     t.index ["user_id", "name"], name: "index_portfolios_on_user_id_and_name", unique: true
     t.index ["user_id"], name: "index_portfolios_on_user_id"
+  end
+
+  create_table "stock_broker_flows", force: :cascade do |t|
+    t.bigint "stock_id", null: false
+    t.date "traded_on", null: false
+    t.string "broker_no", null: false
+    t.bigint "buy_quantity", default: 0, null: false
+    t.bigint "sell_quantity", default: 0, null: false
+    t.decimal "buy_amount", precision: 18, scale: 2, default: "0.0", null: false
+    t.decimal "sell_amount", precision: 18, scale: 2, default: "0.0", null: false
+    t.integer "trades", default: 0, null: false
+    t.index ["stock_id", "traded_on", "broker_no"], name: "index_broker_flows_on_stock_day_broker", unique: true
+    t.index ["traded_on"], name: "index_stock_broker_flows_on_traded_on"
   end
 
   create_table "stock_company_financials", force: :cascade do |t|
@@ -218,6 +239,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_120000) do
     t.jsonb "screener_row", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "flow_state"
+    t.decimal "flow_score", precision: 8, scale: 2
+    t.jsonb "flow", default: {}, null: false
     t.index ["stock_id", "traded_on"], name: "index_stock_setup_snapshots_on_stock_id_and_traded_on", unique: true
     t.index ["stock_id"], name: "index_stock_setup_snapshots_on_stock_id"
     t.index ["traded_on", "in_buy_zone"], name: "index_stock_setup_snapshots_on_traded_on_and_in_buy_zone"
@@ -395,6 +419,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_120000) do
   add_foreign_key "holdings", "stocks"
   add_foreign_key "market_index_histories", "market_indices"
   add_foreign_key "portfolios", "users"
+  add_foreign_key "stock_broker_flows", "stocks"
   add_foreign_key "stock_company_financials", "stocks"
   add_foreign_key "stock_daily_indicators", "stock_daily_prices"
   add_foreign_key "stock_daily_indicators", "stocks"

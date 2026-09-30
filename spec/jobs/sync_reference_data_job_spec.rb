@@ -7,6 +7,8 @@ RSpec.describe SyncReferenceDataJob do
     expect(Indicators::BatchCalculatorService).to receive(:call).with(symbols: [ "NEWCO" ], recalculate_all: true)
     expect(Nepse::Reference::DividendSync).to receive(:call).and_return({ success: true })
     expect(Nepse::Reference::IndexHistorySync).to receive(:call).with(days: 14).and_return({ success: true })
+    expect(Flows::BrokerSync).to receive(:call).and_return({ success: true, brokers: 92 })
+    expect(Flows::Backfill).to receive(:call).with(sessions: 5).and_return({ success: true, imported: [], failed: {} })
     expect(Nepse::Reference::FundamentalsSync).not_to receive(:call)
 
     described_class.perform_now("daily")

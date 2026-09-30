@@ -1,5 +1,6 @@
 # Refreshes reference data on a tiered schedule (see config/recurring.yml):
-#   "daily"  - securities list, dividends, index history, and price history for new listings
+#   "daily"  - securities list, dividends, index history, price history for new
+#              listings, broker names and the floorsheet (broker flows)
 #   "weekly" - fundamentals (one Merolagani page per security, so it is slow)
 class SyncReferenceDataJob < ApplicationJob
   queue_as :default
@@ -15,6 +16,9 @@ class SyncReferenceDataJob < ApplicationJob
       log("universe", universe)
       log("dividends", Nepse::Reference::DividendSync.call)
       log("indices", Nepse::Reference::IndexHistorySync.call(days: 14))
+      # Floorsheet for any recent sessions not stored yet (normally just today's).
+      log("brokers", Flows::BrokerSync.call)
+      log("floorsheet", Flows::Backfill.call(sessions: 5))
     when "weekly"
       log("fundamentals", Nepse::Reference::FundamentalsSync.call)
     else

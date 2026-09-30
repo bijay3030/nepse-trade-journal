@@ -44,7 +44,9 @@ RSpec.describe Setups::SnapshotBuilder do
     expect(result).to include(success: true, traded_on: day, stocks: 2, in_buy_zone: [ "BANK" ])
     snapshot = leader.setup_snapshots.find_by!(traded_on: day)
     expect(snapshot).to have_attributes(setup_type: "vcp", zone_state: "in_zone", trend_rules_passed: 7, rs_rating: 99, setup_quality: 80, in_buy_zone: true)
-    expect(snapshot.readiness_score).to eq(35 + 24 + 9 + 20)
+    # trend 30 + setup 20 (80% of 25) + neutral market 9 + sector 15 + no flow data 7
+    expect(snapshot.readiness_score).to eq(30 + 20 + 9 + 15 + 7)
+    expect(snapshot.flow_state).to eq("no_data")
     expect(snapshot.entry_zone_low.to_f).to eq(195.0)
     expect(snapshot.screener_row).to include("symbol" => "BANK")
     expect(snapshot.trend_checks.size).to eq(8)
