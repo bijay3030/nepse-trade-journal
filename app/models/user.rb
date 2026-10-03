@@ -22,4 +22,12 @@ class User < ApplicationRecord
   has_many :positions, dependent: :destroy
 
   validates :jti, presence: true, uniqueness: true
+  validates :trading_capital, numericality: { greater_than: 0 }, allow_nil: true
+  validates :risk_per_trade_pct, numericality: { greater_than: 0, less_than_or_equal_to: 10 }
+  validates :max_open_risk_pct, numericality: { greater_than: 0, less_than_or_equal_to: 50 }
+
+  # Position size for an entry and stop from the user's capital and risk per trade.
+  def size_position(entry:, stop:, target: nil)
+    Positions::Sizer.call(capital: trading_capital, risk_pct: risk_per_trade_pct, entry: entry, stop: stop, target: target)
+  end
 end

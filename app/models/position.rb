@@ -38,6 +38,20 @@ class Position < ApplicationRecord
     (buys.sum { _1.price.to_f * _1.quantity } / bought).round(2)
   end
 
+  # What the open shares cost, including each buy's commission and SEBON fee.
+  def cost_basis
+    bought = buys.sum(&:quantity)
+    return 0.0 if bought.zero?
+
+    total = buys.sum { |fill| amount = fill.price.to_f * fill.quantity; amount + Nepse::Costs.buy_costs(amount) }
+    (total / bought * quantity).round(2)
+  end
+
+  # Selling everything at the last price, after sell costs (before capital gains tax).
+  def net_pnl_if_sold = quantity.positive? ? (Nepse::Costs.net_proceeds(last_price, quantity) - cost_basis).round(2) : 0.0
+
+  def break_even_price = Nepse::Costs.break_even_price(cost_basis, quantity)
+
   def opened_on = buys.map(&:traded_on).min
   def last_buy_on = buys.map(&:traded_on).max
   def last_price = stock.last_price.to_f
@@ -54,8 +68,13 @@ class Position < ApplicationRecord
     risk.positive? ? ((last_price - average_price) / risk).round(2) : nil
   end
 
-  # What's lost if the current stop is hit; zero once the stop is at or above the average price.
-  def open_risk = ([ average_price - stop_price.to_f, 0 ].max * quantity).round(2)
+  # What's lost if the current stop is hit, after buy and sell costs; zero once selling
+  # at the stop would no longer lose money.
+  def open_risk
+    return 0.0 unless quantity.positive?
+
+    [ cost_basis - Nepse::Costs.net_proceeds(stop_price, quantity), 0 ].max.round(2)
+  end
 
   def days_held(today = Nepse::MarketHours.today) = opened_on ? (today - opened_on).to_i : 0
 

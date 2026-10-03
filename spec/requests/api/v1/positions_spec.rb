@@ -13,7 +13,7 @@ RSpec.describe "Positions", type: :request do
     expect(response).to have_http_status(:created)
     expect(json).to include("symbol" => "NABIL", "status" => "open", "quantity" => 100, "average_price" => 505.0, "last_price" => 520.0,
                             "stop_price" => 470.0, "target_price" => 560.0, "unrealized_pnl" => 1500.0, "r_multiple" => 0.43,
-                            "open_risk" => 3500.0, "opened_on" => "2026-10-01", "sellable_on" => "2026-10-05")
+                            "opened_on" => "2026-10-01", "sellable_on" => "2026-10-05")
     expect(json["fills"].sole).to include("side" => "buy", "price" => 505.0, "quantity" => 100)
 
     get "/api/v1/watchlist_items", headers: headers

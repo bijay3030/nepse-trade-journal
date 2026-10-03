@@ -5,7 +5,7 @@ class WatchlistItemSerializer < ActiveModel::Serializer
              :current_price, :change_percent, :price_updated_at, :distance_to_zone_pct, :risk_reward,
              :setup_snapshot, :notes, :trade_plan_id, :last_evaluated_at, :created_at,
              :last_close_on, :last_close_state, :last_close_price, :last_close_relative_volume, :checklist,
-             :next_book_close, :level_adjustments, :position_id
+             :next_book_close, :level_adjustments, :position_id, :sizing
 
   # Decimals are sent as numbers, not strings.
   PRICE_FIELDS.each do |field|
@@ -25,6 +25,17 @@ class WatchlistItemSerializer < ActiveModel::Serializer
 
   def next_book_close = CorporateActions::Upcoming.for_stock(object.stock)
   def position_id = object.open_position&.id
+
+  # A position size for buying now (or at the zone low while the price is below the
+  # zone), with the stop a buy would get. Nil until the user sets their capital.
+  def sizing
+    user = object.user
+    return unless user.trading_capital && !%w[holding archived].include?(object.status)
+
+    entry = [ object.stock.last_price.to_f, object.entry_zone_low.to_f ].max
+    stop = Position.default_stop(entry, object.stop_loss_price.presence || object.invalidation_price)
+    user.size_position(entry: entry, stop: stop, target: object.target_price).merge(entry: entry, stop: stop)
+  end
 
   # Pass a shared Watchlist::MarketContext as `context:` when serializing many items.
   def checklist
