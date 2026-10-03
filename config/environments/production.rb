@@ -84,4 +84,13 @@ Rails.application.configure do
   #
   # Skip DNS rebinding protection for the default health check endpoint.
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+
+  # The API's own hostname(s), e.g. "api.example.com" (comma-separated).
+  if ENV["API_HOSTS"].present?
+    config.hosts = ENV["API_HOSTS"].split(",").map(&:strip)
+    config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  end
+
+  # Live prices over WebSocket only from the deployed frontend (FRONTEND_ORIGINS, see cors.rb).
+  config.action_cable.allowed_request_origins = ENV.fetch("FRONTEND_ORIGINS", "").split(",").map(&:strip).reject(&:empty?)
 end

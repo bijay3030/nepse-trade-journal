@@ -90,8 +90,9 @@ test:
 production:
   primary: &primary_production
     <<: *default
+    host: <%= ENV.fetch("DB_HOST", "localhost") %>
     database: nepse_trade_journal_production
-    username: nepse_trade_journal
+    username: <%= ENV.fetch("DB_USER", "nepse_trade_journal") %>
     password: <%= ENV["NEPSE_TRADE_JOURNAL_DATABASE_PASSWORD"] %>
   cache:
     <<: *primary_production

@@ -1,7 +1,9 @@
 import { Suspense, lazy } from "react"
 import { Navigate, Route, Routes } from "react-router-dom"
 import { LoadingSpinner } from "./components/ui"
+import { RequireAuth } from "./components/RequireAuth"
 import { PlatformLayout } from "./layouts/PlatformLayout"
+import { LoginPage } from "./pages/LoginPage"
 
 const AnalyticsPage = lazy(async () => import("./pages/AnalyticsPage").then((m) => ({ default: m.AnalyticsPage })))
 const DashboardPage = lazy(async () => import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })))
@@ -32,7 +34,8 @@ function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
-        <Route path="/" element={<PlatformLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<RequireAuth><PlatformLayout /></RequireAuth>}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="market" element={<MarketOverviewPage />} />

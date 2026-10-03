@@ -315,8 +315,11 @@ Devise.setup do |config|
   # config.sign_in_after_change_password = true
 
   config.jwt do |jwt|
-    jwt.secret = ENV["JWT_SECRET"]
+    # Required in production (see require_production_secrets.rb); a fixed value elsewhere.
+    jwt.secret = ENV.fetch("JWT_SECRET", "secret")
     jwt.dispatch_requests = [["POST", %r{^/login$}]]
     jwt.revocation_requests = [["DELETE", %r{^/logout$}]]
+    # Sign in again after 30 days.
+    jwt.expiration_time = 30.days.to_i
   end
 end
