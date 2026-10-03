@@ -416,9 +416,23 @@ After you buy on TMS, record it in the app so it can track the trade:
   position), or remove a mistaken fill (removing the last one returns the stock to your
   watchlist).
 
-Figures are before fees and tax; NEPSE costs, a position-size calculator and sell-rule
-alerts (stop, target, time stop and more, also on Telegram) come next. Manual test steps
-are in `docs/qa/manual-test-plan.md` section H13.
+### Position size and costs
+
+Set **Settings → Capital & Risk** once: trading capital, risk per trade (default 1%) and
+max open risk (default 6%). Then:
+
+- each watchlist card shows a **Size** line: the shares to buy (rounded down to 10-share
+  lots) so that hitting the stop loses at most capital × risk %, the cost with fees, the
+  loss at the stop, break-even and the net result at the target;
+- **Mark as bought** suggests that quantity (**Use N**) and shows the fees, total cost,
+  break-even and loss at stop for the quantity you type;
+- positions show the cost including fees, **Net if sold now** and break-even.
+
+Costs (`Nepse::Costs`): broker commission by SEBON's slabs (0.36% up to Rs 50,000, 0.33%
+to 5 lakh, 0.306% to 20 lakh, 0.27% to 1 crore, 0.243% above), SEBON fee 0.015% on buys and
+sells, DP charge Rs 25 on sells. Capital gains tax is counted when a position is closed.
+Sell-rule alerts (stop, target, time stop and more, also on Telegram) come next. Manual
+test steps are in `docs/qa/manual-test-plan.md` sections H13–H14.
 
 ## Daily digest
 

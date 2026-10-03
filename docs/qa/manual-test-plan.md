@@ -280,6 +280,19 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H13.9 | Remove the last fill (confirm) | Position disappears; the watchlist card returns to Watching/In zone |
 | H13.10 | Buy dated Thursday | Sellable from the following Monday (weekend skipped; holidays not counted) |
 
+## H14. Position size and costs
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H14.1 | Watchlist with no capital set | Cards say "Set your trading capital to see a position size" (link to Settings) |
+| H14.2 | Settings → **Capital & Risk**: capital 500000, risk 1%, Save | "Each trade is sized so hitting its stop loses at most Rs 5,000, including fees." then "Saved." |
+| H14.3 | Back on the watchlist | Each tracked card shows "Size: N shares at P = Rs … + Rs … fees · loss at stop …: Rs … (…% of capital) · break-even … · at target +Rs … (…R)"; N is a multiple of 10 and the loss is at most Rs 5,000 |
+| H14.4 | Card whose price is below its zone | Sized at the zone low |
+| H14.5 | Very small capital (e.g. 20000) | "Size: Your risk budget is smaller than the loss on one 10-share lot at this stop." |
+| H14.6 | **Mark as bought** | "Suggested for your risk (Rs 5,000.00): N shares" with **Use N**; typing a quantity shows fees, total cost, break-even and loss at stop after fees |
+| H14.7 | `/positions` | Each card adds Cost incl. fees, Net if sold now and Break-even; the summary shows Net if all sold now |
+| H14.8 | Check a fee by hand: buy Rs 1,00,000 | Commission Rs 330 (0.33%) + SEBON Rs 15 = Rs 345 |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

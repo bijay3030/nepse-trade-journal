@@ -4,6 +4,7 @@ import { Download, Trash2, Upload } from "lucide-react"
 import { Badge, Button, Card, CardBody, CardHeader, Input, Select } from "../components/ui"
 import { DigestSettingsCard } from "../features/digest/DigestSettingsCard"
 import { TelegramSettingsCard } from "../features/telegram/TelegramSettingsCard"
+import { TradingSettingsCard } from "../features/sizing/TradingSettingsCard"
 
 type SettingsFormValues = {
   name: string
@@ -263,6 +264,8 @@ export function SettingsPage() {
             </Select>
           </CardBody>
         </Card>
+
+        <TradingSettingsCard />
 
         <TelegramSettingsCard />
 
