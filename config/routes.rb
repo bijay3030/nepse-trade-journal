@@ -2,7 +2,10 @@ Rails.application.routes.draw do
   get "up" => "rails/health#show", as: :rails_health_check
   mount ActionCable.server => "/cable"
 
+  # Sign-in only: accounts are created on the server (bin/rails users:create), and
+  # there is no public sign-up or emailed password reset.
   devise_for :users,
+             skip: %i[registrations passwords],
              path: "",
              path_names: {
                sign_in: "login",

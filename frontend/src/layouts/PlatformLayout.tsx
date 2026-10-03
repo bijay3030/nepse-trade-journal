@@ -28,6 +28,7 @@ import { useEffect, useRef, useState } from "react"
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useWatchlistAlerts } from "../features/watchlist/api"
 import { useStockPrices } from "../hooks/useStockPrices"
+import { authUrl, clearSession, getEmail, getToken } from "../lib/auth"
 import { tradingDaysLabel } from "../lib/marketHours"
 import { cn } from "../lib/cn"
 
@@ -70,6 +71,22 @@ export function PlatformLayout() {
   const profileRef = useRef<HTMLDivElement | null>(null)
   const location = useLocation()
   const navigate = useNavigate()
+  const accountLabel = getEmail() ?? "Account"
+  const accountInitials = (getEmail() ?? "A").slice(0, 2).toUpperCase()
+
+  // Revokes the token on the server (best effort), then forgets it here.
+  const signOut = async () => {
+    const token = getToken()
+    if (token) {
+      try {
+        await fetch(authUrl("/logout"), { method: "DELETE", headers: { Authorization: `Bearer ${token}` } })
+      } catch {
+        // Offline: the token is still forgotten locally.
+      }
+    }
+    clearSession()
+    navigate("/login", { replace: true })
+  }
   const { connectionStatus, market, refresh, lastUpdatedAt } = useStockPrices()
   const unreadAlerts = useWatchlistAlerts().data?.unread_count ?? 0
   const status = market.statusLabel
@@ -295,8 +312,8 @@ export function PlatformLayout() {
                     className="flex min-h-[44px] items-center gap-2 rounded-xl border border-mist/70 bg-white px-3 py-1.5 text-sm font-semibold text-ink"
                     onClick={() => setProfileOpen((prev) => !prev)}
                   >
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-ink text-xs text-white">AS</span>
-                    <span className="hidden sm:block">Aarav Shrestha</span>
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-ink text-xs text-white">{accountInitials}</span>
+                    <span className="hidden max-w-[12rem] truncate sm:block">{accountLabel}</span>
                     <ChevronDown className="h-4 w-4 text-slate" />
                   </button>
 
@@ -308,9 +325,8 @@ export function PlatformLayout() {
                         exit={{ opacity: 0, y: -8 }}
                         className="absolute right-0 mt-2 w-48 rounded-xl border border-mist/80 bg-white p-2 shadow-panel"
                       >
-                        <button className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-ink hover:bg-slate/10">Profile</button>
-                        <button className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-ink hover:bg-slate/10">Preferences</button>
-                        <button className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-ember hover:bg-ember/10">Sign out</button>
+                        <button className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-ink hover:bg-slate/10" onClick={() => navigate("/settings")}>Settings</button>
+                        <button className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-ember hover:bg-ember/10" onClick={() => void signOut()}>Sign out</button>
                       </motion.div>
                     ) : null}
                   </AnimatePresence>

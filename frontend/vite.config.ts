@@ -54,6 +54,13 @@ export default defineConfig({
         target: "http://localhost:3000",
         changeOrigin: true,
       },
+      // POST /login goes to Rails; opening the /login page in the browser stays with the app.
+      "/login": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+        bypass: (req) => (req.headers.accept?.includes("text/html") ? "/index.html" : undefined),
+      },
+      "/logout": { target: "http://localhost:3000", changeOrigin: true },
       "/cable": {
         target: "ws://localhost:3000",
         ws: true,
