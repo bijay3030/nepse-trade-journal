@@ -13,11 +13,20 @@ module Telegram
 
   # Minimal Telegram Bot API client. The token comes from TELEGRAM_BOT_TOKEN or the
   # telegram.bot_token credential; without one, Telegram is simply off.
+  #
+  # The credentials are shared with development, and two apps polling one bot
+  # steal each other's messages (and both send alerts), so development ignores the
+  # credential unless TELEGRAM_IN_DEVELOPMENT=true. TELEGRAM_BOT_TOKEN always works,
+  # e.g. with a separate test bot.
   class Client
     BASE_URL = "https://api.telegram.org"
     TIMEOUT = 10
 
-    def self.token = ENV["TELEGRAM_BOT_TOKEN"].presence || Rails.application.credentials.dig(:telegram, :bot_token)
+    def self.token
+      ENV["TELEGRAM_BOT_TOKEN"].presence || (credential_token if !Rails.env.development? || ENV["TELEGRAM_IN_DEVELOPMENT"] == "true")
+    end
+
+    def self.credential_token = Rails.application.credentials.dig(:telegram, :bot_token)
     def self.configured? = token.present?
 
     def initialize(token: self.class.token)
