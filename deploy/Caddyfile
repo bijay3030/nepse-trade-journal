@@ -1,0 +1,6 @@
+# HTTPS for the API with an automatic Let's Encrypt certificate. API_HOST is a
+# hostname pointing at this server, e.g. api.152-67-1-2.sslip.io or api.example.com.np.
+{$API_HOST} {
+	encode zstd gzip
+	reverse_proxy web:80
+}

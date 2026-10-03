@@ -43,3 +43,9 @@
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
+
+# Not part of the API image.
+/frontend/
+/deploy/
+/backups/
+/docs/
