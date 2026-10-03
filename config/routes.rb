@@ -49,6 +49,9 @@ Rails.application.routes.draw do
       post "data_imports/sync_market", to: "data_imports#sync_market"
       post "data_imports/import_csv", to: "data_imports#import_csv"
 
+      resources :positions, only: [ :index, :show, :create, :update ] do
+        delete "fills/:fill_id", action: :destroy_fill, on: :member
+      end
       resources :watchlist_items, only: [:index, :create, :update, :destroy] do
         get :suggestion, on: :collection
         post :trade_plan, on: :member

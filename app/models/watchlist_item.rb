@@ -2,15 +2,17 @@
 # level at which the setup is considered failed.
 class WatchlistItem < ApplicationRecord
   SETUP_TYPES = Setups::Types::ALL
-  STATUSES = %w[watching in_zone extended invalidated planned archived].freeze
+  # holding: bought; the Position takes over (sell rules instead of entry alerts).
+  STATUSES = %w[watching in_zone extended invalidated planned holding archived].freeze
   PRICE_STATES = %w[below_zone in_zone extended invalidated].freeze
   # Statuses the price no longer changes: the user has acted, or the setup failed.
-  STICKY_STATUSES = %w[invalidated planned archived].freeze
+  STICKY_STATUSES = %w[invalidated planned holding archived].freeze
 
   belongs_to :user
   belongs_to :stock
   belongs_to :trade_plan, optional: true
   has_many :alerts, class_name: "WatchlistAlert", dependent: :delete_all
+  has_one :open_position, -> { open }, class_name: "Position", inverse_of: :watchlist_item
 
   validates :setup_type, inclusion: { in: SETUP_TYPES }
   validates :status, inclusion: { in: STATUSES }
@@ -21,6 +23,8 @@ class WatchlistItem < ApplicationRecord
   validate :levels_are_ordered
 
   scope :tracked, -> { where.not(status: "archived") }
+  # Still waiting for an entry: entry alerts and end-of-day verdicts apply.
+  scope :awaiting_entry, -> { where.not(status: %w[archived holding]) }
 
   def price_state_for(price)
     price = price.to_f

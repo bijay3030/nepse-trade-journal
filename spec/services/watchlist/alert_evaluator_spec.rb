@@ -16,6 +16,13 @@ RSpec.describe Watchlist::AlertEvaluator do
     create(:stock_daily_price, stock: stock, traded_on: Date.new(2026, 9, 24), volume: 0)
   end
 
+  it "leaves held stocks to the position (no entry alerts)" do
+    item.update!(status: "holding")
+
+    expect { move_to(505) }.not_to change(WatchlistAlert, :count)
+    expect(item.status).to eq("holding")
+  end
+
   it "does not alert while the state is unchanged" do
     expect { move_to(495) }.not_to change(WatchlistAlert, :count)
     expect(item.last_evaluated_at).to be_present

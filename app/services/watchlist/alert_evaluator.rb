@@ -10,7 +10,7 @@ module Watchlist
       "extended" => "extended", "invalidated" => "invalidated"
     }.freeze
 
-    def self.call(items = WatchlistItem.tracked)
+    def self.call(items = WatchlistItem.awaiting_entry)
       new(items).call
     end
 

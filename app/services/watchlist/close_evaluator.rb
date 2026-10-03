@@ -7,7 +7,7 @@ module Watchlist
     AVERAGE_VOLUME_SESSIONS = AlertEvaluator::AVERAGE_VOLUME_SESSIONS
     STATES = %w[confirmed unconfirmed failed held_zone in_zone below_zone above_zone invalidated].freeze
 
-    def self.call(items = WatchlistItem.tracked)
+    def self.call(items = WatchlistItem.awaiting_entry)
       new(items).call
     end
 
