@@ -2,7 +2,7 @@ class PositionSerializer < ActiveModel::Serializer
   attributes :id, :symbol, :name, :sector, :status, :setup_type, :watchlist_item_id,
              :quantity, :average_price, :last_price, :change_percent, :price_updated_at,
              :stop_price, :initial_stop_price, :target_price, :unrealized_pnl, :unrealized_pct, :r_multiple,
-             :open_risk, :opened_on, :sellable_on, :days_held, :closed_on, :notes, :fills
+             :open_risk, :cost_basis, :net_pnl_if_sold, :break_even_price, :opened_on, :sellable_on, :days_held, :closed_on, :notes, :fills
 
   def symbol = object.stock.symbol
   def name = object.stock.name

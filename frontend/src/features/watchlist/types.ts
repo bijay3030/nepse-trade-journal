@@ -1,3 +1,4 @@
+import type { WatchlistSizing } from "../sizing/types"
 import type { BookClose, LevelAdjustment } from "../corporate/types"
 
 export type SetupType = "vcp" | "pullback" | "ma_pullback" | "base_breakout"
@@ -76,6 +77,8 @@ export type WatchlistItem = WatchlistLevels & {
   level_adjustments?: LevelAdjustment[]
   /** The open position when the stock has been bought. */
   position_id?: number | null
+  /** Position size for buying now; null until trading capital is set. */
+  sizing?: WatchlistSizing | null
 }
 
 export type Suggestion =

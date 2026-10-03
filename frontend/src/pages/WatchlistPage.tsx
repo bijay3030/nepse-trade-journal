@@ -24,6 +24,7 @@ import { LevelFields } from "../features/watchlist/LevelFields"
 import { draftToLevels, levelsToDraft, type LevelDraft } from "../features/watchlist/levels"
 import { BookCloseBadge } from "../features/corporate/BookCloseBadge"
 import { BuyDialog } from "../features/positions/BuyDialog"
+import { SizingLine } from "../features/sizing/SizingLine"
 import { EntryChecklistPanel } from "../features/watchlist/EntryChecklistPanel"
 import { PriceLadder } from "../features/watchlist/PriceLadder"
 import type { WatchlistItem } from "../features/watchlist/types"
@@ -159,6 +160,8 @@ function WatchlistCard({ item }: { item: WatchlistItem }) {
             <div><dt className="text-xs text-slate">Risk:reward</dt><dd className="font-mono font-semibold text-ink">{item.risk_reward === null ? "—" : `${item.risk_reward}R`}</dd></div>
           </dl>
         )}
+
+        {!editing && !archived && !holding && item.status !== "invalidated" && <SizingLine sizing={item.sizing} />}
 
         {item.level_adjustments && item.level_adjustments.length > 0 && (
           <p className="mt-2 text-xs text-slate">

@@ -98,6 +98,9 @@ function PositionCard({ position }: { position: Position }) {
             <div><dt className="text-xs text-slate">Target</dt><dd className="font-mono font-semibold text-pine">{position.target_price ? <>{money(position.target_price)} <span className="text-xs text-slate">({signed(toTarget as number, "%")})</span></> : "—"}</dd></div>
             <div><dt className="text-xs text-slate">Risk at stop</dt><dd className="font-mono font-semibold text-ink">Rs {money(position.open_risk)}</dd></div>
             <div><dt className="text-xs text-slate">Opened</dt><dd className="font-mono font-semibold text-ink">{position.opened_on ?? "—"}</dd></div>
+            <div><dt className="text-xs text-slate">Cost incl. fees</dt><dd className="font-mono font-semibold text-ink">Rs {money(position.cost_basis)}</dd></div>
+            <div><dt className="text-xs text-slate">Net if sold now</dt><dd className={cn("font-mono font-semibold", tone(position.net_pnl_if_sold))}>Rs {signed(position.net_pnl_if_sold)}</dd></div>
+            <div><dt className="text-xs text-slate">Break-even</dt><dd className="font-mono font-semibold text-ink">{position.break_even_price === null ? "—" : money(position.break_even_price)}</dd></div>
           </dl>
         )}
         {!editing && position.notes && <p className="mt-2 text-sm text-ink">{position.notes}</p>}
@@ -149,7 +152,7 @@ export function PositionsPage() {
   }
 
   const value = data.reduce((sum, position) => sum + position.last_price * position.quantity, 0)
-  const pnl = data.reduce((sum, position) => sum + position.unrealized_pnl, 0)
+  const net = data.reduce((sum, position) => sum + position.net_pnl_if_sold, 0)
   const risk = data.reduce((sum, position) => sum + position.open_risk, 0)
 
   return (
@@ -171,7 +174,7 @@ export function PositionsPage() {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat label="Open positions" value={String(data.length)} />
             <Stat label="Market value" value={`Rs ${money(value)}`} />
-            <Stat label="Unrealized P&L" value={`Rs ${signed(pnl)}`} className={tone(pnl)} />
+            <Stat label="Net if all sold now" value={`Rs ${signed(net)}`} className={tone(net)} />
             <Stat label="Risk if every stop is hit" value={`Rs ${money(risk)}`} />
           </div>
           <div className="grid gap-4 xl:grid-cols-2">
@@ -179,7 +182,10 @@ export function PositionsPage() {
           </div>
         </>
       )}
-      <p className="text-xs text-slate">Before fees and tax. Rule checks, not recommendations.</p>
+      <p className="text-xs text-slate">
+        The P&L next to each price is before fees. "Net if sold now", "Risk at stop" and break-even include NEPSE commission, the SEBON fee and the Rs 25 DP charge;
+        capital gains tax is counted when you close a position. Rule checks, not recommendations.
+      </p>
     </div>
   )
 }

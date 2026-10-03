@@ -23,8 +23,13 @@ export type Position = {
   unrealized_pct: number | null
   /** Move in units of the risk at entry (average price to the first stop). */
   r_multiple: number | null
-  /** Loss if the current stop is hit; 0 once the stop is at or above the average. */
+  /** Loss if the current stop is hit, after buy and sell fees; 0 once that wouldn't lose money. */
   open_risk: number
+  /** What the open shares cost, including commission and SEBON fee. */
+  cost_basis: number
+  /** Selling everything at the last price, after sell fees (before capital gains tax). */
+  net_pnl_if_sold: number
+  break_even_price: number | null
   opened_on: string | null
   /** T+2: first day the newest shares can be sold (holidays not counted). */
   sellable_on: string | null

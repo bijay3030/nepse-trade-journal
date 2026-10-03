@@ -7,6 +7,9 @@ import { Button, Input } from "../../components/ui"
 import { nptToday } from "../../lib/marketHours"
 import { apiErrorMessage } from "../watchlist/api"
 import { formatPrice } from "../watchlist/labels"
+import { usePositionSizing } from "../sizing/api"
+import { rupees } from "../sizing/format"
+import { isSized } from "../sizing/types"
 import { useRecordBuy } from "./api"
 import { MAX_STOP_PCT, defaultStop } from "./rules"
 
@@ -45,6 +48,8 @@ export function BuyDialog({ symbol, currentPrice, watchlistItemId, setupStop, ta
   const risk = stop !== null && entry > stop ? entry - stop : null
   const reward = target && risk ? (target - entry) / risk : null
   const adding = existingStop !== undefined
+  const sizing = usePositionSizing({ entry, stop, target, quantity: valid ? shares : undefined }).data
+  const typed = sizing?.for_quantity
 
   const submit = () => buy.mutate({ watchlist_item_id: watchlistItemId, symbol: watchlistItemId ? undefined : symbol, price: entry, quantity: shares, traded_on: date })
 
@@ -103,9 +108,41 @@ export function BuyDialog({ symbol, currentPrice, watchlistItemId, setupStop, ta
             </dl>
             <p className="mt-2 text-xs text-slate">
               {adding ? "Your position's stop is kept." : capped ? `The setup's stop is more than ${MAX_STOP_PCT}% below this price, so the stop is set ${MAX_STOP_PCT}% below it.` : "Stop and target come from the setup."}
-              {valid && risk !== null && <> If the stop is hit, this buy loses about <b className="text-ink">Rs {money(risk * shares)}</b> before fees.</>}{" "}
-              You can change them later on the Positions page.
+              {" "}You can change them later on the Positions page.
             </p>
+
+            <div className="mt-3 rounded-xl border border-slate/15 p-3 text-sm" aria-label="Size and costs">
+              {!sizing ? (
+                <p className="text-xs text-slate">Working out the size…</p>
+              ) : "error" in sizing ? (
+                <p className="text-xs text-slate">
+                  {sizing.error.startsWith("Set your") ? <><Link to="/settings" className="font-semibold text-ink underline">Set your trading capital</Link> to get a suggested quantity.</> : sizing.error}
+                </p>
+              ) : isSized(sizing) ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-slate">
+                    Suggested for your risk ({rupees(sizing.risk_budget)}): <b className="text-ink">{sizing.quantity} shares</b>
+                    {adding ? " for this buy" : ""}{sizing.limited_by === "capital" ? ", limited by your capital" : ""}
+                  </span>
+                  {sizing.quantity !== shares && (
+                    <Button size="sm" variant="outline" onClick={() => setQuantity(String(sizing.quantity))}>Use {sizing.quantity}</Button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-slate">{sizing.note}.</p>
+              )}
+              {typed && (
+                <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-4">
+                  <div><dt className="text-slate">Fees (commission + SEBON)</dt><dd className="font-mono text-ink">{rupees(typed.buy_costs.total)}</dd></div>
+                  <div><dt className="text-slate">Total cost</dt><dd className="font-mono text-ink">{rupees(typed.total_cost)}</dd></div>
+                  <div><dt className="text-slate">Break-even</dt><dd className="font-mono text-ink">{typed.break_even === null ? "—" : money(typed.break_even)}</dd></div>
+                  <div>
+                    <dt className="text-slate">Loss at stop, after fees</dt>
+                    <dd className="font-mono text-ember">{rupees(typed.loss_at_stop)}{typed.loss_pct_of_capital !== null && <span className="text-slate"> ({typed.loss_pct_of_capital}%)</span>}</dd>
+                  </div>
+                </dl>
+              )}
+            </div>
 
             {buy.isError && <p role="alert" className="mt-3 text-sm text-ember">{apiErrorMessage(buy.error)}</p>}
             <div className="mt-4 flex gap-2">

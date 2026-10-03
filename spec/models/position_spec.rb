@@ -16,11 +16,19 @@ RSpec.describe Position do
     expect(position.unrealized_pct).to eq(7.84)
     # risk per share 102 - 92 = 10; up 8 => 0.8R
     expect(position.r_multiple).to eq(0.8)
-    expect(position.open_risk).to eq(1500.0)
   end
 
-  it "has no open risk once the stop is at or above the average price" do
-    position.update!(stop_price: 103)
+  it "counts buy and sell costs in the cost basis, risk at the stop and break-even" do
+    # Buys of 10,000 and 5,300 at 0.36% commission + 0.015% SEBON.
+    expect(position.cost_basis).to eq(15_357.38)
+    # Selling 150 at 92: 13,800 - 49.68 - 2.07 - 25 DP.
+    expect(position.open_risk).to eq(1634.13)
+    expect(position.net_pnl_if_sold).to eq(1055.75)
+    expect(position.break_even_price).to eq(102.94)
+  end
+
+  it "has no open risk once selling at the stop wouldn't lose money" do
+    position.update!(stop_price: 104)
     expect(position.open_risk).to eq(0)
   end
 

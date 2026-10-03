@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_03_100000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_04_060000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -443,6 +443,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_03_100000) do
     t.datetime "telegram_link_expires_at"
     t.boolean "telegram_watchlist_alerts", default: true, null: false
     t.boolean "telegram_board_alerts", default: true, null: false
+    t.decimal "trading_capital", precision: 15, scale: 2
+    t.decimal "risk_per_trade_pct", precision: 5, scale: 2, default: "1.0", null: false
+    t.decimal "max_open_risk_pct", precision: 5, scale: 2, default: "6.0", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["jti"], name: "index_users_on_jti", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
