@@ -201,6 +201,8 @@ export type BuyZoneResponse = {
     min_readiness: number
     min_avg_turnover?: number
     circuit_near_pct?: number
+    /** NEPSE's per-stock daily price limit for the session (±15% since 2026-04-20). */
+    daily_limit_pct?: number
   }
   results: BuyZoneRow[]
   /** Charts meeting the rules that a tradability guard kept off the board. */

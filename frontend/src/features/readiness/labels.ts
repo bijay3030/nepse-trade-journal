@@ -54,8 +54,8 @@ export const GUARD_LABELS: Record<Guard, string> = {
 
 export const GUARD_DETAILS: Record<Guard, string> = {
   thin_volume: "Low average turnover: a small order can move the price and fills may be poor.",
-  upper_circuit: "Closed near the +10% daily limit: few sellers, and the next open often gaps. Wait for another session.",
-  lower_circuit: "Closed near the -10% daily limit: few buyers, so exits and stops may not fill.",
+  upper_circuit: "Closed near the day's upper price limit (+15%): few sellers, and the next open often gaps. Wait for another session.",
+  lower_circuit: "Closed near the day's lower price limit (-15%): few buyers, so exits and stops may not fill.",
 }
 
 /** "NPR 34.1M" for a turnover in rupees. */

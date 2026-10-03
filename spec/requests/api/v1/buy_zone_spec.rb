@@ -20,7 +20,7 @@ RSpec.describe "Buy zone and snapshot-backed screener", type: :request do
     get "/api/v1/screener/buy_zone"
 
     body = JSON.parse(response.body)
-    expect(body).to include("traded_on" => "2026-09-28", "criteria" => { "zone_state" => "in_zone", "min_trend_rules" => 5, "min_readiness" => 60, "min_avg_turnover" => 2_000_000.0, "circuit_near_pct" => 9.5 }, "held_back" => [])
+    expect(body).to include("traded_on" => "2026-09-28", "criteria" => { "zone_state" => "in_zone", "min_trend_rules" => 5, "min_readiness" => 60, "min_avg_turnover" => 2_000_000.0, "circuit_near_pct" => 14.5, "daily_limit_pct" => 15.0 }, "held_back" => [])
     expect(body["results"].map { _1["symbol"] }).to eq([ "BANK" ])
     expect(body["results"].first).to include("name" => "Bank Ltd", "readiness_score" => 72, "rs_rating" => 88, "entry_zone_low" => 195.0)
     expect(body["results"].first["readiness_history"]).to eq([ { "traded_on" => "2026-09-28", "score" => 72, "zone_state" => "in_zone", "in_buy_zone" => true } ])

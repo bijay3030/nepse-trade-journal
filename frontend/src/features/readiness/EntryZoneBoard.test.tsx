@@ -36,7 +36,7 @@ describe("EntryZoneBoard", () => {
       Promise.resolve({
         data: path === "/watchlist_items" ? [] : {
           traded_on: "2026-09-28",
-          criteria: { ...criteria, min_avg_turnover: 2_000_000, circuit_near_pct: 9.5 },
+          criteria: { ...criteria, min_avg_turnover: 2_000_000, circuit_near_pct: 14.5, daily_limit_pct: 15 },
           results: [],
           held_back: [
             { ...readinessSnapshot(), symbol: "THIN", name: "Thin Hydro", sector: "Hydro Power", in_buy_zone: false, guards: ["thin_volume"], avg_turnover: 1_240_000 },
@@ -54,7 +54,7 @@ describe("EntryZoneBoard", () => {
     expect(section).toHaveTextContent("NPR 1.2M a day")
     expect(section).toHaveTextContent("At upper circuit")
     expect(section).toHaveTextContent("+9.96% on the day")
-    expect(screen.getByText(/average turnover NPR 2.0M\+ a day, and a daily move under ±9.5%/)).toBeInTheDocument()
+    expect(screen.getByText(/average turnover NPR 2.0M\+ a day, and a daily move under ±14.5% \(not at the ±15% circuit\)/)).toBeInTheDocument()
     expect(screen.queryByRole("article")).not.toBeInTheDocument()
   })
 

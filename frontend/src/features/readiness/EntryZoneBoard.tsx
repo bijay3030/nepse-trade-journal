@@ -34,7 +34,7 @@ export function EntryZoneBoard() {
         Price inside a setup's entry zone, at least {criteria.min_trend_rules} of 7 trend rules and readiness {criteria.min_readiness}+,
         on the {data.traded_on ?? "—"} close.
         {criteria.min_avg_turnover !== undefined && (
-          <> Tradable only: average turnover {formatTurnover(criteria.min_avg_turnover)}+ a day, and a daily move under ±{criteria.circuit_near_pct ?? 9.5}% (not at the ±10% circuit).</>
+          <> Tradable only: average turnover {formatTurnover(criteria.min_avg_turnover)}+ a day, and a daily move under ±{criteria.circuit_near_pct ?? 14.5}% (not at the ±{criteria.daily_limit_pct ?? 15}% circuit).</>
         )}{" "}
         Rule checks, not recommendations.
       </p>

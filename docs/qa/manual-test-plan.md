@@ -223,12 +223,12 @@ Run `bin/rails "nepse:data:setup_history[120]"` (about 25 minutes, once) and `bi
 
 | # | Steps | Expected |
 | - | ----- | -------- |
-| H10.1 | `/screener` → **Entry zone now** | Criteria line mentions "average turnover NPR 2.0M+ a day, and a daily move under ±9.5%"; no card shows a guard badge |
+| H10.1 | `/screener` → **Entry zone now** | Criteria line mentions "average turnover NPR 2.0M+ a day, and a daily move under ±14.5% (not at the ±15% circuit)"; no card shows a guard badge |
 | H10.2 | Same tab after a session where a qualifying chart was thin or hit a circuit | **Held back by guards (n)** list under the cards: symbol, readiness, badge, "NPR 1.2M a day" or "+9.96% on the day"; the stock is not a card above |
 | H10.3 | `/screener` → **All setups**, a thin stock (e.g. sort by turnover) | Amber "Thin volume" badge next to its zone badge |
 | H10.4 | `/screener/SYMBOL` for a thin stock | Readiness card: "Thin volume" badge, turnover "NPR x.xM/day", note "…Kept off the Entry zone now board."; no "Meets entry-zone criteria" |
 | H10.5 | `/screener/NABIL` | Turnover about "NPR 34M/day", no guard badge |
-| H10.6 | `/watchlist`, expand a card's checklist | Rules "Average turnover at least NPR 2.0M a day (20 sessions)" and "Not at the ±10% daily limit" with today's change; a stock up 9.5%+ intraday shows ✗ "at the upper circuit, few sellers; wait for another session" |
+| H10.6 | `/watchlist`, expand a card's checklist | Rules "Average turnover at least NPR 2.0M a day (20 sessions)" and "Not at the ±15% daily limit" with today's change; a stock up 14.5%+ intraday shows ✗ "at the upper circuit, few sellers; wait for another session" |
 | H10.7 | `/backtest` | Trades summary hint includes "n held back by guards" when any; **By tradability guard** chart compares "Passed guards" with each guard |
 | H10.8 | Terminal: `NEPSE_MIN_TURNOVER=5000000 bin/rails nepse:data:setups` | More stocks flagged thin (about 100 vs 47 at 2M); reset by running it again without the variable |
 

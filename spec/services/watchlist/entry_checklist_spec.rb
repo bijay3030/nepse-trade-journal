@@ -94,13 +94,16 @@ RSpec.describe Watchlist::EntryChecklist do
 
     it "fails thin turnover and a stock at either circuit" do
       StockSetupSnapshot.update_all(avg_turnover: 1_200_000)
-      stock.update!(change_percent: 9.8)
+      stock.update!(change_percent: 14.8)
 
       expect(checks["liquidity"]).to include(status: "fail", detail: "NPR 1.2M a day: thin, a small order can move the price")
-      expect(checks["circuit"]).to include(status: "fail", detail: "+9.80%: at the upper circuit, few sellers; wait for another session")
+      expect(checks["circuit"]).to include(status: "fail", detail: "+14.80%: at the upper circuit, few sellers; wait for another session")
 
-      stock.update!(change_percent: -10)
-      expect(checks["circuit"][:detail]).to eq("-10.00%: at the lower circuit, few buyers; exits may not fill")
+      stock.update!(change_percent: -15)
+      expect(checks["circuit"][:detail]).to eq("-15.00%: at the lower circuit, few buyers; exits may not fill")
+
+      stock.update!(change_percent: 10)
+      expect(checks["circuit"]).to include(status: "pass", label: "Not at the ±15% daily limit")
     end
 
     it "waits for the nightly snapshot before judging liquidity" do
