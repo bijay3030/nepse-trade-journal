@@ -416,8 +416,9 @@ After you buy on TMS, record it in the app so it can track the trade:
   position), or remove a mistaken fill (removing the last one returns the stock to your
   watchlist).
 
-Figures are before fees and tax; costs and sell alerts come next (see the roadmap in
-`docs/qa/manual-test-plan.md` section H13).
+Figures are before fees and tax; NEPSE costs, a position-size calculator and sell-rule
+alerts (stop, target, time stop and more, also on Telegram) come next. Manual test steps
+are in `docs/qa/manual-test-plan.md` section H13.
 
 ## Daily digest
 
