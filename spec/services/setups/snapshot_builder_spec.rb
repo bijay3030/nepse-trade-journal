@@ -55,7 +55,7 @@ RSpec.describe Setups::SnapshotBuilder do
 
   it "keeps a qualifying chart off the board when a tradability guard fails" do
     thin = stock_with_history("THIN", Array.new(100) { |i| 100.0 + i * 1.0 }, turnover: 1_000_000)
-    jump = stock_with_history("JUMP", Array.new(99) { |i| 100.0 + i * 0.8 } + [ 200.0 ]) # +12.1% into the zone
+    jump = stock_with_history("JUMP", Array.new(99) { |i| 100.0 + i * 0.7 } + [ 200.0 ]) # +18.6% into the zone (limit ±15%)
 
     result = described_class.call
 

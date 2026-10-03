@@ -282,13 +282,13 @@ A stock is listed under **Entry zone now** when the price is inside the zone, at
 | Guard | Rule | Why |
 | ----- | ---- | --- |
 | Thin volume | Average daily turnover over the last 20 NEPSE sessions under NPR 2M (`NEPSE_MIN_TURNOVER`); sessions the stock didn't trade count as 0 | A small order moves the price; fills are poor |
-| At upper circuit | Closed +9.5% or more (NEPSE's daily limit is ±10%) | Few sellers, the next open often gaps; wait for another session |
-| At lower circuit | Closed -9.5% or less | Few buyers; stops and exits may not fill |
+| At upper circuit | Closed +14.5% or more (NEPSE's per-stock daily limit is ±15% since 2026-04-20; ±10%, flagged at 9.5%, for earlier sessions) | Few sellers, the next open often gaps; wait for another session |
+| At lower circuit | Closed -14.5% or less | Few buyers; stops and exits may not fill |
 
 A stock that fails a guard keeps its readiness and zone, shows a badge in the screener
 and on its readiness card, and is listed under **Held back by guards** below the board.
 The watchlist entry checklist has matching rules: average turnover (from the nightly
-snapshot) and "not at the ±10% daily limit" (from today's live change, so it also warns
+snapshot) and "not at the ±15% daily limit" (from today's live change, so it also warns
 during the session). The backtest doesn't trade held-back signals. Where to see it:
 
 - `/screener`, **Entry zone now** tab (default), plus a readiness column on **All setups**

@@ -2,12 +2,21 @@ require "rails_helper"
 
 RSpec.describe Setups::Guards do
   describe ".call" do
-    it "flags thin turnover and either circuit" do
-      expect(described_class.call(avg_turnover: 1_500_000, change_pct: 1.0)).to eq([ "thin_volume" ])
-      expect(described_class.call(avg_turnover: 9_000_000, change_pct: 9.6)).to eq([ "upper_circuit" ])
-      expect(described_class.call(avg_turnover: 1_000_000, change_pct: -10.0)).to eq(%w[thin_volume lower_circuit])
-      expect(described_class.call(avg_turnover: 2_000_000, change_pct: 9.4)).to eq([])
-      expect(described_class.call(avg_turnover: nil, change_pct: nil)).to eq([])
+    let(:now) { Date.new(2026, 9, 29) }
+
+    it "flags thin turnover and either circuit at the ±15% limit" do
+      expect(described_class.call(avg_turnover: 1_500_000, change_pct: 1.0, on: now)).to eq([ "thin_volume" ])
+      expect(described_class.call(avg_turnover: 9_000_000, change_pct: 14.6, on: now)).to eq([ "upper_circuit" ])
+      expect(described_class.call(avg_turnover: 1_000_000, change_pct: -15.0, on: now)).to eq(%w[thin_volume lower_circuit])
+      expect(described_class.call(avg_turnover: 2_000_000, change_pct: 10.0, on: now)).to eq([])
+      expect(described_class.call(avg_turnover: nil, change_pct: nil, on: now)).to eq([])
+    end
+
+    it "uses the ±10% limit for sessions before it changed on 2026-04-20" do
+      expect(described_class.call(avg_turnover: 9_000_000, change_pct: 9.6, on: Date.new(2026, 4, 17))).to eq([ "upper_circuit" ])
+      expect(described_class.call(avg_turnover: 9_000_000, change_pct: 9.6, on: Date.new(2026, 4, 20))).to eq([])
+      expect(described_class.daily_limit_pct(Date.new(2026, 4, 17))).to eq(10.0)
+      expect(described_class.circuit_near_pct(Date.new(2026, 4, 20))).to eq(14.5)
     end
   end
 

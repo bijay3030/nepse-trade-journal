@@ -109,17 +109,18 @@ module Watchlist
 
     # Uses today's live change, so it also warns during the session.
     def circuit_check
-      label = "Not at the ±#{Setups::Guards::DAILY_LIMIT_PCT.to_i}% daily limit"
+      label = "Not at the ±#{Setups::Guards.daily_limit_pct.to_i}% daily limit"
+      near = Setups::Guards.circuit_near_pct
       change = @item.stock.change_percent
       return check("circuit", label, "pending", "No price change yet") if change.nil?
 
       change = change.to_f
       detail =
-        if change >= Setups::Guards::CIRCUIT_NEAR_PCT then "#{signed(change)}: at the upper circuit, few sellers; wait for another session"
-        elsif change <= -Setups::Guards::CIRCUIT_NEAR_PCT then "#{signed(change)}: at the lower circuit, few buyers; exits may not fill"
+        if change >= near then "#{signed(change)}: at the upper circuit, few sellers; wait for another session"
+        elsif change <= -near then "#{signed(change)}: at the lower circuit, few buyers; exits may not fill"
         else "#{signed(change)} today"
         end
-      check("circuit", label, change.abs < Setups::Guards::CIRCUIT_NEAR_PCT ? "pass" : "fail", detail)
+      check("circuit", label, change.abs < near ? "pass" : "fail", detail)
     end
 
     # A bonus book close adjusts the price (and this setup's levels) mid-trade.
