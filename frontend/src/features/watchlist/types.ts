@@ -1,7 +1,7 @@
 import type { BookClose, LevelAdjustment } from "../corporate/types"
 
 export type SetupType = "vcp" | "pullback" | "ma_pullback" | "base_breakout"
-export type WatchlistStatus = "watching" | "in_zone" | "extended" | "invalidated" | "planned" | "archived"
+export type WatchlistStatus = "watching" | "in_zone" | "extended" | "invalidated" | "planned" | "holding" | "archived"
 export type PriceState = "below_zone" | "in_zone" | "extended" | "invalidated"
 export type AlertKind =
   | "entered_zone"
@@ -74,6 +74,8 @@ export type WatchlistItem = WatchlistLevels & {
   checklist: EntryChecklist
   next_book_close?: BookClose | null
   level_adjustments?: LevelAdjustment[]
+  /** The open position when the stock has been bought. */
+  position_id?: number | null
 }
 
 export type Suggestion =

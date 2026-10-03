@@ -20,6 +20,7 @@ export const STATUS_LABELS: Record<WatchlistStatus, string> = {
   extended: "Extended",
   invalidated: "Invalidated",
   planned: "Planned",
+  holding: "Holding",
   archived: "Archived",
 }
 
@@ -29,6 +30,7 @@ export const STATUS_TONE: Record<WatchlistStatus, "neutral" | "gain" | "loss"> =
   extended: "neutral",
   invalidated: "loss",
   planned: "gain",
+  holding: "gain",
   archived: "neutral",
 }
 

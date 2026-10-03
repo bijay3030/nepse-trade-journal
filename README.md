@@ -102,6 +102,7 @@ you can use the app straight away.
 | Dashboard         | `/dashboard`           | KPI cards and recent trades                     |
 | Market overview   | `/market`              | NEPSE index trend, breadth, heatmap, sectors    |
 | Daily digest      | `/digest`              | End-of-day summary; card on the dashboard       |
+| Positions         | `/positions`           | Bought stocks vs stop and target, live P&L in R |
 | VCP screener      | `/screener`            | Setup scores, breakout watch list               |
 | Stock analysis    | `/screener/NABIL`      | Candles, moving averages, levels, VCP breakdown |
 | Watchlist         | `/watchlist`           | Tracked setups, entry zones, alerts             |
@@ -398,6 +399,25 @@ Track a stock toward an entry using a VCP or price-action setup.
 6. **Plan the trade.** **Create plan** opens `/trade/new?watchlist=ID` with the entry,
    stop, target and a thesis filled in, plus position sizing from your account size
    and risk per trade. Saving creates a trade plan and marks the setup **Planned**.
+
+## Positions
+
+After you buy on TMS, record it in the app so it can track the trade:
+
+- **Watchlist card → Mark as bought:** price (defaults to the latest), quantity and date.
+  The stop and target come from the setup; the stop is capped at **8% below your entry**
+  when the setup's invalidation is further away. The dialog previews risk per share,
+  reward:risk and what the buy loses if the stop is hit. The card then shows
+  **Holding**, and entry alerts and end-of-day verdicts stop for it.
+- **`/positions`:** each open position with quantity, average price (weighted across
+  buys), live P&L in rupees, % and **R** (the move in units of the risk at entry), stop
+  and target with the distance to each, risk at the stop, days held and the **T+2
+  sellable date**. Edit the stop/target/notes, **Add a buy** (adds to the same
+  position), or remove a mistaken fill (removing the last one returns the stock to your
+  watchlist).
+
+Figures are before fees and tax; costs and sell alerts come next (see the roadmap in
+`docs/qa/manual-test-plan.md` section H13).
 
 ## Daily digest
 
