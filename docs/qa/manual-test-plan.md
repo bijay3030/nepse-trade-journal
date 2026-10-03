@@ -265,6 +265,21 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H12.10 | Send `/stop` to the bot | Bot replies "Disconnected"; Settings shows **Connect Telegram** again within a minute |
 | H12.11 | Read the messages | No "buy"/"sell" wording; ends with "Rule checks, not a recommendation." |
 
+## H13. Positions — `/watchlist` and `/positions`
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H13.1 | Watchlist card → **Mark as bought** | Dialog with price (latest), quantity, date (today, Nepal time); preview of stop, target, risk/share, reward:risk; **Record buy** disabled until a whole quantity is entered |
+| H13.2 | Stock whose invalidation is more than 8% below the price | Stop shows 8% below the price, with a note saying why |
+| H13.3 | Enter 100 shares, **Record buy** | "Recorded: 100 … Position now 100 shares at an average …", stop/target and "sellable from <date> (T+2)"; **View positions** link |
+| H13.4 | Back on the watchlist | Card shows **Holding**, a **View position** button, no entry checklist; no "entered zone" alerts for it any more |
+| H13.5 | `/positions` (sidebar **Positions**) | Summary (open positions, market value, unrealized P&L, risk if every stop is hit) and a card per position: shares at average, held days, P&L ₹ and %, R, stop and target with % distance, risk at stop, opened date, "Sellable from" badge until T+2 |
+| H13.6 | **Add a buy** at a different price | Same position; quantity adds up and the average is weighted; the stop is kept |
+| H13.7 | **Edit stop / target**, save | New values shown; R still measured from the first stop |
+| H13.8 | **Fills** → remove the newer buy | Quantity and average go back |
+| H13.9 | Remove the last fill (confirm) | Position disappears; the watchlist card returns to Watching/In zone |
+| H13.10 | Buy dated Thursday | Sellable from the following Monday (weekend skipped; holidays not counted) |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

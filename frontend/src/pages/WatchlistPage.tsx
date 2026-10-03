@@ -1,4 +1,4 @@
-import { Archive, Bell, BellOff, ClipboardList, Pencil, RotateCcw, Trash2 } from "lucide-react"
+import { Archive, Bell, BellOff, ClipboardList, Pencil, RotateCcw, Trash2, Wallet } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 
@@ -23,6 +23,7 @@ import {
 import { LevelFields } from "../features/watchlist/LevelFields"
 import { draftToLevels, levelsToDraft, type LevelDraft } from "../features/watchlist/levels"
 import { BookCloseBadge } from "../features/corporate/BookCloseBadge"
+import { BuyDialog } from "../features/positions/BuyDialog"
 import { EntryChecklistPanel } from "../features/watchlist/EntryChecklistPanel"
 import { PriceLadder } from "../features/watchlist/PriceLadder"
 import type { WatchlistItem } from "../features/watchlist/types"
@@ -96,8 +97,10 @@ function WatchlistCard({ item }: { item: WatchlistItem }) {
   const [notes, setNotes] = useState(item.notes ?? "")
   const update = useUpdateWatchlistItem()
   const remove = useRemoveWatchlistItem()
+  const [buying, setBuying] = useState(false)
   const snapshot = item.setup_snapshot
   const archived = item.status === "archived"
+  const holding = item.status === "holding"
 
   const save = () =>
     update.mutate(
@@ -162,7 +165,7 @@ function WatchlistCard({ item }: { item: WatchlistItem }) {
             Levels adjusted for {item.level_adjustments.map((adjustment) => `a ${adjustment.bonus_percent}% bonus (book close ${adjustment.book_close_on})`).join(" and ")}.
           </p>
         )}
-        {!archived && <EntryChecklistPanel checklist={item.checklist} />}
+        {!archived && !holding && <EntryChecklistPanel checklist={item.checklist} />}
 
         <p className="mt-3 rounded-lg bg-slate/5 px-3 py-2 text-xs text-slate">
           Added {new Date(item.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at {formatPrice(item.price_at_add)}
@@ -176,7 +179,18 @@ function WatchlistCard({ item }: { item: WatchlistItem }) {
 
         {!editing && (
           <div className="mt-3 flex flex-wrap gap-2">
-            {item.trade_plan_id ? (
+            {holding ? (
+              <Link to="/positions" className="inline-flex items-center gap-1.5 rounded-xl bg-pine px-3 py-1.5 text-xs font-bold text-white">
+                <Wallet className="h-4 w-4" /> View position
+              </Link>
+            ) : (
+              !archived && item.status !== "invalidated" && (
+                <Button size="sm" onClick={() => setBuying(true)} className="inline-flex items-center gap-1.5">
+                  <Wallet className="h-3.5 w-3.5" /> Mark as bought
+                </Button>
+              )
+            )}
+            {holding ? null : item.trade_plan_id ? (
               // The Trades page still reads browser storage, not saved plans, so this is a label, not a link.
               <span className="inline-flex items-center gap-1.5 rounded-xl border border-pine/30 bg-pine/10 px-3 py-1.5 text-xs font-bold text-pine">
                 <ClipboardList className="h-4 w-4" /> Plan #{item.trade_plan_id} saved
@@ -214,6 +228,16 @@ function WatchlistCard({ item }: { item: WatchlistItem }) {
           </div>
         )}
       </Card>
+      {buying && (
+        <BuyDialog
+          symbol={item.symbol}
+          currentPrice={item.current_price}
+          watchlistItemId={item.id}
+          setupStop={item.stop_loss_price ?? item.invalidation_price}
+          target={item.target_price}
+          onClose={() => setBuying(false)}
+        />
+      )}
     </article>
   )
 }

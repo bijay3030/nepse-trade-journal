@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_30_220000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_03_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -139,6 +139,36 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_220000) do
     t.string "name", null: false
     t.index ["user_id", "name"], name: "index_portfolios_on_user_id_and_name", unique: true
     t.index ["user_id"], name: "index_portfolios_on_user_id"
+  end
+
+  create_table "position_fills", force: :cascade do |t|
+    t.bigint "position_id", null: false
+    t.string "side", null: false
+    t.decimal "price", precision: 12, scale: 2, null: false
+    t.integer "quantity", null: false
+    t.date "traded_on", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["position_id"], name: "index_position_fills_on_position_id"
+  end
+
+  create_table "positions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "stock_id", null: false
+    t.bigint "watchlist_item_id"
+    t.string "status", default: "open", null: false
+    t.string "setup_type"
+    t.decimal "stop_price", precision: 12, scale: 2, null: false
+    t.decimal "initial_stop_price", precision: 12, scale: 2, null: false
+    t.decimal "target_price", precision: 12, scale: 2
+    t.date "closed_on"
+    t.text "notes"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["stock_id"], name: "index_positions_on_stock_id"
+    t.index ["user_id", "stock_id"], name: "index_positions_one_open_per_stock", unique: true, where: "((status)::text = 'open'::text)"
+    t.index ["user_id"], name: "index_positions_on_user_id"
+    t.index ["watchlist_item_id"], name: "index_positions_on_watchlist_item_id"
   end
 
   create_table "stock_broker_flows", force: :cascade do |t|
@@ -476,6 +506,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_30_220000) do
   add_foreign_key "holdings", "stocks"
   add_foreign_key "market_index_histories", "market_indices"
   add_foreign_key "portfolios", "users"
+  add_foreign_key "position_fills", "positions", on_delete: :cascade
+  add_foreign_key "positions", "stocks"
+  add_foreign_key "positions", "users"
+  add_foreign_key "positions", "watchlist_items", on_delete: :nullify
   add_foreign_key "stock_broker_flows", "stocks"
   add_foreign_key "stock_company_financials", "stocks"
   add_foreign_key "stock_daily_indicators", "stock_daily_prices"

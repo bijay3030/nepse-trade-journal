@@ -41,3 +41,8 @@ export function nextMarketOpen(nowNpt: Date, days: number[] = TRADING_DAYS) {
   }
   return nowNpt
 }
+
+/** Today's date in Nepal (YYYY-MM-DD), whatever the browser's time zone. */
+export function nptToday(now: Date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kathmandu", year: "numeric", month: "2-digit", day: "2-digit" }).format(now)
+}

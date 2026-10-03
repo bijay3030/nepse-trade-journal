@@ -30,6 +30,13 @@ module Nepse
       within?(time, CLOSE_MINUTE + CLOSING_GRACE_MINUTES)
     end
 
+    # The next weekday NEPSE trades after the given date (holidays not modelled).
+    def next_trading_day(date)
+      day = date + 1
+      day += 1 until trading_wdays.include?(day.wday)
+      day
+    end
+
     def within?(time, end_minute)
       local = time.in_time_zone(TIME_ZONE)
       minute = local.hour * 60 + local.min

@@ -19,6 +19,7 @@ class User < ApplicationRecord
   has_many :watchlist_alerts, dependent: :delete_all
   has_many :daily_digests, dependent: :delete_all
   has_many :telegram_deliveries, dependent: :delete_all
+  has_many :positions, dependent: :destroy
 
   validates :jti, presence: true, uniqueness: true
 end
