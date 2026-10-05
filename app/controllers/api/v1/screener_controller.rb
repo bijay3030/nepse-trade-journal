@@ -13,6 +13,7 @@ module Api
           readiness: snapshot && StockSetupSnapshotSerializer.new(snapshot).as_json,
           readiness_history: Setups::ReadinessHistory.for_stock(stock),
           rs_line: Setups::RsLine.call(stock),
+          volume_pace: Nepse::VolumeProfile.pace(stock),
           broker_flow: Flows::AccumulationAnalyzer.call(stock),
           corporate_actions: {
             upcoming: CorporateActions::Upcoming.for_stock(stock),

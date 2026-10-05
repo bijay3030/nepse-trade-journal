@@ -10,8 +10,10 @@ module Nepse
       result
     end
 
-    # Runs after any price update: checks watchlist levels, then pushes quotes.
+    # Runs after any price update: records the running volumes (for the volume
+    # pace), checks watchlist levels, then pushes quotes.
     def self.publish
+      Nepse::VolumeProfile.record!
       Watchlist::AlertEvaluator.call
       broadcast
     end

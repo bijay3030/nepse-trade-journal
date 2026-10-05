@@ -138,6 +138,16 @@ export type RsLine = {
   last_new_high_leads_price: boolean
 }
 
+export type VolumePace = {
+  so_far: number
+  minute: number
+  average: number | null
+  projected: number | null
+  ratio: number | null
+  /** "learned" from NEPSE's own intraday volumes, or the "default" curve until there are enough sessions. */
+  curve: { source: "learned" | "default"; sessions: number }
+}
+
 /** Tradability guards (Setups::Guards) that keep a qualifying chart off the board. */
 export type Guard = "thin_volume" | "upper_circuit" | "lower_circuit"
 
@@ -302,6 +312,8 @@ export type StockAnalysis = {
   readiness?: ReadinessSnapshot | null
   readiness_history?: ReadinessHistoryPoint[]
   rs_line?: RsLine
+  /** Today's volume during the session, projected to the close (Nepse::VolumeProfile). */
+  volume_pace?: VolumePace | null
   broker_flow?: BrokerFlow
   corporate_actions?: { upcoming: BookClose | null; history: DividendRow[] }
 }

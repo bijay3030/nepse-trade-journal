@@ -311,6 +311,23 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
 
+## Intraday volume pace
+
+Breakouts are judged on the day's **projected** volume, not the volume so far: at 11:30
+only about a fifth of a day's shares have usually traded, so comparing that with a full
+day's average called almost every early breakout "light".
+
+- Every 5-minute price sync records each stock's running volume (`stock_intraday_volumes`,
+  kept 45 days).
+- `Nepse::VolumeProfile` learns how much of a day's volume has normally traded by each
+  15-minute slot (median across stocks over the last 20 sessions, ignoring stale
+  volumes). Until 5 sessions are recorded it uses an estimated front-loaded curve.
+- Projected volume = volume so far ÷ that share. Breakout alerts use projected ÷ 50-day
+  average ≥ 1.5x; in the first 15 minutes they say it's too early to judge. A stock at
+  the upper circuit gets a note that volume understates demand.
+- The stock page shows "Volume today: … so far · projected … by the close = …× the
+  50-day average" during the session.
+
 ## Corporate actions (book closes and bonus shares)
 
 A bonus issue lowers the share price mechanically on the book close (a 10% bonus

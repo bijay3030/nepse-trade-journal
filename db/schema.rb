@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_04_060000) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_05_073845) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -276,6 +276,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_04_060000) do
     t.index ["stock_id"], name: "index_stock_dividends_on_stock_id"
   end
 
+  create_table "stock_intraday_volumes", force: :cascade do |t|
+    t.bigint "stock_id", null: false
+    t.date "traded_on", null: false
+    t.integer "minute", null: false
+    t.bigint "volume", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["stock_id", "traded_on", "minute"], name: "index_intraday_volumes_unique", unique: true
+    t.index ["stock_id"], name: "index_stock_intraday_volumes_on_stock_id"
+    t.index ["traded_on"], name: "index_stock_intraday_volumes_on_traded_on"
+  end
+
   create_table "stock_setup_snapshots", force: :cascade do |t|
     t.bigint "stock_id", null: false
     t.date "traded_on", null: false
@@ -519,6 +531,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_04_060000) do
   add_foreign_key "stock_daily_indicators", "stocks"
   add_foreign_key "stock_daily_prices", "stocks"
   add_foreign_key "stock_dividends", "stocks"
+  add_foreign_key "stock_intraday_volumes", "stocks", on_delete: :cascade
   add_foreign_key "stock_setup_snapshots", "stocks"
   add_foreign_key "telegram_deliveries", "stocks"
   add_foreign_key "telegram_deliveries", "users"
