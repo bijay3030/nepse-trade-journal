@@ -61,4 +61,12 @@ describe("ReadinessCard", () => {
     expect(screen.getByRole("img", { name: "Readiness over 3 sessions: 48 to 68" })).toBeInTheDocument()
     expect(screen.getByText(/48 on 2026-09-24 → 68 now · dashed line at 60/)).toHaveTextContent("2 sessions met the entry-zone criteria")
   })
+
+  it("shows the RS rating component on snapshots that have one", () => {
+    const snapshot = readinessSnapshot()
+    render(<ReadinessCard snapshot={{ ...snapshot, readiness_components: { ...snapshot.readiness_components, rs: { points: 15, max: 20 } } }} />)
+
+    expect(screen.getByText("RS rating")).toBeInTheDocument()
+    expect(screen.getByText("15/20")).toBeInTheDocument()
+  })
 })

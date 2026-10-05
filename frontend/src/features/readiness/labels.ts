@@ -26,6 +26,7 @@ export const SETUP_TYPE_LABELS = {
 
 export const COMPONENT_LABELS = {
   trend: "Trend template",
+  rs: "RS rating",
   setup: "Setup quality",
   market: "Market regime",
   sector: "Sector vs NEPSE",
