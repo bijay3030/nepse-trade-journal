@@ -276,6 +276,14 @@ with enough history gets a snapshot:
 - **Entry readiness (0-100):** trend template 30 + setup quality 25 + market regime 15 +
   sector index vs NEPSE 15 + broker flow 15.
 
+Support pullbacks only count as a setup for stocks with an **RS rating of 70 or more**.
+In the backtest (Apr–Oct 2026) weaker stocks' pullbacks kept falling: all support
+pullbacks in their zone averaged −0.98% over 10 sessions (38% up), those with RS ≥ 70
+−0.30% (46% up). This cut the stock-days marked "in zone" from 12,503 to 4,929 without
+changing the board. (A reweighted readiness score with an RS component was tried and
+dropped: it let more pullbacks onto the board and the simulated trades fell from a 56.5%
+to a 50.8% win rate.)
+
 A stock is listed under **Entry zone now** when the price is inside the zone, at least
 5 of 7 trend rules pass and readiness is 60+, **and it passes the tradability guards**
 (`Setups::Guards`, measured point in time in the nightly snapshot):

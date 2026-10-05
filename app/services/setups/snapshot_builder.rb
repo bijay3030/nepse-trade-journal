@@ -80,7 +80,7 @@ module Setups
       readiness = Readiness.call(
         trend_passed: trend[:passed], setup_quality: setup[:quality], regime: context.regime,
         sector_return: context.sector_returns[stock.sector], nepse_return: context.nepse_return,
-        flow_score: flow[:score], rs_rating: rs_rating
+        flow_score: flow[:score]
       )
 
       avg_turnover = Guards.avg_turnover(stock.daily_prices, @sessions)
