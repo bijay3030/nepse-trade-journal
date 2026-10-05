@@ -10,6 +10,7 @@ module Setups
     MIN_SESSIONS = 60
     SETUP_TYPES = Types::ALL
     # Which setup represents the stock when both have zones: one in its zone first.
+    PULLBACK_MIN_RS = 70
     ZONE_PRIORITY = { "in_zone" => 0, "too_early" => 1, "extended" => 2, "failed" => 3 }.freeze
 
     def self.call(**options) = new(**options).call
@@ -74,7 +75,7 @@ module Setups
 
       analysis = Stock::SetupAnalysis.new(stock, market: market, as_of: traded_on)
       detail = analysis.detail
-      setup = best_setup(stock, detail, close, market)
+      setup = best_setup(stock, detail, close, market, rs_rating)
 
       readiness = Readiness.call(
         trend_passed: trend[:passed], setup_quality: setup[:quality], regime: context.regime,
@@ -112,8 +113,12 @@ module Setups
     end
 
     # Evaluates both setups and keeps the most actionable one.
-    def best_setup(stock, detail, close, market)
+    # Support pullbacks only count for stocks with an RS rating of PULLBACK_MIN_RS or
+    # more: in the backtest, weaker stocks' pullbacks kept falling (win rate 38% -> 46%).
+    def best_setup(stock, detail, close, market, rs_rating = nil)
       candidates = SETUP_TYPES.filter_map do |type|
+        next if type == "pullback" && rs_rating.to_i < PULLBACK_MIN_RS
+
         suggestion = Watchlist::EntryZoneSuggester.call(stock, type, market: market, analysis: detail)
         next unless suggestion[:success]
 

@@ -88,6 +88,25 @@ RSpec.describe Setups::SnapshotBuilder do
     expect(snapshot).to have_attributes(traded_on: day, close_price: 199.0, zone_state: "in_zone")
   end
 
+  it "only counts a support pullback for a stock with an RS rating of 70 or more" do
+    leader = stock_with_history("LEAD", Array.new(100) { |i| 100.0 + i * 1.0 }) # rises most: RS 99
+    laggard = stock_with_history("LAG", Array.new(100) { |i| 100.0 + i * 0.1 }) # rises least: RS 1
+    allow(Watchlist::EntryZoneSuggester).to receive(:call) do |stock, type, **|
+      next { success: false, error: "No #{type}" } unless type == "pullback"
+
+      close = stock.daily_prices.max_by(&:traded_on).close_price.to_f
+      { success: true, levels: { entry_zone_low: close - 1, entry_zone_high: close + 1, invalidation_price: close - 10, target_price: close + 20, pivot_price: nil } }
+    end
+
+    detail[:candles] = [ { open: 198.0, high: 200.0, low: 197.0, close: 199.0 } ]
+    detail[:price_action][:trend] = "uptrend"
+
+    described_class.call
+
+    expect(leader.setup_snapshots.sole).to have_attributes(setup_type: "pullback", zone_state: "in_zone")
+    expect(laggard.setup_snapshots.sole).to have_attributes(setup_type: nil, zone_state: "no_setup")
+  end
+
   it "uses a newer pattern's own quality and prefers a setup in its zone" do
     stock = stock_with_history("BANK", Array.new(100) { |i| 100.0 + i * 1.0 }) # ends at 199
     allow(Watchlist::EntryZoneSuggester).to receive(:call) do |_stock, type, **|

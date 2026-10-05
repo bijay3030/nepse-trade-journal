@@ -171,6 +171,8 @@ export type ReadinessSnapshot = {
     market: ReadinessComponent
     sector: ReadinessComponent
     flow?: ReadinessComponent
+    /** Added with the October 2026 reweighting. */
+    rs?: ReadinessComponent
     sector_vs_nepse: number | null
     flow_score?: number | null
   }
