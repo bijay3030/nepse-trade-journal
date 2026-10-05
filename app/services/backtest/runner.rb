@@ -138,7 +138,7 @@ module Backtest
     end
 
     def qualifies?(snap)
-      Setups::Readiness.in_buy_zone?(zone_state: snap[:zone_state], price_rules_passed: snap[:trend_rules].to_i, score: snap[:readiness].to_i)
+      Setups::Readiness.in_buy_zone?(zone_state: snap[:zone_state], price_rules_passed: snap[:trend_rules].to_i, score: snap[:readiness].to_i, setup_type: snap[:setup_type])
     end
 
     def trades(snapshots)

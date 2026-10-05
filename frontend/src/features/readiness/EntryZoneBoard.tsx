@@ -36,6 +36,9 @@ export function EntryZoneBoard() {
         {criteria.min_avg_turnover !== undefined && (
           <> Tradable only: average turnover {formatTurnover(criteria.min_avg_turnover)}+ a day, and a daily move under ±{criteria.circuit_near_pct ?? 14.5}% (not at the ±{criteria.daily_limit_pct ?? 15}% circuit).</>
         )}{" "}
+        {criteria.setup_types && (
+          <> Setups: {criteria.setup_types.map((type) => SETUP_TYPE_LABELS[type]).join(", ")}; support pullbacks are shown in the screener but not here (they lost in the backtest).</>
+        )}{" "}
         Rule checks, not recommendations.
       </p>
       {data.results.length === 0 ? (

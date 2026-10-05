@@ -43,8 +43,14 @@ module Setups
       (((value + spread) / (2 * spread)).clamp(0, 1) * max).round
     end
 
-    def in_buy_zone?(zone_state:, price_rules_passed:, score:)
-      zone_state == "in_zone" && price_rules_passed >= MIN_PRICE_RULES && score >= MIN_READINESS
+    # Setups that can put a stock on "Entry zone now". Support pullbacks are shown in the
+    # screener but kept off the board: in the backtest they lost (14 trades, 36% win)
+    # while pullbacks to a rising average won about 70%.
+    BOARD_SETUP_TYPES = Types::ALL - %w[pullback]
+
+    def in_buy_zone?(zone_state:, price_rules_passed:, score:, setup_type:)
+      zone_state == "in_zone" && BOARD_SETUP_TYPES.include?(setup_type) &&
+        price_rules_passed >= MIN_PRICE_RULES && score >= MIN_READINESS
     end
   end
 end

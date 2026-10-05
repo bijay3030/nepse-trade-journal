@@ -86,7 +86,7 @@ module Setups
       avg_turnover = Guards.avg_turnover(stock.daily_prices, @sessions)
       change_pct = Guards.change_pct(stock.daily_prices, traded_on)
       guards = Guards.call(avg_turnover: avg_turnover, change_pct: change_pct, on: traded_on)
-      qualifies = Readiness.in_buy_zone?(zone_state: setup[:zone_state], price_rules_passed: trend[:price_rules_passed], score: readiness[:score])
+      qualifies = Readiness.in_buy_zone?(zone_state: setup[:zone_state], price_rules_passed: trend[:price_rules_passed], score: readiness[:score], setup_type: setup[:type])
 
       snapshot = StockSetupSnapshot.find_or_initialize_by(stock: stock, traded_on: traded_on)
       snapshot.update!(

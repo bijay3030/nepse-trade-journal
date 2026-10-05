@@ -284,6 +284,12 @@ changing the board. (A reweighted readiness score with an RS component was tried
 dropped: it let more pullbacks onto the board and the simulated trades fell from a 56.5%
 to a 50.8% win rate.)
 
+**Entry zone now** takes VCP breakouts, flat-base breakouts and pullbacks to a rising
+average; support pullbacks stay in the screener and watchlist but don't qualify. Over
+the same backtest that lifted the board's 10-session results from +0.75% (56% up) to
++1.44% (63% up), and the simulated trades from a 56.5% to a 63.6% win rate (profit
+factor 1.19 to 1.53).
+
 A stock is listed under **Entry zone now** when the price is inside the zone, at least
 5 of 7 trend rules pass and readiness is 60+, **and it passes the tradability guards**
 (`Setups::Guards`, measured point in time in the nightly snapshot):
