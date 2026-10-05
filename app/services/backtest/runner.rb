@@ -35,7 +35,7 @@ module Backtest
     def call
       snapshots = StockSetupSnapshot.order(:traded_on).pluck(
         :stock_id, :traded_on, :close_price, :readiness_score, :zone_state, :flow_state, :trend_rules_passed,
-        :in_buy_zone, :entry_zone_low, :entry_zone_high, :invalidation_price, :target_price, :setup_type, :guards
+        :in_buy_zone, :entry_zone_low, :entry_zone_high, :invalidation_price, :target_price, :setup_type, :guards, :extension
       ).map { |row| snapshot_hash(row) }
       sessions = Setups::HistoryBuilder.sessions.to_set
       snapshots.select! { sessions.include?(_1[:traded_on]) }
@@ -58,7 +58,7 @@ module Backtest
     private
 
     def snapshot_hash(row)
-      keys = %i[stock_id traded_on close readiness zone_state flow_state trend_rules in_buy_zone entry_low entry_high stop target setup_type guards]
+      keys = %i[stock_id traded_on close readiness zone_state flow_state trend_rules in_buy_zone entry_low entry_high stop target setup_type guards extension]
       keys.zip(row).to_h.tap do |snap|
         %i[close entry_low entry_high stop target].each { snap[_1] = snap[_1]&.to_f }
       end
@@ -126,7 +126,30 @@ module Backtest
                  "under 5" => by_horizon(snapshots.select { _1[:trend_rules].to_i < 5 }) },
         entry_zone: { "Entry zone now" => by_horizon(snapshots.select { _1[:in_buy_zone] }),
                       "Everything else" => by_horizon(snapshots.reject { _1[:in_buy_zone] }) },
-        guards: guard_groups(snapshots)
+        guards: guard_groups(snapshots),
+        **extension_groups(snapshots)
+      }
+    end
+
+    # Setups::Extension measures, for stocks in their zone and for the board's picks.
+    def extension_groups(snapshots)
+      in_zone = snapshots.select { _1[:zone_state] == "in_zone" }
+      board = snapshots.select { _1[:in_buy_zone] }
+      ext = ->(snap) { snap[:extension]&.dig("extension_adr") }
+      move = ->(snap) { snap[:extension]&.dig("day_move_adr") }
+      age = ->(snap) { snap[:extension]&.dig("breakout_age") }
+      bands = { "under 2 ADR" => ...2, "2-4 ADR" => 2...4, "4-6 ADR" => 4...6, "6+ ADR" => 6.. }
+      {
+        extension: { "in zone" => in_zone, "board" => board }.flat_map do |label, rows|
+          bands.map { |band, range| [ "#{label}: #{band}", by_horizon(rows.select { (value = ext.(_1)) && range.cover?(value) }) ] }
+        end.to_h,
+        day_move: { "in zone" => in_zone, "board" => board }.flat_map do |label, rows|
+          [ [ "#{label}: move up to 1 ADR", by_horizon(rows.select { (value = move.(_1)) && value <= 1 }) ],
+            [ "#{label}: move over 1 ADR", by_horizon(rows.select { (value = move.(_1)) && value > 1 }) ] ]
+        end.to_h,
+        breakout_age: { "day 0" => 0..0, "days 1-2" => 1..2, "days 3-4" => 3..4, "day 5+" => 5.. }.to_h do |band, range|
+          [ "breakouts in zone: #{band}", by_horizon(in_zone.select { (value = age.(_1)) && range.cover?(value) }) ]
+        end
       }
     end
 
