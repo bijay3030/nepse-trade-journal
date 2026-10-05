@@ -211,6 +211,8 @@ export type BuyZoneResponse = {
     zone_state: ZoneState
     min_trend_rules: number
     min_readiness: number
+    /** Setups that can qualify; support pullbacks are left out. */
+    setup_types?: Array<"vcp" | "pullback" | "ma_pullback" | "base_breakout">
     min_avg_turnover?: number
     circuit_near_pct?: number
     /** NEPSE's per-stock daily price limit for the session (±15% since 2026-04-20). */

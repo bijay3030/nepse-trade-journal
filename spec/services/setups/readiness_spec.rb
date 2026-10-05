@@ -35,9 +35,15 @@ RSpec.describe Setups::Readiness do
   end
 
   it "requires the zone, five trend rules and 60+ readiness for the entry zone" do
-    expect(described_class.in_buy_zone?(zone_state: "in_zone", price_rules_passed: 5, score: 60)).to be(true)
-    expect(described_class.in_buy_zone?(zone_state: "in_zone", price_rules_passed: 4, score: 80)).to be(false)
-    expect(described_class.in_buy_zone?(zone_state: "extended", price_rules_passed: 7, score: 90)).to be(false)
-    expect(described_class.in_buy_zone?(zone_state: "in_zone", price_rules_passed: 7, score: 59)).to be(false)
+    expect(described_class.in_buy_zone?(zone_state: "in_zone", price_rules_passed: 5, score: 60, setup_type: "vcp")).to be(true)
+    expect(described_class.in_buy_zone?(zone_state: "in_zone", price_rules_passed: 4, score: 80, setup_type: "vcp")).to be(false)
+    expect(described_class.in_buy_zone?(zone_state: "extended", price_rules_passed: 7, score: 90, setup_type: "vcp")).to be(false)
+    expect(described_class.in_buy_zone?(zone_state: "in_zone", price_rules_passed: 7, score: 59, setup_type: "vcp")).to be(false)
+  end
+
+  it "keeps support pullbacks off the board but not pullbacks to a rising average" do
+    expect(described_class.in_buy_zone?(zone_state: "in_zone", price_rules_passed: 7, score: 90, setup_type: "pullback")).to be(false)
+    expect(described_class.in_buy_zone?(zone_state: "in_zone", price_rules_passed: 7, score: 90, setup_type: "ma_pullback")).to be(true)
+    expect(described_class.in_buy_zone?(zone_state: "in_zone", price_rules_passed: 7, score: 90, setup_type: "base_breakout")).to be(true)
   end
 end

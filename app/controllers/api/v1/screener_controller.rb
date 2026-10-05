@@ -39,6 +39,7 @@ module Api
           traded_on: traded_on&.iso8601,
           criteria: {
             zone_state: "in_zone", min_trend_rules: Setups::Readiness::MIN_PRICE_RULES, min_readiness: Setups::Readiness::MIN_READINESS,
+            setup_types: Setups::Readiness::BOARD_SETUP_TYPES,
             min_avg_turnover: Setups::Guards::MIN_TURNOVER, circuit_near_pct: Setups::Guards.circuit_near_pct(traded_on || Nepse::MarketHours.today),
             daily_limit_pct: Setups::Guards.daily_limit_pct(traded_on || Nepse::MarketHours.today)
           },

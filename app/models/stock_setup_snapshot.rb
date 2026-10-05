@@ -15,7 +15,7 @@ class StockSetupSnapshot < ApplicationRecord
   scope :latest_session, -> { where(traded_on: maximum(:traded_on)) }
   # Charts that meet the entry-zone rules but fail a tradability guard.
   scope :held_back_by_guards, lambda {
-    where(zone_state: "in_zone")
+    where(zone_state: "in_zone", setup_type: Setups::Readiness::BOARD_SETUP_TYPES)
       .where("trend_rules_passed >= ? AND readiness_score >= ?", Setups::Readiness::MIN_PRICE_RULES, Setups::Readiness::MIN_READINESS)
       .where("guards <> '[]'::jsonb")
   }
