@@ -172,6 +172,26 @@ export function BacktestPage() {
             </CardBody>
           </Card>
         )}
+        {results.groups.extension && (
+          <Card>
+            <CardHeader title="By extension from the 50-day" subtitle="Distance above the 50-day average in ADRs (the stock's average daily range); 4+ is flagged extended" />
+            <CardBody><GroupChart groups={results.groups.extension} horizon={horizon} /></CardBody>
+          </Card>
+        )}
+        {results.groups.day_move && (
+          <Card>
+            <CardHeader title="By the day's move" subtitle="The signal day's change in ADRs; over 1 is flagged as a big move" />
+            <CardBody><GroupChart groups={results.groups.day_move} horizon={horizon} /></CardBody>
+          </Card>
+        )}
+        {results.groups.breakout_age && (
+          <Card>
+            <CardHeader title="By breakout age" subtitle="Breakout setups in their zone: sessions since the first close above the pivot; 5+ is flagged stale" />
+            <CardBody>
+              <GroupChart groups={results.groups.breakout_age} horizon={horizon} order={["breakouts in zone: day 0", "breakouts in zone: days 1-2", "breakouts in zone: days 3-4", "breakouts in zone: day 5+"]} />
+            </CardBody>
+          </Card>
+        )}
         {results.groups.guards && (
           <Card>
             <CardHeader title="By tradability guard" subtitle="Charts meeting the entry rules: passed every guard, or held back by thin volume or a circuit" />

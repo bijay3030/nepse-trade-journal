@@ -38,6 +38,10 @@ export type BacktestResults = {
     entry_zone: Record<string, GroupStats>
     /** Charts meeting the entry rules: passed all guards, or held back by each guard. */
     guards?: Record<string, GroupStats>
+    /** Setups::Extension: extension from the 50-day, the day's move, breakout age. */
+    extension?: Record<string, GroupStats>
+    day_move?: Record<string, GroupStats>
+    breakout_age?: Record<string, GroupStats>
   }
   trades: {
     total: number

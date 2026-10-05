@@ -3,6 +3,7 @@ import { CheckCircle2, XCircle } from "lucide-react"
 import { Badge, Card, CardBody, CardHeader } from "../../components/ui"
 import { cn } from "../../lib/cn"
 import type { ReadinessHistoryPoint, ReadinessSnapshot } from "../screener/types"
+import { ExtensionBadges } from "./ExtensionBadges"
 import { GuardBadges } from "./GuardBadges"
 import { COMPONENT_LABELS, GUARD_DETAILS, SETUP_TYPE_LABELS, ZONE_LABELS, ZONE_TONE, formatTurnover, readinessTone } from "./labels"
 import { ReadinessGauge } from "./ReadinessGauge"
@@ -31,6 +32,7 @@ export function ReadinessCard({ snapshot, history = [] }: { snapshot: ReadinessS
               <Badge tone={ZONE_TONE[snapshot.zone_state]}>{ZONE_LABELS[snapshot.zone_state]}</Badge>
               {snapshot.in_buy_zone && <Badge tone="gain">Meets entry-zone criteria</Badge>}
               <GuardBadges guards={snapshot.guards} />
+              <ExtensionBadges extension={snapshot.extension} />
               <span className={cn("text-sm font-semibold", tone.text)}>{tone.label} readiness</span>
             </div>
             <p className="mt-1 text-sm text-slate">
