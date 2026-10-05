@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Badge, Button, Card, CardBody, CardHeader, LoadingSpinner } from "../components/ui"
 import { useStockAnalysis } from "../features/screener/api"
-import type { PriceLevel, RsLine, StockAnalysis } from "../features/screener/types"
+import type { PriceLevel, RsLine, StockAnalysis, VolumePace } from "../features/screener/types"
 import { SETUP_STATE_LABELS } from "../features/screener/types"
 import { CandlestickChart, type ChartLevels } from "../features/readiness/CandlestickChart"
 import { CorporateActionsCard } from "../features/corporate/CorporateActionsCard"
@@ -67,6 +67,31 @@ function RsSummary({ rsLine }: { rsLine: RsLine }) {
           {rsLine.last_new_high_leads_price && " (before price)"}
         </>
       )}
+    </p>
+  )
+}
+
+const shares = (value: number) => value.toLocaleString("en-US")
+
+// During the session: today's volume so far and where it's heading by the close.
+function VolumePaceLine({ pace }: { pace: VolumePace }) {
+  const strong = pace.ratio !== null && pace.ratio >= 1.5
+  return (
+    <p className="rounded-xl bg-white/80 px-4 py-2 text-sm text-slate" aria-label="Volume pace">
+      <b className="text-ink">Volume today:</b> {shares(pace.so_far)} so far
+      {pace.projected === null ? (
+        " · too early in the session to project"
+      ) : (
+        <>
+          {" · "}projected {shares(pace.projected)} by the close
+          {pace.ratio !== null && pace.average !== null && (
+            <> = <b className={strong ? "text-pine" : "text-ink"}>{pace.ratio}×</b> the 50-day average of {shares(pace.average)}</>
+          )}
+        </>
+      )}
+      <span className="text-xs">
+        {" "}({pace.curve.source === "learned" ? `pace learned from the last ${pace.curve.sessions} sessions` : "estimated pace until enough NEPSE sessions are recorded"})
+      </span>
     </p>
   )
 }
@@ -350,6 +375,8 @@ function StockAnalysisBody({ symbol, onBack }: { symbol: string; onBack: () => v
           </Badge>
         </div>
       </header>
+
+      {data.volume_pace ? <VolumePaceLine pace={data.volume_pace} /> : null}
 
       {data.readiness ? <ReadinessCard snapshot={data.readiness} history={data.readiness_history} /> : null}
 

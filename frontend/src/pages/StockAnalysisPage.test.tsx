@@ -146,6 +146,16 @@ describe("StockAnalysisPage", () => {
     )
   })
 
+  it("shows today's volume pace during the session", () => {
+    const volume_pace = { so_far: 35_000, minute: 60, average: 50_000, projected: 100_000, ratio: 2, curve: { source: "default" as const, sessions: 0 } }
+    mockUseStockAnalysis.mockReturnValue({ data: { ...mockStockAnalysis, volume_pace }, isLoading: false, isError: false, refetch: vi.fn() })
+    renderPage()
+
+    expect(screen.getByLabelText("Volume pace")).toHaveTextContent(
+      "Volume today: 35,000 so far · projected 100,000 by the close = 2× the 50-day average of 50,000 (estimated pace until enough NEPSE sessions are recorded)",
+    )
+  })
+
   it("never renders trading advice words", () => {
     mockUseStockAnalysis.mockReturnValue({ data: { ...mockStockAnalysis, readiness: readinessSnapshot() }, isLoading: false, isError: false, refetch: vi.fn() })
     const { container } = renderPage()

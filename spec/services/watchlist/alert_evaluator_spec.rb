@@ -11,11 +11,6 @@ RSpec.describe Watchlist::AlertEvaluator do
     item.reload
   end
 
-  def with_average_volume(volume)
-    (1..50).each { |n| create(:stock_daily_price, stock: stock, traded_on: Date.new(2026, 9, 24) - n, volume: volume) }
-    create(:stock_daily_price, stock: stock, traded_on: Date.new(2026, 9, 24), volume: 0)
-  end
-
   it "leaves held stocks to the position (no entry alerts)" do
     item.update!(status: "holding")
 
@@ -28,23 +23,66 @@ RSpec.describe Watchlist::AlertEvaluator do
     expect(item.last_evaluated_at).to be_present
   end
 
-  it "confirms a VCP breakout when volume is at least 1.5x the average" do
-    with_average_volume(10_000)
-    move_to(505, volume: 18_000)
+  describe "breakout volume, projected to the close" do
+    include ActiveSupport::Testing::TimeHelpers
 
-    alert = item.alerts.last
-    expect(alert.kind).to eq("breakout_confirmed")
-    expect(alert.relative_volume.to_f).to eq(1.8)
-    expect(alert.message).to eq("NABIL broke above the 500.00 pivot at 505.00 on 1.8x its 50-day average volume so far.")
-    expect(item).to have_attributes(status: "in_zone", price_state: "in_zone", touched_zone_on: Nepse::MarketHours.today)
-  end
+    # Thursday 2026-09-24; 50 earlier sessions averaging 10,000 shares.
+    def at(npt_time) = travel_to(ActiveSupport::TimeZone["Asia/Kathmandu"].parse("2026-09-24 #{npt_time}"))
 
-  it "flags a breakout on light volume" do
-    with_average_volume(10_000)
-    move_to(505, volume: 9_000)
+    before do
+      (1..50).each { |n| create(:stock_daily_price, stock: stock, traded_on: Date.new(2026, 9, 24) - n, volume: 10_000) }
+    end
 
-    expect(item.alerts.last.kind).to eq("breakout_low_volume")
-    expect(item.alerts.last.message).to include("0.9x", "Wait for volume to confirm")
+    after { travel_back }
+
+    it "confirms a breakout whose projected volume is at least 1.5x the average" do
+      at("14:00") # default curve: 76% of the day's volume by 3 hours in
+      move_to(505, volume: 18_000)
+
+      alert = item.alerts.last
+      expect(alert.kind).to eq("breakout_confirmed")
+      expect(alert.relative_volume.to_f).to eq(2.37)
+      expect(alert.message).to eq("NABIL broke above the 500.00 pivot at 505.00 on a projected 2.37x its 50-day average volume (18,000 so far by 2:00).")
+      expect(item).to have_attributes(status: "in_zone", price_state: "in_zone", touched_zone_on: Date.new(2026, 9, 24))
+    end
+
+    it "doesn't call an early breakout light just because the day has barely started" do
+      at("11:30") # 22% of the day traded: 4,000 so far projects to ~18,000
+      move_to(505, volume: 4_000)
+
+      expect(item.alerts.last).to have_attributes(kind: "breakout_confirmed", relative_volume: 1.82)
+    end
+
+    it "flags light projected volume, and says when it's too early to judge" do
+      at("14:00")
+      move_to(505, volume: 9_000)
+      expect(item.alerts.last.kind).to eq("breakout_low_volume")
+      expect(item.alerts.last.message).to include("projected 1.18x", "Wait for volume to confirm")
+
+      item.update!(price_state: "below_zone")
+      at("11:05")
+      move_to(506, volume: 500)
+      expect(item.alerts.last.message).to eq("NABIL broke above the 500.00 pivot at 506.00. It's too early in the session to judge volume; the close will confirm or reject it.")
+    end
+
+    it "raises breakout alerts for a flat-base breakout too" do
+      at("14:00")
+      item.update!(setup_type: "base_breakout")
+      move_to(505, volume: 18_000)
+
+      expect(item.alerts.last.kind).to eq("breakout_confirmed")
+    end
+
+    it "uses the day's total after the close, and notes an upper-circuit lock" do
+      at("15:30")
+      stock.update!(change_percent: 14.8)
+      move_to(505, volume: 12_000)
+
+      expect(item.alerts.last.message).to eq(
+        "NABIL broke above the 500.00 pivot at 505.00, but on 1.2x its 50-day average volume (below 1.5x). Wait for volume to confirm. " \
+        "It's at the upper circuit, so volume understates demand."
+      )
+    end
   end
 
   it "reports a pullback entering its zone" do
@@ -90,13 +128,5 @@ RSpec.describe Watchlist::AlertEvaluator do
 
     expect { described_class.initial_state!(fresh) }.not_to change(WatchlistAlert, :count)
     expect(fresh.reload).to have_attributes(price_state: "in_zone", status: "in_zone")
-  end
-
-  it "raises breakout alerts for a flat-base breakout too" do
-    item.update!(setup_type: "base_breakout")
-    with_average_volume(10_000)
-    move_to(505, volume: 18_000)
-
-    expect(item.alerts.last.kind).to eq("breakout_confirmed")
   end
 end

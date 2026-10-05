@@ -293,6 +293,17 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H14.7 | `/positions` | Each card adds Cost incl. fees, Net if sold now and Break-even; the summary shows Net if all sold now |
 | H14.8 | Check a fee by hand: buy Rs 1,00,000 | Commission Rs 330 (0.33%) + SEBON Rs 15 = Rs 345 |
 
+## H15. Intraday volume pace *(market hours)*
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H15.1 | During the session, open `/screener/NABIL` | "Volume today: N so far · projected M by the close = R× the 50-day average of A (estimated pace…)"; after 5 recorded sessions the note says "pace learned from the last N sessions" |
+| H15.2 | Before 11:15 | "too early in the session to project" |
+| H15.3 | A tracked VCP/flat-base stock breaks its pivot mid-session | Alert says "on a projected R× its 50-day average volume (N so far by h:mm)"; confirmed when R ≥ 1.5 even if the volume so far is below the average |
+| H15.4 | Breakout in the first 15 minutes | "It's too early in the session to judge volume; the close will confirm or reject it." |
+| H15.5 | Breakout at the upper circuit | Message ends "It's at the upper circuit, so volume understates demand." |
+| H15.6 | Terminal after a few sessions: `bin/rails runner 'p Nepse::VolumeProfile.build'` | `source: "learned"` once 5 sessions exist, points rising to 1.0 at minute 240 |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

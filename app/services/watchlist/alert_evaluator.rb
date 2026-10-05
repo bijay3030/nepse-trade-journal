@@ -79,29 +79,41 @@ module Watchlist
       item.alerts.build(user: item.user, kind: kind, message: message, price: price, relative_volume: relative_volume)
     end
 
+    # Volume is judged on the day's projected total (Nepse::VolumeProfile), not the
+    # volume so far, so a breakout early in the session isn't called light by default.
     def breakout_alert(item, price)
-      symbol = item.stock.symbol
-      pivot = item.pivot_price.presence || item.entry_zone_low
-      ratio = relative_volume(item.stock)
-      volume_text = ratio ? "#{ratio}x its #{AVERAGE_VOLUME_SESSIONS}-day average volume so far" : "volume not available"
+      stock = item.stock
+      head = "#{stock.symbol} broke above the #{fmt(item.pivot_price.presence || item.entry_zone_low)} pivot at #{fmt(price)}"
+      ratio = relative_volume(stock)
+      circuit = stock.change_percent.to_f >= Setups::Guards.circuit_near_pct ? " It's at the upper circuit, so volume understates demand." : ""
 
-      if ratio && ratio >= BREAKOUT_VOLUME_MULTIPLE
-        [ "breakout_confirmed", "#{symbol} broke above the #{fmt(pivot)} pivot at #{fmt(price)} on #{volume_text}.", ratio ]
+      if ratio.nil?
+        [ "breakout_low_volume", "#{head}. It's too early in the session to judge volume; the close will confirm or reject it.#{circuit}", nil ]
+      elsif ratio >= BREAKOUT_VOLUME_MULTIPLE
+        [ "breakout_confirmed", "#{head} on #{volume_text(stock, ratio)}.#{circuit}", ratio ]
       else
-        [ "breakout_low_volume", "#{symbol} broke above the #{fmt(pivot)} pivot at #{fmt(price)}, but on #{volume_text} (below #{BREAKOUT_VOLUME_MULTIPLE}x). Wait for volume to confirm.", ratio ]
+        [ "breakout_low_volume", "#{head}, but on #{volume_text(stock, ratio)} (below #{BREAKOUT_VOLUME_MULTIPLE}x). Wait for volume to confirm.#{circuit}", ratio ]
       end
     end
 
-    # Today's volume against the average of the sessions before the latest one.
-    def relative_volume(stock)
-      latest = stock.daily_prices.maximum(:traded_on)
-      return unless latest
+    def volume_text(stock, ratio)
+      minute = Nepse::VolumeProfile.session_minute
+      return "#{ratio}x its #{AVERAGE_VOLUME_SESSIONS}-day average volume" unless minute && minute < Nepse::VolumeProfile::SESSION_MINUTES
 
-      volumes = stock.daily_prices.where("traded_on < ?", latest).order(traded_on: :desc).limit(AVERAGE_VOLUME_SESSIONS).pluck(:volume)
+      clock = (Time.current.in_time_zone(Nepse::MarketHours::TIME_ZONE)).strftime("%-l:%M")
+      "a projected #{ratio}x its #{AVERAGE_VOLUME_SESSIONS}-day average volume (#{stock.volume.to_i.to_fs(:delimited)} so far by #{clock})"
+    end
+
+    # Today's volume, projected to the close during the session, against the average
+    # of the sessions before today. Nil when it's too early in the session to tell.
+    def relative_volume(stock)
+      today = Nepse::MarketHours.today
+      volumes = stock.daily_prices.where("traded_on < ?", today).order(traded_on: :desc).limit(AVERAGE_VOLUME_SESSIONS).pluck(:volume)
       average = volumes.sum.to_f / volumes.size if volumes.any?
       return unless average&.positive? && stock.volume.to_i.positive?
 
-      (stock.volume.to_f / average).round(2)
+      projected = Nepse::VolumeProfile.projected(stock.volume.to_i)
+      projected && (projected / average).round(2)
     end
 
     def zone(item)
