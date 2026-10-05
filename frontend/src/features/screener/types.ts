@@ -162,7 +162,7 @@ export type Extension = {
 }
 
 /** Tradability guards (Setups::Guards) that keep a qualifying chart off the board. */
-export type Guard = "thin_volume" | "upper_circuit" | "lower_circuit"
+export type Guard = "thin_volume" | "upper_circuit" | "lower_circuit" | "extended"
 
 /** Where the price sits against the best setup's entry zone. */
 export type ZoneState = "too_early" | "in_zone" | "extended" | "failed" | "no_setup"

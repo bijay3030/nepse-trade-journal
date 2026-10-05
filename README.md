@@ -300,6 +300,15 @@ A stock is listed under **Entry zone now** when the price is inside the zone, at
 | At upper circuit | Closed +14.5% or more (NEPSE's per-stock daily limit is ±15% since 2026-04-20; ±10%, flagged at 9.5%, for earlier sessions) | Few sellers, the next open often gaps; wait for another session |
 | At lower circuit | Closed -14.5% or less | Few buyers; stops and exits may not fill |
 
+| Extended | 4+ ADR above the 50-day average (ADR = the stock's average daily high–low range over 20 sessions) | Stretched stocks usually pulled back first: in the backtest, stocks in their zone that far up fell about 4.6% over 10 sessions |
+
+Two more measures are shown but don't hold anything back, because the backtest didn't
+support it: **Big move N ADR** (the day already moved more than an average day; worse
+for stocks in their zone, but board picks did fine) and **Breakout day N** / **Stale
+breakout** from day 5 (fresh breakouts did worst in this falling market, so staleness
+isn't penalised). The watchlist checklist has a live "Not stretched" rule for both
+extension and today's move.
+
 A stock that fails a guard keeps its readiness and zone, shows a badge in the screener
 and on its readiness card, and is listed under **Held back by guards** below the board.
 The watchlist entry checklist has matching rules: average turnover (from the nightly

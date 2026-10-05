@@ -11,7 +11,7 @@ import { cn } from "../lib/cn"
 const HORIZONS: Horizon[] = ["5", "10", "20"]
 const ZONE_ORDER = ["too_early", "in_zone", "extended", "failed", "no_setup"]
 const FLOW_ORDER = ["accumulation", "neutral", "distribution", "no_data"]
-const GUARD_ORDER = ["Passed guards", "thin_volume", "upper_circuit", "lower_circuit"]
+const GUARD_ORDER = ["Passed guards", "thin_volume", "upper_circuit", "lower_circuit", "extended"]
 const EXIT_LABELS = { stop: "Stopped out", target: "Target reached", time: "Time exit (20 sessions)" }
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
