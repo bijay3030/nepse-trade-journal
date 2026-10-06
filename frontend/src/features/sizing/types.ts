@@ -13,7 +13,10 @@ export type SizeDetails = {
   reward_risk: number | null
 }
 
-type SizingBase = { risk_budget: number; lot_size: number; limited_by: "risk" | "capital" }
+/** Outside an uptrend: the size at a share of the usual risk, shown alongside (User#size_position). */
+export type CautiousSize = { state: "under_pressure" | "correction"; label: string; size_factor: number; risk_budget: number; quantity: number }
+
+type SizingBase = { risk_budget: number; lot_size: number; limited_by: "risk" | "capital"; cautious?: CautiousSize }
 
 /** A suggested size; `note` (and no details) when not even one lot fits the risk budget. */
 export type SizedResult = SizingBase & SizeDetails

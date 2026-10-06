@@ -127,8 +127,19 @@ module Backtest
         entry_zone: { "Entry zone now" => by_horizon(snapshots.select { _1[:in_buy_zone] }),
                       "Everything else" => by_horizon(snapshots.reject { _1[:in_buy_zone] }) },
         guards: guard_groups(snapshots),
+        market_direction: direction_groups(snapshots),
         **extension_groups(snapshots)
       }
+    end
+
+    # Setups::MarketDirection's state on the signal day, for stocks in their zone and the board.
+    def direction_groups(snapshots)
+      states = Setups::MarketDirection.timeline(Setups::MarketDirection.nepse_series)
+      { "in zone" => snapshots.select { _1[:zone_state] == "in_zone" }, "board" => snapshots.select { _1[:in_buy_zone] } }.flat_map do |label, rows|
+        Setups::MarketDirection::STATES.map do |state|
+          [ "#{label}: #{Setups::MarketDirection::LABELS[state].downcase}", by_horizon(rows.select { states[_1[:traded_on]]&.dig(:state) == state }) ]
+        end
+      end.to_h
     end
 
     # Setups::Extension measures, for stocks in their zone and for the board's picks.

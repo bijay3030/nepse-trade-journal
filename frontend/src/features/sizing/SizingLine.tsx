@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom"
 
+import { CautiousSize } from "./CautiousSize"
 import { rupees, signedRupees } from "./format"
 import { isSized, type WatchlistSizing } from "./types"
 
@@ -23,6 +24,7 @@ export function SizingLine({ sizing }: { sizing: WatchlistSizing | null | undefi
       {sizing.break_even !== null && ` · break-even ${sizing.break_even.toFixed(2)}`}
       {sizing.gain_at_target !== null && <> · at target <b className="text-pine">{signedRupees(sizing.gain_at_target)}</b>{sizing.reward_risk !== null && ` (${sizing.reward_risk}R)`}</>}
       {sizing.limited_by === "capital" && " · limited by your capital"}
+      <CautiousSize cautious={sizing.cautious} />
     </p>
   )
 }

@@ -42,6 +42,8 @@ export type BacktestResults = {
     extension?: Record<string, GroupStats>
     day_move?: Record<string, GroupStats>
     breakout_age?: Record<string, GroupStats>
+    /** Setups::MarketDirection's state on the signal day. */
+    market_direction?: Record<string, GroupStats>
   }
   trades: {
     total: number

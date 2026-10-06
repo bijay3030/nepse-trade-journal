@@ -27,4 +27,15 @@ describe("SizingLine", () => {
     renderLine({ risk_budget: 200, lot_size: 10, limited_by: "risk", quantity: 0, note: "Your risk budget is smaller than the loss on one 10-share lot at this stop" })
     expect(screen.getByLabelText("Position size")).toHaveTextContent("smaller than the loss on one 10-share lot")
   })
+
+  it("adds a cautious size outside an uptrend", () => {
+    renderLine({
+      risk_budget: 5000, lot_size: 10, limited_by: "risk", entry: 500, stop: 470, quantity: 140, amount: 70_000,
+      buy_costs: { amount: 70_000, commission: 231, sebon: 10.5, dp: 0, total: 241.5 }, total_cost: 70_241.5,
+      loss_at_stop: 4_798.2, loss_pct_of_capital: 0.96, break_even: 503.64, gain_at_target: null, reward_risk: null,
+      cautious: { state: "correction", label: "Correction", size_factor: 0.25, risk_budget: 1250, quantity: 30 },
+    })
+
+    expect(screen.getByLabelText("Cautious size")).toHaveTextContent("Market correction: a cautious size at 25% of your risk would be 30 shares")
+  })
 })

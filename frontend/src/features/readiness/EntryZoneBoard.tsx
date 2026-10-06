@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom"
 
+import { MarketDirectionCard } from "../market/MarketDirectionCard"
 import { Badge, Button, Card, LoadingSpinner } from "../../components/ui"
 import { useBuyZone } from "../screener/api"
 import type { BuyZoneRow } from "../screener/types"
@@ -31,6 +32,7 @@ export function EntryZoneBoard() {
   const heldBack = data.held_back ?? []
   return (
     <div className="space-y-3">
+      {data.market_direction && <MarketDirectionCard direction={data.market_direction} compact />}
       <p className="text-sm text-slate">
         Price inside a setup's entry zone, at least {criteria.min_trend_rules} of 7 trend rules and readiness {criteria.min_readiness}+,
         on the {data.traded_on ?? "—"} close.

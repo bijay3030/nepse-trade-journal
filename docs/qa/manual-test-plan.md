@@ -314,6 +314,17 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H16.4 | `/watchlist`, a card's checklist | Rule "Not stretched: under 4 ADR above the 50-day, today's move under 1 ADR" with "N ADR above the 50-day; today ±N ADR (ADR N%)" |
 | H16.5 | `/backtest` | Charts "By extension from the 50-day", "By the day's move" and "By breakout age"; the guard chart includes "Extended" |
 
+## H17. Market direction
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H17.1 | `/market` | Card "Market: Uptrend · N distribution days in the last 25 sessions · index -X% from its high · last follow-through D Mon" and the threshold explanation |
+| H17.2 | `/screener` → Entry zone now | The same card in compact form above the criteria |
+| H17.3 | Terminal: `bin/rails runner 'p Setups::MarketDirection.call'` | `state`, `distribution_days`, `size_factor` (1.0 / 0.5 / 0.25) |
+| H17.4 | When the state is under pressure or correction: a watchlist card's size line | Adds "Market correction: a cautious size at 25% of your risk would be N shares" |
+| H17.5 | Same, in the buy dialog | The cautious line has "Use N", which fills the quantity |
+| H17.6 | `/backtest` | Chart "By market direction" |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |
