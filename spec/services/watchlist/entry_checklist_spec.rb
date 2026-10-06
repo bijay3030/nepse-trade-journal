@@ -13,6 +13,11 @@ RSpec.describe Watchlist::EntryChecklist do
   before do
     allow(Vcp::DetectionEngine).to receive(:call).and_return(vcp)
     StockSetupSnapshot.create!(stock: stock, traded_on: Date.new(2026, 9, 29), close_price: 505, zone_state: "in_zone", avg_turnover: 34_000_000)
+    # 20 sessions with a 2% daily range around 500, and the 50-day at 490.
+    20.times do |i|
+      price = create(:stock_daily_price, stock: stock, traded_on: Date.new(2026, 9, 1) + i, high_price: 505, low_price: 495.1, close_price: 500)
+      StockDailyIndicator.create!(stock: stock, stock_daily_price: price, traded_on: price.traded_on, sma_50: 490) if i == 19
+    end
   end
 
   def statuses = described_class.call(item, context: context)[:checks].to_h { [ _1[:key], _1[:status] ] }
@@ -23,7 +28,7 @@ RSpec.describe Watchlist::EntryChecklist do
     result = described_class.call(item, context: context)
 
     expect(result[:checks].map { _1[:status] }).to all(eq("pass"))
-    expect(result).to include(passed: 10, total: 10, all_passed: true)
+    expect(result).to include(passed: 11, total: 11, all_passed: true)
     expect(result[:checks].find { _1[:key] == "sector" }[:detail]).to eq("Commercial Banks +0.80% vs NEPSE -1.20%")
   end
 
@@ -53,7 +58,7 @@ RSpec.describe Watchlist::EntryChecklist do
     allow(PriceAction::AnalyzerService).to receive(:call).and_return({ trend: "uptrend", structure: "higher_high_higher_low" })
 
     expect(statuses).to include("pattern" => "pass", "close" => "pass", "volume" => "n/a")
-    expect(described_class.call(item, context: context)[:total]).to eq(9)
+    expect(described_class.call(item, context: context)[:total]).to eq(10)
   end
 
   it "marks the sector check not applicable without a sector index" do
@@ -82,6 +87,23 @@ RSpec.describe Watchlist::EntryChecklist do
     expect(checks["pattern"]).to include(status: "fail", detail: "Not an uptrend above a rising 50-day average")
     expect(checks["close"][:label]).to eq("Closed inside the entry zone")
     expect(checks["volume"][:status]).to eq("n/a")
+  end
+
+  describe "stretch rule" do
+    def stretch = described_class.call(item, context: context)[:checks].find { _1[:key] == "stretch" }
+
+    it "passes near the 50-day on a normal day, with the figures" do
+      # 505 is 3.1% above 490 = 1.5 ADR; today +1.2% = 0.6 ADR
+      expect(stretch).to include(status: "pass", detail: "1.5 ADR above the 50-day; today +0.6 ADR (ADR 2.0%)")
+    end
+
+    it "fails when the price is 4+ ADR above the 50-day or today already ran more than 1 ADR" do
+      stock.update!(last_price: 535)
+      expect(stretch[:status]).to eq("fail")
+
+      stock.update!(last_price: 505, change_percent: 3.0)
+      expect(stretch).to include(status: "fail", detail: /today \+1.5 ADR/)
+    end
   end
 
   describe "liquidity and circuit rules" do

@@ -93,6 +93,7 @@ export type ScreenerRow = {
   invalidation_price?: number | null
   flow_state?: FlowState | null
   guards?: Guard[]
+  extension?: Extension
   next_book_close?: BookClose | null
 }
 
@@ -148,8 +149,20 @@ export type VolumePace = {
   curve: { source: "learned" | "default"; sessions: number }
 }
 
+/** Setups::Extension: how stretched the stock is and how fresh a breakout is. */
+export type Extension = {
+  adr_pct?: number | null
+  /** Distance above the 50-day average in ADRs; 4+ is extended. */
+  extension_adr?: number | null
+  /** The session's move in ADRs; over 1 is a big move. */
+  day_move_adr?: number | null
+  /** Breakout setups: sessions since the first close above the pivot (0 = that day); 5+ is stale. */
+  breakout_age?: number | null
+  flags?: Array<"extended" | "big_move" | "stale_breakout">
+}
+
 /** Tradability guards (Setups::Guards) that keep a qualifying chart off the board. */
-export type Guard = "thin_volume" | "upper_circuit" | "lower_circuit"
+export type Guard = "thin_volume" | "upper_circuit" | "lower_circuit" | "extended"
 
 /** Where the price sits against the best setup's entry zone. */
 export type ZoneState = "too_early" | "in_zone" | "extended" | "failed" | "no_setup"
@@ -194,6 +207,7 @@ export type ReadinessSnapshot = {
   /** Close-to-close change on the snapshot's session. */
   change_pct?: number | null
   guards?: Guard[]
+  extension?: Extension
 }
 
 export type BuyZoneRow = ReadinessSnapshot & {

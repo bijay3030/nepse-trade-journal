@@ -11,7 +11,7 @@ import { cn } from "../lib/cn"
 const HORIZONS: Horizon[] = ["5", "10", "20"]
 const ZONE_ORDER = ["too_early", "in_zone", "extended", "failed", "no_setup"]
 const FLOW_ORDER = ["accumulation", "neutral", "distribution", "no_data"]
-const GUARD_ORDER = ["Passed guards", "thin_volume", "upper_circuit", "lower_circuit"]
+const GUARD_ORDER = ["Passed guards", "thin_volume", "upper_circuit", "lower_circuit", "extended"]
 const EXIT_LABELS = { stop: "Stopped out", target: "Target reached", time: "Time exit (20 sessions)" }
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -169,6 +169,26 @@ export function BacktestPage() {
             <CardHeader title="By setup type" subtitle="Stocks inside their entry zone, by the setup that put them there" />
             <CardBody>
               <GroupChart groups={results.groups.setup_type} horizon={horizon} labels={SETUP_TYPE_LABELS} order={["vcp", "base_breakout", "pullback", "ma_pullback"]} />
+            </CardBody>
+          </Card>
+        )}
+        {results.groups.extension && (
+          <Card>
+            <CardHeader title="By extension from the 50-day" subtitle="Distance above the 50-day average in ADRs (the stock's average daily range); 4+ is flagged extended" />
+            <CardBody><GroupChart groups={results.groups.extension} horizon={horizon} /></CardBody>
+          </Card>
+        )}
+        {results.groups.day_move && (
+          <Card>
+            <CardHeader title="By the day's move" subtitle="The signal day's change in ADRs; over 1 is flagged as a big move" />
+            <CardBody><GroupChart groups={results.groups.day_move} horizon={horizon} /></CardBody>
+          </Card>
+        )}
+        {results.groups.breakout_age && (
+          <Card>
+            <CardHeader title="By breakout age" subtitle="Breakout setups in their zone: sessions since the first close above the pivot; 5+ is flagged stale" />
+            <CardBody>
+              <GroupChart groups={results.groups.breakout_age} horizon={horizon} order={["breakouts in zone: day 0", "breakouts in zone: days 1-2", "breakouts in zone: days 3-4", "breakouts in zone: day 5+"]} />
             </CardBody>
           </Card>
         )}

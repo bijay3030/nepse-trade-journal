@@ -8,6 +8,8 @@ module Setups
   #                  sellers are scarce and the next open often gaps; wait for another session.
   #   lower_circuit  closed within CIRCUIT_MARGIN_PCT of the downward limit: buyers are
   #                  scarce and a stop may not fill.
+  #   extended       4+ ADR above the 50-day average (Setups::Extension). In the
+  #                  backtest stocks in their zone that far up fell ~4.6% over 10 sessions.
   #
   # NEPSE's per-stock daily limit was ±10% and became ±15% on 2026-04-20, so the limit
   # is taken for the session's date (past sessions in the backtest keep the old one).
@@ -18,7 +20,7 @@ module Setups
     OLD_DAILY_LIMIT_PCT = 10.0
     DAILY_LIMIT_PCT = 15.0
     CIRCUIT_MARGIN_PCT = 0.5
-    ALL = %w[thin_volume upper_circuit lower_circuit].freeze
+    ALL = %w[thin_volume upper_circuit lower_circuit extended].freeze
 
     module_function
 
@@ -27,12 +29,13 @@ module Setups
     # A move this large counts as at the circuit.
     def circuit_near_pct(on = Nepse::MarketHours.today) = daily_limit_pct(on) - CIRCUIT_MARGIN_PCT
 
-    def call(avg_turnover:, change_pct:, on: Nepse::MarketHours.today)
+    def call(avg_turnover:, change_pct:, on: Nepse::MarketHours.today, extension: {})
       near = circuit_near_pct(on)
       guards = []
       guards << "thin_volume" if avg_turnover && avg_turnover < MIN_TURNOVER
       guards << "upper_circuit" if change_pct && change_pct >= near
       guards << "lower_circuit" if change_pct && change_pct <= -near
+      guards << "extended" if Array(extension[:flags]).include?("extended")
       guards
     end
 

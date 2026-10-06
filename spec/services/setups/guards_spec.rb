@@ -48,3 +48,10 @@ RSpec.describe Setups::Guards do
     end
   end
 end
+
+RSpec.describe Setups::Guards, ".call extended" do
+  it "adds the extended guard when the extension measure flags it" do
+    expect(described_class.call(avg_turnover: 9_000_000, change_pct: 1.0, on: Date.new(2026, 9, 29), extension: { flags: %w[extended big_move] })).to eq([ "extended" ])
+    expect(described_class.call(avg_turnover: 9_000_000, change_pct: 1.0, on: Date.new(2026, 9, 29), extension: { flags: [ "big_move" ] })).to eq([])
+  end
+end

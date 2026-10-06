@@ -16,7 +16,7 @@ module Watchlist
     end
 
     def call
-      checks = [ pattern_check, close_check, volume_check, regime_check, sector_check, risk_reward_check, chasing_check, liquidity_check, circuit_check, book_close_check ].compact
+      checks = [ pattern_check, close_check, volume_check, regime_check, sector_check, risk_reward_check, chasing_check, stretch_check, liquidity_check, circuit_check, book_close_check ].compact
       applicable = checks.reject { _1[:status] == "n/a" }
       {
         checks: checks,
@@ -95,6 +95,23 @@ module Watchlist
       price = @item.stock.last_price.to_f
       check("not_extended", "Price not above the entry zone", price <= @item.entry_zone_high.to_f ? "pass" : "fail",
             "#{format('%.2f', price)} vs zone high #{format('%.2f', @item.entry_zone_high.to_f)}")
+    end
+
+    # Live: today's price against the 50-day average and today's move, both in ADRs.
+    def stretch_check
+      label = "Not stretched: under #{Setups::Extension::EXTENDED_ADR.to_i} ADR above the 50-day, today's move under #{Setups::Extension::BIG_MOVE_ADR.to_i} ADR"
+      bars = prices.last(Setups::Extension::ADR_SESSIONS)
+      sma_50 = @item.stock.daily_indicators.order(traded_on: :desc).pick(:sma_50)
+      live = @item.stock.last_price.to_f
+      return check("stretch", label, "pending", "Not enough price history") if bars.size < 5 || sma_50.nil? || live <= 0
+
+      adr = Setups::Extension.adr_pct(bars)
+      return check("stretch", label, "pending", "Not enough price history") unless adr
+
+      extension = ((live / sma_50.to_f - 1) * 100 / adr).round(1)
+      move = (@item.stock.change_percent.to_f / adr).round(1)
+      ok = extension < Setups::Extension::EXTENDED_ADR && move <= Setups::Extension::BIG_MOVE_ADR
+      check("stretch", label, ok ? "pass" : "fail", "#{extension} ADR above the 50-day; today #{format('%+.1f', move)} ADR (ADR #{adr.round(1)}%)")
     end
 
     def liquidity_check

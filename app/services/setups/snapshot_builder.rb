@@ -61,6 +61,9 @@ module Setups
       end
     end
 
+    # A stock's prices oldest first, sorted once per build (HistoryBuilder reuses stocks).
+    def sorted_prices(stock) = (@sorted_prices ||= {})[stock.id] ||= stock.daily_prices.sort_by(&:traded_on)
+
     # Closes up to the session being built, never later ones.
     def closes(stock) = stock.daily_prices.select { _1.traded_on <= @traded_on }.sort_by(&:traded_on).map(&:close_price)
 
@@ -85,7 +88,13 @@ module Setups
 
       avg_turnover = Guards.avg_turnover(stock.daily_prices, @sessions)
       change_pct = Guards.change_pct(stock.daily_prices, traded_on)
-      guards = Guards.call(avg_turnover: avg_turnover, change_pct: change_pct, on: traded_on)
+      levels = setup.fetch(:levels, {})
+      extension = Extension.call(
+        bars: sorted_prices(stock).select { _1.traded_on <= traded_on },
+        sma_50: latest&.sma_50, change_pct: change_pct, breakout: Types.breakout?(setup[:type]),
+        pivot: levels[:pivot_price] || levels[:entry_zone_low]
+      )
+      guards = Guards.call(avg_turnover: avg_turnover, change_pct: change_pct, on: traded_on, extension: extension)
       qualifies = Readiness.in_buy_zone?(zone_state: setup[:zone_state], price_rules_passed: trend[:price_rules_passed], score: readiness[:score], setup_type: setup[:type])
 
       snapshot = StockSetupSnapshot.find_or_initialize_by(stock: stock, traded_on: traded_on)
@@ -108,7 +117,8 @@ module Setups
         flow_state: flow[:state],
         flow_score: flow[:score],
         flow: flow.except(:daily),
-        **setup.fetch(:levels, {})
+        extension: extension,
+        **levels
       )
     end
 

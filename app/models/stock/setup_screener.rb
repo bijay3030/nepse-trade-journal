@@ -1,7 +1,7 @@
 # Screener rows. Reads the nightly snapshots (Setups::SnapshotBuilder) when they
 # exist, which is fast; otherwise analyses every stock live.
 class Stock::SetupScreener
-  READINESS_FIELDS = %i[readiness_score zone_state in_buy_zone rs_rating trend_rules_passed setup_type flow_state guards].freeze
+  READINESS_FIELDS = %i[readiness_score zone_state in_buy_zone rs_rating trend_rules_passed setup_type flow_state guards extension].freeze
 
   def call
     snapshot_rows || live_rows

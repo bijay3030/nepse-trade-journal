@@ -65,6 +65,19 @@ RSpec.describe Setups::SnapshotBuilder do
     expect(StockSetupSnapshot.held_back_by_guards.count).to eq(2)
   end
 
+  it "stores the extension measures and holds back a stock 4+ ADR above its 50-day" do
+    # A steady climb; the 50-day indicator far below the close makes it extended.
+    leader = stock_with_history("RUN", Array.new(100) { |i| 100.0 + i * 1.0 })
+    leader.daily_indicators.where(traded_on: day).update_all(sma_50: 150.0)
+
+    described_class.call
+
+    snapshot = leader.setup_snapshots.sole
+    expect(snapshot.extension).to include("extension_adr" => be > 4, "flags" => include("extended"))
+    expect(snapshot).to have_attributes(zone_state: "in_zone", in_buy_zone: false)
+    expect(snapshot.guards).to include("extended")
+  end
+
   it "marks a price below invalidation as failed and skips short histories" do
     create(:stock, symbol: "NEW").tap { |s| create(:stock_daily_price, stock: s, traded_on: day) }
     stock_with_history("DROP", Array.new(99) { 150.0 } + [ 170.0 ])

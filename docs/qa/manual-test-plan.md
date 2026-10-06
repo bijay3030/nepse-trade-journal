@@ -304,6 +304,16 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H15.5 | Breakout at the upper circuit | Message ends "It's at the upper circuit, so volume understates demand." |
 | H15.6 | Terminal after a few sessions: `bin/rails runner 'p Nepse::VolumeProfile.build'` | `source: "learned"` once 5 sessions exist, points rising to 1.0 at minute 240 |
 
+## H16. Extension and breakout age
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H16.1 | `/screener` → All setups | Some rows show "Extended N ADR" or "Big move N ADR" (amber) and breakout setups "Breakout day N" ("Stale breakout · day N" from 5) |
+| H16.2 | **Entry zone now** | No card is "Extended"; extended charts that met the rules appear under "Held back by guards" |
+| H16.3 | `/screener/SYMBOL` readiness card | The same badges; an extended stock has the note "4+ ADR above the 50-day average…" |
+| H16.4 | `/watchlist`, a card's checklist | Rule "Not stretched: under 4 ADR above the 50-day, today's move under 1 ADR" with "N ADR above the 50-day; today ±N ADR (ADR N%)" |
+| H16.5 | `/backtest` | Charts "By extension from the 50-day", "By the day's move" and "By breakout age"; the guard chart includes "Extended" |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |
