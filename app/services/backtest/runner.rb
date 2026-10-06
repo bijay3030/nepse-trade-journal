@@ -33,15 +33,15 @@ module Backtest
     end
 
     def call
-      snapshots = StockSetupSnapshot.order(:traded_on).pluck(
+      sessions = Setups::HistoryBuilder.sessions
+      snapshots = StockSetupSnapshot.where(traded_on: sessions).order(:traded_on).pluck(
         :stock_id, :traded_on, :close_price, :readiness_score, :zone_state, :flow_state, :trend_rules_passed,
-        :in_buy_zone, :entry_zone_low, :entry_zone_high, :invalidation_price, :target_price, :setup_type, :guards, :extension, :signals
+        :in_buy_zone, :entry_zone_low, :entry_zone_high, :invalidation_price, :target_price, :setup_type, :guards,
+        *JSON_FIELDS.map { |column, key| Arel.sql("#{column}->'#{key}'") }, Arel.sql("signals ? 'up_down_ratio'")
       ).map { |row| snapshot_hash(row) }
-      sessions = Setups::HistoryBuilder.sessions.to_set
-      snapshots.select! { sessions.include?(_1[:traded_on]) }
       return { success: false, error: "No snapshots. Run rails nepse:data:setup_history first." } if snapshots.empty?
 
-      load_prices(snapshots.map { _1[:stock_id] }.uniq)
+      load_prices(snapshots.map { _1[:stock_id] }.uniq, from: snapshots.first[:traded_on])
       load_nepse
 
       results = {
@@ -57,16 +57,32 @@ module Backtest
 
     private
 
+    # The few extension and signal values the groups read, taken out in SQL: loading the
+    # whole JSON of every snapshot cost ~100 MB, too much for a 512 MB host.
+    JSON_FIELDS = [
+      %w[extension extension_adr], %w[extension day_move_adr], %w[extension breakout_age],
+      %w[signals base_number], %w[signals pocket_pivot_age], %w[signals up_down_ratio], %w[signals dry_up_days]
+    ].freeze
+
     def snapshot_hash(row)
-      keys = %i[stock_id traded_on close readiness zone_state flow_state trend_rules in_buy_zone entry_low entry_high stop target setup_type guards extension signals]
-      keys.zip(row).to_h.tap do |snap|
+      keys = %i[stock_id traded_on close readiness zone_state flow_state trend_rules in_buy_zone entry_low entry_high stop target setup_type guards]
+      fixed = row.first(keys.size)
+      json = row[keys.size, JSON_FIELDS.size].map { _1.is_a?(String) ? JSON.parse(_1) : _1 }
+      measured = row.last
+      keys.zip(fixed).to_h.tap do |snap|
         %i[close entry_low entry_high stop target].each { snap[_1] = snap[_1]&.to_f }
+        snap[:extension] = {}
+        snap[:signals] = {}
+        JSON_FIELDS.zip(json).each { |(column, key), value| snap[column.to_sym][key] = value if column == "extension" || measured }
       end
     end
 
     # stock_id => { dates: [...], index: { date => i }, bars: [[open, high, low, close], ...] }
-    def load_prices(stock_ids)
-      @prices = StockDailyPrice.where(stock_id: stock_ids).order(:traded_on)
+    # Only from the first signal session on: returns and trades look forward.
+    def load_prices(stock_ids, from: nil)
+      scope = StockDailyPrice.where(stock_id: stock_ids)
+      scope = scope.where(traded_on: from..) if from
+      @prices = scope.order(:traded_on)
         .pluck(:stock_id, :traded_on, :open_price, :high_price, :low_price, :close_price)
         .group_by(&:first).transform_values do |rows|
           dates = rows.map { _1[1] }
@@ -213,7 +229,7 @@ module Backtest
           busy_until = trade[:exit_on] || Date::Infinity.new
         end
       end
-      trade_stats(trades.sort_by { _1[:signal_on] }).merge(
+      trade_stats(trades.sort_by { [ _1[:signal_on], _1[:symbol].to_s ] }).merge(
         held_back: Setups::Guards::ALL.to_h { |guard| [ guard, snapshots.count { qualifies?(_1) && _1[:guards].include?(guard) } ] }
       )
     end

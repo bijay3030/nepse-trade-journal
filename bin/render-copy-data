@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# Copies your local database to Supabase for the Render deployment, trimmed to fit the
+# free 500 MB and with a new password for your account. Your local database is not
+# changed: the trimming happens on a temporary copy.
+#
+#   bin/render-copy-data
+#
+# It asks (without showing what you type) for the Supabase connection string and your
+# new password. Run it once, after Supabase is set up and before or after Render's first
+# deploy. Running it again replaces everything in Supabase with your local data.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+LOCAL_DB="${LOCAL_DB:-nepse_trade_journal_development}"
+SCRATCH_DB="nepse_render_copy"
+DUMP="$(mktemp -t nepse-render).dump"
+trap 'rm -f "$DUMP"; dropdb --if-exists "$SCRATCH_DB" >/dev/null 2>&1 || true' EXIT
+
+if [ -z "${SUPABASE_DATABASE_URL:-}" ]; then
+  read -r -s -p "Supabase connection string (Session pooler, with your database password): " SUPABASE_DATABASE_URL
+  echo
+fi
+case "$SUPABASE_DATABASE_URL" in
+  postgres://*|postgresql://*) ;;
+  *) echo "That doesn't look like a postgres:// connection string." >&2; exit 1 ;;
+esac
+
+echo "1/6 Copying $LOCAL_DB to a temporary database..."
+dropdb --if-exists "$SCRATCH_DB"
+createdb "$SCRATCH_DB"
+pg_dump -Fc --no-owner --no-privileges --exclude-table-data='solid_queue_*' "$LOCAL_DB" | pg_restore --no-owner --no-privileges -d "$SCRATCH_DB"
+
+echo "2/6 Trimming history (30 sessions of broker flows, 130 of snapshots, 25 days of intraday volume)..."
+DATABASE_URL="postgres:///$SCRATCH_DB" RETAIN_FLOW_SESSIONS=30 RETAIN_SNAPSHOT_SESSIONS=130 RETAIN_INTRADAY_DAYS=25 \
+  bin/rails runner 'p Maintenance::DataRetention.call' 2>/dev/null
+
+echo "3/6 Your login. Accounts on this copy:"
+DATABASE_URL="postgres:///$SCRATCH_DB" bin/rails runner 'User.order(:id).each { puts "   #{_1.email}" }' 2>/dev/null
+read -r -p "Email to log in with on the live app (Enter keeps the first one): " EMAIL
+FIRST=$(DATABASE_URL="postgres:///$SCRATCH_DB" bin/rails runner 'print User.order(:id).first&.email' 2>/dev/null)
+if [ -n "$EMAIL" ] && [ "$EMAIL" != "$FIRST" ]; then
+  DATABASE_URL="postgres:///$SCRATCH_DB" bin/rails "users:rename[$FIRST,$EMAIL]" 2>/dev/null
+else
+  EMAIL="$FIRST"
+fi
+echo "   Set the password for $EMAIL (your local development password is NOT carried over):"
+DATABASE_URL="postgres:///$SCRATCH_DB" bin/rails "users:set_password[$EMAIL]" 2>/dev/null
+
+echo "4/6 Compacting..."
+psql -q -d "$SCRATCH_DB" -c "VACUUM FULL ANALYZE" >/dev/null
+SIZE_MB=$(psql -At -d "$SCRATCH_DB" -c "SELECT pg_database_size(current_database()) / 1048576")
+echo "   Size: ${SIZE_MB} MB (Supabase free allows 500 MB)"
+if [ "$SIZE_MB" -gt 450 ]; then
+  echo "Too close to the 500 MB limit; stopping before anything is uploaded." >&2
+  exit 1
+fi
+
+echo "5/6 Uploading to Supabase (a few minutes)..."
+pg_dump -Fc --no-owner --no-privileges "$SCRATCH_DB" > "$DUMP"
+pg_restore --no-owner --no-privileges --clean --if-exists -d "$SUPABASE_DATABASE_URL" "$DUMP" 2> >(grep -v "does not exist, skipping" >&2) || true
+
+echo "6/6 Checking..."
+psql -At -d "$SUPABASE_DATABASE_URL" -c "SELECT 'stocks: ' || count(*) FROM stocks UNION ALL SELECT 'users: ' || count(*) FROM users UNION ALL SELECT 'database: ' || pg_size_pretty(pg_database_size(current_database()))"
+echo "Done. Log in on the live app as $EMAIL with the password you just set."

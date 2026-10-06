@@ -3,7 +3,7 @@
 #              listings, broker names and the floorsheet (broker flows)
 #   "weekly" - fundamentals (one Merolagani page per security, so it is slow)
 class SyncReferenceDataJob < ApplicationJob
-  queue_as :default
+  queue_as :heavy
 
   def perform(kind = "daily")
     case kind.to_s

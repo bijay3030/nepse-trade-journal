@@ -38,8 +38,7 @@ module Api
         return unless auth_header
 
         token = auth_header.split(" ").last
-        secret = ENV.fetch("JWT_SECRET", "secret")
-        JWT.decode(token, secret, true, algorithm: "HS256")[0]
+        JWT.decode(token, Warden::JWTAuth.config.secret, true, algorithm: "HS256")[0]
       rescue JWT::DecodeError, JWT::VerificationError
         nil
       end

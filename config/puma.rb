@@ -34,7 +34,12 @@ port ENV.fetch("PORT", 3000)
 plugin :tmp_restart
 
 # Run the Solid Queue supervisor inside of Puma for single-server deployments
-plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"]
+if ENV["SOLID_QUEUE_IN_PUMA"]
+  plugin :solid_queue
+  # Workers, dispatcher and scheduler as threads in this process rather than forked
+  # processes: each fork costs ~100 MB, too much for a 512 MB host (Render free).
+  solid_queue_mode :async if ENV["SOLID_QUEUE_MODE"] == "async"
+end
 
 # Specify the PID file. Defaults to tmp/pids/server.pid in development.
 # In other environments, only set the PID file if requested.

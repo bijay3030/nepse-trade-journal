@@ -37,3 +37,8 @@
 
 # Kamal secrets (keep out of version control)
 /.kamal/secrets
+
+# Deployment secrets and dumps
+/deploy/.env
+/deploy/target.env
+/backups/

@@ -13,7 +13,7 @@ module Users
       }, status: :ok
     end
 
-    def respond_to_on_destroy
+    def respond_to_on_destroy(*)
       render json: { message: "Logged out successfully" }, status: :ok
     end
   end

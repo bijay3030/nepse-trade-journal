@@ -8,6 +8,9 @@ module Setups
   # rating is the one field computed from current data; the backtest doesn't use it.)
   class SnapshotBuilder
     MIN_SESSIONS = 60
+    # The nightly build loads stocks in batches of this many, so its memory stays within
+    # a small host (Render's free 512 MB); HistoryBuilder passes everything preloaded.
+    BATCH_SIZE = 25
     SETUP_TYPES = Types::ALL
     # Which setup represents the stock when both have zones: one in its zone first.
     PULLBACK_MIN_RS = 70
@@ -33,22 +36,51 @@ module Setups
       @sessions = prices.distinct.where("traded_on <= ?", traded_on).order(traded_on: :desc).limit(Guards::WINDOW).pluck(:traded_on)
       market = MarketIndex::Overview.new.call(as_of: traded_on)
       context = Watchlist::MarketContext.call(as_of: traded_on)
-      stocks = eligible_stocks(traded_on)
-      ratings = RelativeStrength.ratings(stocks.to_h { [ _1.id, RelativeStrength.score(closes(_1)) ] })
-      flows = Flows::AccumulationAnalyzer.for_stocks(stocks.map(&:id), as_of: traded_on)
-
       summary = { success: true, traded_on: traded_on, stocks: 0, in_buy_zone: [], failed: {} }
-      stocks.each do |stock|
+      build_one = lambda do |stock, ratings, flows|
         build(stock, traded_on, market, context, ratings, flows[stock.id] || Flows::AccumulationAnalyzer.empty)
         summary[:stocks] += 1
       rescue StandardError => e
         summary[:failed][stock.symbol] = e.message
+      end
+
+      if @preloaded
+        stocks = eligible_stocks(traded_on)
+        ratings = RelativeStrength.ratings(stocks.to_h { [ _1.id, RelativeStrength.score(closes(_1)) ] })
+        flows = Flows::AccumulationAnalyzer.for_stocks(stocks.map(&:id), as_of: traded_on)
+        stocks.each { build_one.(_1, ratings, flows) }
+      else
+        ids = eligible_ids(traded_on)
+        ratings = RelativeStrength.ratings(close_series(ids, traded_on).transform_values { RelativeStrength.score(_1) })
+        flows = Flows::AccumulationAnalyzer.for_stocks(ids, as_of: traded_on)
+        ids.each_slice(BATCH_SIZE) do |batch|
+          Stock.where(id: batch).includes(:daily_prices, :daily_indicators).order(:symbol).each { build_one.(_1, ratings, flows) }
+          @sorted_prices = nil
+          # Free each batch before loading the next, so the heap doesn't keep growing.
+          GC.start
+        end
       end
       summary[:in_buy_zone] = StockSetupSnapshot.where(traded_on: traded_on, in_buy_zone: true).joins(:stock).pluck("stocks.symbol").sort
       summary
     end
 
     private
+
+    # Ids of active equities (optionally limited to @symbols) with MIN_SESSIONS prices up
+    # to the session and a price on it, without loading their history.
+    def eligible_ids(traded_on)
+      scope = Stock.active.where(security_type: "Equity")
+      scope = scope.where(symbol: @symbols) if @symbols
+      traded = StockDailyPrice.where(traded_on: traded_on).select(:stock_id)
+      StockDailyPrice.where(stock_id: scope.where(id: traded).select(:id)).where(traded_on: ..traded_on)
+                     .group(:stock_id).having("COUNT(*) >= ?", MIN_SESSIONS).pluck(:stock_id)
+    end
+
+    # Closing prices up to the session, oldest first, per stock: enough for RS ratings.
+    def close_series(ids, traded_on)
+      StockDailyPrice.where(stock_id: ids, traded_on: ..traded_on).order(:traded_on).pluck(:stock_id, :close_price)
+                     .group_by(&:first).transform_values { |rows| rows.map(&:last) }
+    end
 
     # Stocks with enough history that traded in the latest session.
     def eligible_stocks(traded_on)
