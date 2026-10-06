@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
 
 import { CautiousSize } from "./CautiousSize"
+import { HeatWarning } from "./HeatWarning"
 import { rupees, signedRupees } from "./format"
 import { isSized, type WatchlistSizing } from "./types"
 
@@ -25,6 +26,7 @@ export function SizingLine({ sizing }: { sizing: WatchlistSizing | null | undefi
       {sizing.gain_at_target !== null && <> · at target <b className="text-pine">{signedRupees(sizing.gain_at_target)}</b>{sizing.reward_risk !== null && ` (${sizing.reward_risk}R)`}</>}
       {sizing.limited_by === "capital" && " · limited by your capital"}
       <CautiousSize cautious={sizing.cautious} />
+      <HeatWarning heat={sizing.heat} />
     </p>
   )
 }

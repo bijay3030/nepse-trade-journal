@@ -255,6 +255,8 @@ export type BuyZoneRow = ReadinessSnapshot & {
 export type BuyZoneResponse = {
   traded_on: string | null
   market_direction?: MarketDirection | null
+  /** The user's open risk against their limit (Positions::Portfolio). */
+  portfolio_heat?: { pct: number | null; limit_pct: number; state: "ok" | "near" | "over" | "unknown" } | null
   criteria: {
     zone_state: ZoneState
     min_trend_rules: number

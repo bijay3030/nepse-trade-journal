@@ -3,8 +3,11 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 
 import { Badge, Button, Card, Input, LoadingSpinner, Textarea } from "../components/ui"
-import { usePositions, useRemoveFill, useUpdatePosition } from "../features/positions/api"
+import { usePortfolio, usePositions, useRemoveFill, useUpdatePosition } from "../features/positions/api"
 import { BuyDialog } from "../features/positions/BuyDialog"
+import { HeatCard, SectorCard } from "../features/positions/PortfolioCards"
+import { PositionAlertsPanel } from "../features/positions/PositionAlertsPanel"
+import { useTradingSettings } from "../features/sizing/api"
 import type { Position } from "../features/positions/types"
 import { apiErrorMessage } from "../features/watchlist/api"
 import { SETUP_LABELS } from "../features/watchlist/labels"
@@ -104,6 +107,11 @@ function PositionCard({ position }: { position: Position }) {
           </dl>
         )}
         {!editing && position.notes && <p className="mt-2 text-sm text-ink">{position.notes}</p>}
+        {position.latest_alert && (
+          <p className={cn("mt-2 rounded-lg px-3 py-1.5 text-xs", position.latest_alert.read ? "bg-slate/5 text-slate" : "bg-amber-50 font-semibold text-amber-900")} aria-label="Latest alert">
+            {position.latest_alert.message}
+          </p>
+        )}
 
         {showFills && (
           <ul className="mt-3 divide-y divide-slate/10 rounded-lg border border-slate/15 text-sm" aria-label={`${position.symbol} fills`}>
@@ -140,6 +148,8 @@ function PositionCard({ position }: { position: Position }) {
 
 export function PositionsPage() {
   const { data, isLoading, isError, refetch } = usePositions("open")
+  const portfolio = usePortfolio().data
+  const sectorLimit = useTradingSettings().data?.max_sector_pct ?? 30
 
   if (isLoading) return <div className="flex h-[50vh] items-center justify-center"><LoadingSpinner size="lg" /></div>
   if (isError || !data) {
@@ -177,6 +187,13 @@ export function PositionsPage() {
             <Stat label="Net if all sold now" value={`Rs ${signed(net)}`} className={tone(net)} />
             <Stat label="Risk if every stop is hit" value={`Rs ${money(risk)}`} />
           </div>
+          {portfolio && (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <HeatCard portfolio={portfolio} />
+              <SectorCard portfolio={portfolio} limit={sectorLimit} />
+            </div>
+          )}
+          <PositionAlertsPanel />
           <div className="grid gap-4 xl:grid-cols-2">
             {data.map((position) => <PositionCard key={position.id} position={position} />)}
           </div>

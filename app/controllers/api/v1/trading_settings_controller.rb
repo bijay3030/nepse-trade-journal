@@ -7,7 +7,7 @@ module Api
       end
 
       def update
-        if current_user.update(params.permit(:trading_capital, :risk_per_trade_pct, :max_open_risk_pct))
+        if current_user.update(params.permit(:trading_capital, :risk_per_trade_pct, :max_open_risk_pct, :max_sector_pct))
           render json: payload
         else
           render json: { error: current_user.errors.full_messages.to_sentence }, status: :unprocessable_entity
@@ -32,7 +32,8 @@ module Api
         {
           trading_capital: current_user.trading_capital&.to_f,
           risk_per_trade_pct: current_user.risk_per_trade_pct.to_f,
-          max_open_risk_pct: current_user.max_open_risk_pct.to_f
+          max_open_risk_pct: current_user.max_open_risk_pct.to_f,
+          max_sector_pct: current_user.max_sector_pct.to_f
         }
       end
     end

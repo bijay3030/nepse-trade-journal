@@ -72,7 +72,8 @@ export function PlatformLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { connectionStatus, market, refresh, lastUpdatedAt } = useStockPrices()
-  const unreadAlerts = (useWatchlistAlerts().data?.unread_count ?? 0) + (usePositionAlerts().data?.unread_count ?? 0)
+  const unreadAlerts = useWatchlistAlerts().data?.unread_count ?? 0
+  const unreadPositionAlerts = usePositionAlerts().data?.unread_count ?? 0
   const status = market.statusLabel
 
   useEffect(() => {
@@ -223,11 +224,14 @@ export function PlatformLayout() {
                       <span className="relative flex items-center gap-2.5">
                         <Icon className={cn("h-4 w-4 text-white/70", isActive && "text-white")} />
                         <span>{item.label}</span>
-                        {item.to === "/watchlist" && unreadAlerts > 0 ? (
-                          <span className="ml-auto rounded-full bg-ember px-2 py-0.5 text-[10px] font-bold text-white" aria-label={`${unreadAlerts} unread alerts`}>
-                            {unreadAlerts}
-                          </span>
-                        ) : null}
+                        {(() => {
+                          const count = item.to === "/watchlist" ? unreadAlerts : item.to === "/positions" ? unreadPositionAlerts : 0
+                          return count > 0 ? (
+                            <span className="ml-auto rounded-full bg-ember px-2 py-0.5 text-[10px] font-bold text-white" aria-label={`${count} unread alerts`}>
+                              {count}
+                            </span>
+                          ) : null
+                        })()}
                       </span>
                     </>
                   )}

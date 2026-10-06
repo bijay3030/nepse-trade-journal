@@ -16,7 +16,10 @@ export type SizeDetails = {
 /** Outside an uptrend: the size at a share of the usual risk, shown alongside (User#size_position). */
 export type CautiousSize = { state: "under_pressure" | "correction"; label: string; size_factor: number; risk_budget: number; quantity: number }
 
-type SizingBase = { risk_budget: number; lot_size: number; limited_by: "risk" | "capital"; cautious?: CautiousSize }
+/** Portfolio heat now and after this buy, against max open risk (User#size_position). */
+export type HeatCheck = { now_pct: number | null; after_pct: number | null; limit_pct: number; state: "ok" | "near" | "over" | "unknown"; fits_quantity: number }
+
+type SizingBase = { risk_budget: number; lot_size: number; limited_by: "risk" | "capital"; cautious?: CautiousSize; heat?: HeatCheck }
 
 /** A suggested size; `note` (and no details) when not even one lot fits the risk budget. */
 export type SizedResult = SizingBase & SizeDetails
@@ -33,4 +36,4 @@ export type WatchlistSizing = Sizing & { entry?: number; stop?: number }
 
 export type SizingResponse = Sizing & { for_quantity?: SizeDetails }
 
-export type TradingSettings = { trading_capital: number | null; risk_per_trade_pct: number; max_open_risk_pct: number }
+export type TradingSettings = { trading_capital: number | null; risk_per_trade_pct: number; max_open_risk_pct: number; max_sector_pct: number }

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import api from "../../lib/axios"
-import type { BuyInput, Position, PositionAlertsResponse } from "./types"
+import type { BuyInput, Portfolio, Position, PositionAlertsResponse } from "./types"
 
 const KEY = ["positions"]
 
@@ -59,5 +59,15 @@ export function useMarkPositionAlertsRead() {
   return useMutation({
     mutationFn: async (ids?: number[]) => (await api.post<{ updated: number }>("/position_alerts/mark_read", ids ? { ids } : {})).data,
     onSuccess: () => client.invalidateQueries({ queryKey: ALERTS_KEY }),
+  })
+}
+
+export function usePortfolio() {
+  return useQuery({
+    queryKey: [...KEY, "portfolio"],
+    queryFn: async () => (await api.get<Portfolio>("/positions/portfolio")).data,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    retry: 1,
   })
 }

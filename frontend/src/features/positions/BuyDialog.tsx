@@ -1,5 +1,6 @@
 import { X } from "lucide-react"
 import { CautiousSize } from "../sizing/CautiousSize"
+import { HeatWarning } from "../sizing/HeatWarning"
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import { Link } from "react-router-dom"
@@ -129,6 +130,7 @@ export function BuyDialog({ symbol, currentPrice, watchlistItemId, setupStop, ta
                     <Button size="sm" variant="outline" onClick={() => setQuantity(String(sizing.quantity))}>Use {sizing.quantity}</Button>
                   )}
                   <CautiousSize cautious={sizing.cautious} onUse={(quantity) => setQuantity(String(quantity))} />
+                  <HeatWarning heat={sizing.heat} onUse={(quantity) => setQuantity(String(quantity))} />
                 </div>
               ) : (
                 <p className="text-xs text-slate">{sizing.note}.</p>

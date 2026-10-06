@@ -5,6 +5,8 @@ export type PositionFill = { id: number; side: "buy" | "sell"; price: number; qu
 /** GET /positions, /positions/:id */
 export type Position = {
   id: number
+  /** The newest sell-rule alert (Positions::Monitor). */
+  latest_alert?: { id: number; kind: PositionAlertKind; message: string; created_at: string; read: boolean } | null
   symbol: string
   name: string
   sector: string
@@ -60,3 +62,17 @@ export type PositionAlert = {
 }
 
 export type PositionAlertsResponse = { unread_count: number; alerts: PositionAlert[] }
+
+export type HeatState = "ok" | "near" | "over" | "unknown"
+
+/** GET /positions/portfolio (Positions::Portfolio). */
+export type Portfolio = {
+  capital: number | null
+  open_risk: number
+  market_value: number
+  invested: number
+  cash: number | null
+  heat: { pct: number | null; limit_pct: number; state: HeatState; room: number | null }
+  positions: Array<{ position_id: number; symbol: string; open_risk: number; heat_pct: number | null; share_of_risk_pct: number | null }>
+  sectors: Array<{ sector: string; value: number; pct: number | null; symbols: string[]; over: boolean }>
+}

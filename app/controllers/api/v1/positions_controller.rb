@@ -4,9 +4,14 @@ module Api
       before_action :set_position, only: %i[show update destroy_fill]
 
       def index
-        positions = current_user.positions.includes(:stock, :fills).order(status: :desc, created_at: :desc)
+        positions = current_user.positions.includes(:stock, :fills, :alerts).order(status: :desc, created_at: :desc)
         positions = positions.where(status: params[:status]) if Position::STATUSES.include?(params[:status])
         render json: positions, each_serializer: PositionSerializer
+      end
+
+      # GET /positions/portfolio: heat and sector exposure of the open positions.
+      def portfolio
+        render json: Positions::Portfolio.call(current_user)
       end
 
       def show
