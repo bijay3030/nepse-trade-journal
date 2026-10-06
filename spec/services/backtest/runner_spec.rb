@@ -111,7 +111,7 @@ RSpec.describe Backtest::Runner do
     result = described_class.call(save: false)
 
     expect(result[:trades][:list].map { _1[:symbol] }).to eq([ "GOOD" ])
-    expect(result[:trades][:held_back]).to eq("thin_volume" => 1, "upper_circuit" => 0, "lower_circuit" => 0, "extended" => 0)
+    expect(result[:trades][:held_back]).to eq("thin_volume" => 1, "upper_circuit" => 0, "lower_circuit" => 0, "extended" => 0, "late_stage_base" => 0)
     expect(result[:groups][:guards]["Passed guards"][5][:n]).to eq(1)
     expect(result[:groups][:guards]["thin_volume"][5][:n]).to eq(1)
   end

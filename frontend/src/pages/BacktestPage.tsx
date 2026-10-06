@@ -11,7 +11,7 @@ import { cn } from "../lib/cn"
 const HORIZONS: Horizon[] = ["5", "10", "20"]
 const ZONE_ORDER = ["too_early", "in_zone", "extended", "failed", "no_setup"]
 const FLOW_ORDER = ["accumulation", "neutral", "distribution", "no_data"]
-const GUARD_ORDER = ["Passed guards", "thin_volume", "upper_circuit", "lower_circuit", "extended"]
+const GUARD_ORDER = ["Passed guards", "thin_volume", "upper_circuit", "lower_circuit", "extended", "late_stage_base"]
 const EXIT_LABELS = { stop: "Stopped out", target: "Target reached", time: "Time exit (20 sessions)" }
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
@@ -198,6 +198,20 @@ export function BacktestPage() {
             <CardBody><GroupChart groups={results.groups.market_direction} horizon={horizon} /></CardBody>
           </Card>
         )}
+        {([
+          ["base_count", "By base count", "Base since the stock's low (3rd+ is held back as late stage)"],
+          ["pocket_pivot", "By pocket pivot", "A pocket pivot in the 5 sessions up to the signal"],
+          ["up_down_volume", "By up/down volume", "Volume on up days ÷ down days over 50 sessions"],
+          ["dry_up", "By volume dry-up", "2+ of the last 10 sessions under half the 50-day average volume"],
+        ] as const).map(([key, title, subtitle]) => {
+          const groups = results.groups[key]
+          return groups ? (
+            <Card key={key}>
+              <CardHeader title={title} subtitle={subtitle} />
+              <CardBody><GroupChart groups={groups} horizon={horizon} /></CardBody>
+            </Card>
+          ) : null
+        })}
         {results.groups.guards && (
           <Card>
             <CardHeader title="By tradability guard" subtitle="Charts meeting the entry rules: passed every guard, or held back by thin volume or a circuit" />

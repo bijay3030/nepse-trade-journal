@@ -55,3 +55,9 @@ RSpec.describe Setups::Guards, ".call extended" do
     expect(described_class.call(avg_turnover: 9_000_000, change_pct: 1.0, on: Date.new(2026, 9, 29), extension: { flags: [ "big_move" ] })).to eq([])
   end
 end
+
+RSpec.describe Setups::Guards, ".call late-stage base" do
+  it "adds the guard for a 3rd or later base" do
+    expect(described_class.call(avg_turnover: 9_000_000, change_pct: 1.0, on: Date.new(2026, 9, 29), signals: { flags: %w[late_stage_base dry_up] })).to eq([ "late_stage_base" ])
+  end
+end

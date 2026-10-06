@@ -44,6 +44,11 @@ export type BacktestResults = {
     breakout_age?: Record<string, GroupStats>
     /** Setups::MarketDirection's state on the signal day. */
     market_direction?: Record<string, GroupStats>
+    /** Setups::Signals: base count and volume signatures. */
+    base_count?: Record<string, GroupStats>
+    pocket_pivot?: Record<string, GroupStats>
+    up_down_volume?: Record<string, GroupStats>
+    dry_up?: Record<string, GroupStats>
   }
   trades: {
     total: number
