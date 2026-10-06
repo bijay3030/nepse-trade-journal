@@ -10,6 +10,9 @@ module Setups
   #                  scarce and a stop may not fill.
   #   extended       4+ ADR above the 50-day average (Setups::Extension). In the
   #                  backtest stocks in their zone that far up fell ~4.6% over 10 sessions.
+  #   late_stage_base  the 3rd or later base since the low (Setups::BaseCount). In the
+  #                  backtest stocks in their zone did worse with each base: 20 sessions
+  #                  later -1.6% (base 1), -3.1% (base 2), -4.2% (base 3+).
   #
   # NEPSE's per-stock daily limit was ±10% and became ±15% on 2026-04-20, so the limit
   # is taken for the session's date (past sessions in the backtest keep the old one).
@@ -20,7 +23,7 @@ module Setups
     OLD_DAILY_LIMIT_PCT = 10.0
     DAILY_LIMIT_PCT = 15.0
     CIRCUIT_MARGIN_PCT = 0.5
-    ALL = %w[thin_volume upper_circuit lower_circuit extended].freeze
+    ALL = %w[thin_volume upper_circuit lower_circuit extended late_stage_base].freeze
 
     module_function
 
@@ -29,13 +32,14 @@ module Setups
     # A move this large counts as at the circuit.
     def circuit_near_pct(on = Nepse::MarketHours.today) = daily_limit_pct(on) - CIRCUIT_MARGIN_PCT
 
-    def call(avg_turnover:, change_pct:, on: Nepse::MarketHours.today, extension: {})
+    def call(avg_turnover:, change_pct:, on: Nepse::MarketHours.today, extension: {}, signals: {})
       near = circuit_near_pct(on)
       guards = []
       guards << "thin_volume" if avg_turnover && avg_turnover < MIN_TURNOVER
       guards << "upper_circuit" if change_pct && change_pct >= near
       guards << "lower_circuit" if change_pct && change_pct <= -near
       guards << "extended" if Array(extension[:flags]).include?("extended")
+      guards << "late_stage_base" if Array(signals[:flags]).include?("late_stage_base")
       guards
     end
 

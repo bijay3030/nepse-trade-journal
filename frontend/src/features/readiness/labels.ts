@@ -52,6 +52,7 @@ export const GUARD_LABELS: Record<Guard, string> = {
   upper_circuit: "At upper circuit",
   lower_circuit: "At lower circuit",
   extended: "Extended",
+  late_stage_base: "Late-stage base",
 }
 
 export const GUARD_DETAILS: Record<Guard, string> = {
@@ -59,6 +60,7 @@ export const GUARD_DETAILS: Record<Guard, string> = {
   upper_circuit: "Closed near the day's upper price limit (+15%): few sellers, and the next open often gaps. Wait for another session.",
   lower_circuit: "Closed near the day's lower price limit (-15%): few buyers, so exits and stops may not fill.",
   extended: "4+ ADR above the 50-day average: in the backtest, stocks this stretched usually pulled back first.",
+  late_stage_base: "The 3rd or later base since the low: in the backtest, each later base did worse (20 sessions on: -1.6%, -3.1%, -4.2%).",
 }
 
 /** "NPR 34.1M" for a turnover in rupees. */

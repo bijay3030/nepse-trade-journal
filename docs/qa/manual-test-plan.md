@@ -325,6 +325,15 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H17.5 | Same, in the buy dialog | The cautious line has "Use N", which fills the quantity |
 | H17.6 | `/backtest` | Chart "By market direction" |
 
+## H18. Base count and volume signatures
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H18.1 | `/screener` → All setups | Badges "Base N" ("Base N+" when the history starts near the low), "Pocket pivot" / "Pocket pivot Nd ago", "U/D vol N", "Volume dry-up" |
+| H18.2 | A 3rd-or-later base | Amber "Base 3 · late stage"; not on Entry zone now, listed under "Held back by guards" |
+| H18.3 | `/screener/SYMBOL` readiness card | The same badges, with explanations on hover |
+| H18.4 | `/backtest` | Charts by base count, pocket pivot, up/down volume and volume dry-up; the guard chart includes "late_stage_base" |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

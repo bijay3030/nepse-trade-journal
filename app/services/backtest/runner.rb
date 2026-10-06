@@ -35,7 +35,7 @@ module Backtest
     def call
       snapshots = StockSetupSnapshot.order(:traded_on).pluck(
         :stock_id, :traded_on, :close_price, :readiness_score, :zone_state, :flow_state, :trend_rules_passed,
-        :in_buy_zone, :entry_zone_low, :entry_zone_high, :invalidation_price, :target_price, :setup_type, :guards, :extension
+        :in_buy_zone, :entry_zone_low, :entry_zone_high, :invalidation_price, :target_price, :setup_type, :guards, :extension, :signals
       ).map { |row| snapshot_hash(row) }
       sessions = Setups::HistoryBuilder.sessions.to_set
       snapshots.select! { sessions.include?(_1[:traded_on]) }
@@ -58,7 +58,7 @@ module Backtest
     private
 
     def snapshot_hash(row)
-      keys = %i[stock_id traded_on close readiness zone_state flow_state trend_rules in_buy_zone entry_low entry_high stop target setup_type guards extension]
+      keys = %i[stock_id traded_on close readiness zone_state flow_state trend_rules in_buy_zone entry_low entry_high stop target setup_type guards extension signals]
       keys.zip(row).to_h.tap do |snap|
         %i[close entry_low entry_high stop target].each { snap[_1] = snap[_1]&.to_f }
       end
@@ -128,7 +128,28 @@ module Backtest
                       "Everything else" => by_horizon(snapshots.reject { _1[:in_buy_zone] }) },
         guards: guard_groups(snapshots),
         market_direction: direction_groups(snapshots),
+        **signal_groups(snapshots),
         **extension_groups(snapshots)
+      }
+    end
+
+    # Setups::Signals: base number and volume signatures, for stocks in their zone and the board.
+    def signal_groups(snapshots)
+      sets = { "in zone" => snapshots.select { _1[:zone_state] == "in_zone" }, "board" => snapshots.select { _1[:in_buy_zone] } }
+      value = ->(snap, key) { snap[:signals]&.dig(key) }
+      split = lambda do |buckets|
+        sets.flat_map { |label, rows| buckets.map { |name, test| [ "#{label}: #{name}", by_horizon(rows.select(&test)) ] } }.to_h
+      end
+      {
+        base_count: split.({ "base 1" => ->(s) { value.(s, "base_number") == 1 }, "base 2" => ->(s) { value.(s, "base_number") == 2 },
+                             "base 3+" => ->(s) { value.(s, "base_number").to_i >= 3 }, "no base yet" => ->(s) { value.(s, "base_number").nil? } }),
+        pocket_pivot: split.({ "pocket pivot in 5 sessions" => ->(s) { !value.(s, "pocket_pivot_age").nil? },
+                               "none" => ->(s) { value.(s, "pocket_pivot_age").nil? && s[:signals]&.key?("up_down_ratio") } }),
+        up_down_volume: split.({ "U/D under 0.8" => ->(s) { (r = value.(s, "up_down_ratio")) && r < 0.8 },
+                                 "U/D 0.8-1.2" => ->(s) { (r = value.(s, "up_down_ratio")) && r >= 0.8 && r < 1.2 },
+                                 "U/D 1.2+" => ->(s) { (r = value.(s, "up_down_ratio")) && r >= 1.2 } }),
+        dry_up: split.({ "volume dried up" => ->(s) { value.(s, "dry_up_days").to_i >= Setups::VolumeSignals::DRY_UP_MIN_DAYS },
+                         "no dry-up" => ->(s) { (d = value.(s, "dry_up_days")) && d < Setups::VolumeSignals::DRY_UP_MIN_DAYS } })
       }
     end
 

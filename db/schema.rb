@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_05_134817) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_06_073301) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -318,6 +318,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_05_134817) do
     t.decimal "change_pct", precision: 8, scale: 2
     t.jsonb "guards", default: [], null: false
     t.jsonb "extension", default: {}, null: false
+    t.jsonb "signals", default: {}, null: false
     t.index ["stock_id", "traded_on"], name: "index_stock_setup_snapshots_on_stock_id_and_traded_on", unique: true
     t.index ["stock_id"], name: "index_stock_setup_snapshots_on_stock_id"
     t.index ["traded_on", "in_buy_zone"], name: "index_stock_setup_snapshots_on_traded_on_and_in_buy_zone"

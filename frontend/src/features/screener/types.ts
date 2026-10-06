@@ -111,6 +111,7 @@ export type ScreenerRow = {
   flow_state?: FlowState | null
   guards?: Guard[]
   extension?: Extension
+  signals?: Signals
   next_book_close?: BookClose | null
 }
 
@@ -178,8 +179,22 @@ export type Extension = {
   flags?: Array<"extended" | "big_move" | "stale_breakout">
 }
 
+/** Setups::Signals: volume signatures and base count from the nightly snapshot. */
+export type Signals = {
+  up_down_ratio?: number | null
+  /** Sessions since the latest pocket pivot in the last 5 (0 = that session). */
+  pocket_pivot_age?: number | null
+  dry_up_days?: number | null
+  base_number?: number | null
+  /** Price history starts near the low, so earlier bases may be missing ("N+"). */
+  base_partial?: boolean
+  in_base?: boolean
+  base_depth_pct?: number | null
+  flags?: Array<"pocket_pivot" | "strong_up_down" | "weak_up_down" | "dry_up" | "late_stage_base">
+}
+
 /** Tradability guards (Setups::Guards) that keep a qualifying chart off the board. */
-export type Guard = "thin_volume" | "upper_circuit" | "lower_circuit" | "extended"
+export type Guard = "thin_volume" | "upper_circuit" | "lower_circuit" | "extended" | "late_stage_base"
 
 /** Where the price sits against the best setup's entry zone. */
 export type ZoneState = "too_early" | "in_zone" | "extended" | "failed" | "no_setup"
@@ -225,6 +240,7 @@ export type ReadinessSnapshot = {
   change_pct?: number | null
   guards?: Guard[]
   extension?: Extension
+  signals?: Signals
 }
 
 export type BuyZoneRow = ReadinessSnapshot & {

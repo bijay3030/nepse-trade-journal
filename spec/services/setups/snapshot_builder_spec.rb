@@ -65,6 +65,14 @@ RSpec.describe Setups::SnapshotBuilder do
     expect(StockSetupSnapshot.held_back_by_guards.count).to eq(2)
   end
 
+  it "stores the volume signals and base count" do
+    stock = stock_with_history("BASE", Array.new(100) { |i| 100.0 + i * 1.0 })
+
+    described_class.call
+
+    expect(stock.setup_snapshots.sole.signals).to include("up_down_ratio", "pocket_pivot_age", "dry_up_days", "base_number", "flags")
+  end
+
   it "stores the extension measures and holds back a stock 4+ ADR above its 50-day" do
     # A steady climb; the 50-day indicator far below the close makes it extended.
     leader = stock_with_history("RUN", Array.new(100) { |i| 100.0 + i * 1.0 })

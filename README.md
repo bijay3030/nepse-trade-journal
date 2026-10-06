@@ -300,6 +300,7 @@ A stock is listed under **Entry zone now** when the price is inside the zone, at
 | At upper circuit | Closed +14.5% or more (NEPSE's per-stock daily limit is ±15% since 2026-04-20; ±10%, flagged at 9.5%, for earlier sessions) | Few sellers, the next open often gaps; wait for another session |
 | At lower circuit | Closed -14.5% or less | Few buyers; stops and exits may not fill |
 
+| Late-stage base | The 3rd or later base since the stock's low (`Setups::BaseCount`) | Each later base did worse: stocks in their zone were −1.6% (base 1), −3.1% (base 2) and −4.2% (base 3+) 20 sessions later |
 | Extended | 4+ ADR above the 50-day average (ADR = the stock's average daily high–low range over 20 sessions) | Stretched stocks usually pulled back first: in the backtest, stocks in their zone that far up fell about 4.6% over 10 sessions |
 
 Two more measures are shown but don't hold anything back, because the backtest didn't
@@ -333,6 +334,23 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
+
+## Base count and volume signatures
+
+`Setups::Signals`, stored on each nightly snapshot and shown as badges:
+
+- **Base N:** bases counted from the stock's lowest close. A base is a fall of 10%+
+  from a high lasting 15+ sessions, ended by a close above that high. A base that
+  undercuts the previous base's low restarts the count. Price history is about a year,
+  so when the low sits at the start of it the badge reads "Base N+". The 3rd base or
+  later is a guard (see the table above).
+- **Pocket pivot:** an up day on more volume than any down day in the 10 before,
+  closing 0–5% above the 10-day average or within 3% of the 50-day.
+- **U/D vol:** volume on up days ÷ down days over 50 sessions (shown at 1.2+ or under 0.8).
+- **Volume dry-up:** 2+ of the last 10 sessions under half the 50-day average volume.
+
+In the backtest the three volume signatures didn't separate later returns (pocket
+pivots were slightly worse), so they're information only.
 
 ## Market direction
 

@@ -5,7 +5,7 @@ module Telegram
       "vcp" => "VCP breakout", "pullback" => "Pullback to support",
       "ma_pullback" => "Pullback to a rising average", "base_breakout" => "Flat-base breakout"
     }.freeze
-    GUARD_LABELS = { "thin_volume" => "thin volume", "upper_circuit" => "at the upper circuit", "lower_circuit" => "at the lower circuit", "extended" => "extended above the 50-day" }.freeze
+    GUARD_LABELS = { "thin_volume" => "thin volume", "upper_circuit" => "at the upper circuit", "lower_circuit" => "at the lower circuit", "extended" => "extended above the 50-day", "late_stage_base" => "a late-stage (3rd+) base" }.freeze
     ALERT_TITLES = {
       "entered_zone" => "is in its entry zone",
       "breakout_confirmed" => "broke out into its entry zone on volume",

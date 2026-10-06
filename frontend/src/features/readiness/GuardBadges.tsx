@@ -4,8 +4,8 @@ import { GUARD_DETAILS, GUARD_LABELS } from "./labels"
 
 // Amber for thin volume, red for a stock at either daily limit.
 export function GuardBadges({ guards, className }: { guards?: Guard[] | null; className?: string }) {
-  // "Extended" has its own badge with the figure (ExtensionBadges).
-  const shown = guards?.filter((guard) => guard !== "extended") ?? []
+  // "Extended" and the late-stage base have their own badges with the figures.
+  const shown = guards?.filter((guard) => guard !== "extended" && guard !== "late_stage_base") ?? []
   if (!shown.length) return null
   return (
     <>
