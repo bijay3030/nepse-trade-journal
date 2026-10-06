@@ -13,6 +13,8 @@ and [PROGRESS.md](./PROGRESS.md) for the build log.
 
 ---
 
+**New here?** [docs/user-guide.md](docs/user-guide.md) explains every feature (why, how, how to use it, how to test it) and how to paper trade with the app.
+
 ## Prerequisites
 
 | Tool       | Version            | Notes                                                       |
