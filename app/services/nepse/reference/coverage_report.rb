@@ -27,11 +27,12 @@ module Nepse
             price_history_100_sessions: history.count { _2 >= 100 },
             dividend_history: equities.where(id: StockDividend.select(:stock_id)).count
           },
-          equity_fundamentals: %i[eps pe_ratio book_value pb_ratio net_profit roe roa distributable_profit_per_share].to_h do |field|
+          equity_fundamentals: %i[eps pe_ratio book_value pb_ratio net_profit roe roa distributable_profit_per_share growth_rate].to_h do |field|
             [ field, latest.count { |row| row.public_send(field).to_f.nonzero? } ]
           end,
           fundamentals_period: latest.map { "#{_1.fiscal_year} #{_1.quarter}" }.tally.sort_by { -_2 }.first(4).to_h,
           field_sources: source_counts(latest),
+          eps_growth: eps_growth_coverage(equities),
           indices: MarketIndex.order(:symbol).to_h do |index|
             dates = index.histories.pluck(:traded_on)
             [ index.symbol, { sessions: dates.size, from: dates.min, to: dates.max } ]
@@ -40,6 +41,14 @@ module Nepse
       end
 
       private
+
+      # How many equities have a growth figure, and how many from their own stored history
+      # (the same quarter a year earlier), which grows as the weekly sync keeps quarters.
+      def eps_growth_coverage(equities)
+        results = equities.includes(:company_financials).map { Fundamentals::EpsGrowth.call(_1) }.compact
+        { with_growth: results.size, from_reported_history: results.count { _1[:source] == "reported" },
+          quarters_stored: StockCompanyFinancial.where(stock_id: equities.select(:id)).where("quarter LIKE 'Q%'").count }
+      end
 
       def latest_financials(equities)
         StockCompanyFinancial.where(stock_id: equities.select(:id)).where.not(fiscal_year: "latest")

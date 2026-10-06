@@ -41,4 +41,15 @@ RSpec.describe "Buy zone and snapshot-backed screener", type: :request do
     expect(body["traded_on"]).to eq("2026-09-28")
     expect(body["results"].first).to include("symbol" => "BANK", "vcp_score" => 80, "readiness_score" => 72, "zone_state" => "in_zone", "in_buy_zone" => true)
   end
+
+  it "includes each stock's EPS growth" do
+    stock = create(:stock, symbol: "GROW")
+    StockSetupSnapshot.create!(stock: stock, traded_on: Date.new(2026, 9, 28), close_price: 100, zone_state: "in_zone", in_buy_zone: true, readiness_score: 70)
+    stock.company_financials.create!(fiscal_year: "082/083", quarter: "Q4", eps: 30, growth_rate: 33.5, reported_on: Date.new(2026, 9, 30))
+
+    get "/api/v1/screener/buy_zone", headers: headers
+
+    row = response.parsed_body["results"].find { _1["symbol"] == "GROW" }
+    expect(row["eps_growth"]).to include("growth_pct" => 33.5, "source" => "chukul", "strong" => true)
+  end
 end

@@ -8,6 +8,7 @@ import { BookCloseBadge } from "../corporate/BookCloseBadge"
 import { AddToWatchlistButton } from "../watchlist/AddToWatchlist"
 import { ExtensionBadges } from "./ExtensionBadges"
 import { SignalBadges } from "./SignalBadges"
+import { EpsGrowthBadge } from "./EpsGrowthBadge"
 import { GuardBadges } from "./GuardBadges"
 import { FLOW_LABELS, GUARD_LABELS, SETUP_TYPE_LABELS, ZONE_LABELS, ZONE_TONE, formatTurnover } from "./labels"
 import { ReadinessGauge } from "./ReadinessGauge"
@@ -109,6 +110,7 @@ function BoardCard({ row }: { row: BuyZoneRow }) {
             <Badge tone={ZONE_TONE[row.zone_state]}>{ZONE_LABELS[row.zone_state]}</Badge>
           <ExtensionBadges extension={row.extension} />
           <SignalBadges signals={row.signals} />
+          <EpsGrowthBadge growth={row.eps_growth} />
           </div>
           <p className="truncate text-xs text-slate">{row.name} · {row.sector}</p>
           <p className="mt-1 text-sm text-ink">

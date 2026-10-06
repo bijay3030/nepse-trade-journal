@@ -335,6 +335,23 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
 
+## EPS growth
+
+`Fundamentals::EpsGrowth` gives the year-on-year EPS growth of each stock's latest
+quarterly report, shown as **EPS +N% YoY** on the board, the screener and the stock page
+(green at 25%+, the CAN SLIM bar; red when falling). Information only.
+
+- When the same quarter of the previous fiscal year is stored, the app compares the two
+  EPS figures itself ("reported"). Otherwise it shows Chukul's growth rate (the figure
+  behind its PEG ratio).
+- The weekly fundamentals sync (Saturday) keeps one row per fiscal year and quarter, so
+  history builds up from now on. Past quarters couldn't be backfilled: ShareSansar
+  serves only the latest quarter and Merolagani only links to PDF reports.
+- It isn't in the backtest: without stored history the figure isn't point in time, and
+  using today's growth on past signals would be look-ahead.
+- `Nepse::Reference::CoverageReport` reports how many equities have a growth figure and
+  how many come from the app's own history.
+
 ## Closing and reviewing positions
 
 - **Record a sell** on an open position (price, quantity, date). Partial sells reduce it;

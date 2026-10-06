@@ -14,6 +14,7 @@ module Api
           readiness_history: Setups::ReadinessHistory.for_stock(stock),
           rs_line: Setups::RsLine.call(stock),
           volume_pace: Nepse::VolumeProfile.pace(stock),
+          eps_growth: Fundamentals::EpsGrowth.call(stock),
           broker_flow: Flows::AccumulationAnalyzer.call(stock),
           corporate_actions: {
             upcoming: CorporateActions::Upcoming.for_stock(stock),
@@ -28,11 +29,11 @@ module Api
       # Stocks in their buy zone on the latest snapshot (or all, ranked by readiness).
       def buy_zone
         traded_on = StockSetupSnapshot.maximum(:traded_on)
-        scope = StockSetupSnapshot.where(traded_on: traded_on).joins(:stock).merge(Stock.active).includes(:stock)
+        scope = StockSetupSnapshot.where(traded_on: traded_on).joins(:stock).merge(Stock.active).includes(stock: :company_financials)
         scope = scope.where(in_buy_zone: true) unless ActiveModel::Type::Boolean.new.cast(params[:all])
         snapshots = scope.order(readiness_score: :desc).limit(200).to_a
         held_back = StockSetupSnapshot.where(traded_on: traded_on).held_back_by_guards.joins(:stock).merge(Stock.active)
-                                      .includes(:stock).order(readiness_score: :desc).to_a
+                                      .includes(stock: :company_financials).order(readiness_score: :desc).to_a
         upcoming = CorporateActions::Upcoming.for_stocks((snapshots + held_back).map(&:stock_id))
         @histories = Setups::ReadinessHistory.for_stocks((snapshots + held_back).map(&:stock_id))
         render json: {
@@ -56,6 +57,7 @@ module Api
         StockSetupSnapshotSerializer.new(snapshot).as_json.merge(
           symbol: snapshot.stock.symbol, name: snapshot.stock.name, sector: snapshot.stock.sector,
           next_book_close: upcoming[snapshot.stock_id],
+          eps_growth: Fundamentals::EpsGrowth.call(snapshot.stock),
           readiness_history: @histories.fetch(snapshot.stock_id, [])
         )
       end

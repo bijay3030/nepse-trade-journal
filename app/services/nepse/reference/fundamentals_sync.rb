@@ -10,7 +10,7 @@ module Nepse
     # Promoter shares and debentures are skipped: they publish no fundamentals of their own.
     class FundamentalsSync
       SECURITY_TYPES = [ "Equity", "Mutual Fund" ].freeze
-      FINANCIAL_FIELDS = %i[eps pe_ratio pb_ratio book_value net_profit paid_up_capital roe roa distributable_profit_per_share].freeze
+      FINANCIAL_FIELDS = %i[eps pe_ratio pb_ratio book_value net_profit paid_up_capital roe roa distributable_profit_per_share growth_rate].freeze
 
       def self.call(**options)
         new(**options).call
@@ -104,7 +104,7 @@ module Nepse
           eps: data["eps_a"], pe_ratio: data["pe_ratio"], pb_ratio: data["pb_ratio"], book_value: data["net_worth"],
           net_profit: data["net_profit"], paid_up_capital: data["paidup_capital"], roe: data["roe"], roa: data["roa"],
           # Chukul calls this "dps"; it is distributable profit per share, not the dividend paid.
-          distributable_profit_per_share: data["dps"]
+          distributable_profit_per_share: data["dps"], growth_rate: data["growth_rate"]
         }
       end
 

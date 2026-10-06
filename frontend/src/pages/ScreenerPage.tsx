@@ -15,6 +15,7 @@ import { Badge, Button, Card, LoadingSpinner } from "../components/ui"
 import { BookCloseBadge } from "../features/corporate/BookCloseBadge"
 import { ExtensionBadges } from "../features/readiness/ExtensionBadges"
 import { SignalBadges } from "../features/readiness/SignalBadges"
+import { EpsGrowthBadge } from "../features/readiness/EpsGrowthBadge"
 import { GuardBadges } from "../features/readiness/GuardBadges"
 import { EntryZoneBoard } from "../features/readiness/EntryZoneBoard"
 import { FLOW_LABELS, FLOW_TONE, ZONE_LABELS, ZONE_TONE } from "../features/readiness/labels"
@@ -161,6 +162,7 @@ function ScreenerTable({
                       <GuardBadges guards={row.guards} />
                       <ExtensionBadges extension={row.extension} />
                       <SignalBadges signals={row.signals} />
+                      <EpsGrowthBadge growth={row.eps_growth} />
                       {row.next_book_close?.bonus_percent ? <BookCloseBadge bookClose={row.next_book_close} /> : null}
                       {row.flow_state && row.flow_state !== "no_data" && row.flow_state !== "neutral" && (
                         <Badge tone={FLOW_TONE[row.flow_state]}>{FLOW_LABELS[row.flow_state]}</Badge>

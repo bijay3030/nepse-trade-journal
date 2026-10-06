@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_06_110804) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_06_111817) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -223,6 +223,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_06_110804) do
     t.jsonb "field_sources", default: {}, null: false
     t.decimal "roa", precision: 8, scale: 2
     t.decimal "distributable_profit_per_share", precision: 10, scale: 2
+    t.decimal "growth_rate", precision: 10, scale: 2
     t.index ["stock_id", "fiscal_year", "quarter"], name: "index_financials_on_stock_fy_quarter", unique: true
     t.index ["stock_id"], name: "index_stock_company_financials_on_stock_id"
   end
