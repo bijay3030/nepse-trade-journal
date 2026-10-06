@@ -168,7 +168,7 @@ export function BacktestPage() {
           <Card>
             <CardHeader title="By setup type" subtitle="Stocks inside their entry zone, by the setup that put them there" />
             <CardBody>
-              <GroupChart groups={results.groups.setup_type} horizon={horizon} labels={SETUP_TYPE_LABELS} order={["vcp", "base_breakout", "pullback", "ma_pullback"]} />
+              <GroupChart groups={results.groups.setup_type} horizon={horizon} labels={SETUP_TYPE_LABELS} order={["vcp", "base_breakout", "three_weeks_tight", "pullback", "ma_pullback", "undercut_rally"]} />
             </CardBody>
           </Card>
         )}

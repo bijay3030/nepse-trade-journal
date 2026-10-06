@@ -335,6 +335,31 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
 
+## Heads-up alerts and secondary setups
+
+Two early alerts for tracked stocks (in-app and Telegram, marked 🟡; they're
+deduplicated separately so they never block the zone alert that day):
+
+- **Approaching zone:** the price is within 3% below the pivot or entry zone. It fires
+  once per approach and can fire again after the price has been 5% away.
+- **Pullback to the 21-day:** the price is within 1.5% of a rising 21-day EMA (of the
+  closes before today), after being 3%+ above it in the last 10 sessions, on projected
+  volume under the 50-day average. At most once a day per stock.
+
+Two more setup types, detected nightly and offered when adding to the watchlist:
+
+- **3-weeks-tight:** three weekly closes (Sunday–Thursday weeks) within 1.5% of each
+  other above a rising 50-day. Zone: the pattern high to 3% above; fails at its low.
+- **Undercut and rally:** a dip under the lowest low of the 25 sessions before the last
+  5, then a close back above it. Zone: the reclaimed low to 3% above; fails just under
+  the dip's low (each capped at 8% below the zone).
+
+They aren't on **Entry zone now** yet. In the Apr–Oct 2026 data undercut-and-rally did
+well in its zone (+1.68% over 10 sessions, 64% up, n=770) but only 3 cases also met
+the board's trend and readiness rules; 3-weeks-tight appeared once. When several setups
+share a zone state, the board's setups win the snapshot, so a newer setup never pushes
+a board pick off.
+
 ## Base count and volume signatures
 
 `Setups::Signals`, stored on each nightly snapshot and shown as badges:

@@ -104,7 +104,7 @@ export type ScreenerRow = {
   in_buy_zone?: boolean
   rs_rating?: number | null
   trend_rules_passed?: number
-  setup_type?: "vcp" | "pullback" | "ma_pullback" | "base_breakout" | null
+  setup_type?: "vcp" | "pullback" | "ma_pullback" | "base_breakout" | "three_weeks_tight" | "undercut_rally" | null
   entry_zone_low?: number | null
   entry_zone_high?: number | null
   invalidation_price?: number | null
@@ -206,7 +206,7 @@ export type ReadinessComponent = { points: number; max: number }
 /** Nightly snapshot for one stock (GET /screener/:symbol -> readiness, GET /screener/buy_zone). */
 export type ReadinessSnapshot = {
   traded_on: string
-  setup_type: "vcp" | "pullback" | "ma_pullback" | "base_breakout" | null
+  setup_type: "vcp" | "pullback" | "ma_pullback" | "base_breakout" | "three_weeks_tight" | "undercut_rally" | null
   zone_state: ZoneState
   in_buy_zone: boolean
   readiness_score: number
@@ -260,7 +260,7 @@ export type BuyZoneResponse = {
     min_trend_rules: number
     min_readiness: number
     /** Setups that can qualify; support pullbacks are left out. */
-    setup_types?: Array<"vcp" | "pullback" | "ma_pullback" | "base_breakout">
+    setup_types?: Array<"vcp" | "pullback" | "ma_pullback" | "base_breakout" | "three_weeks_tight" | "undercut_rally">
     min_avg_turnover?: number
     circuit_near_pct?: number
     /** NEPSE's per-stock daily price limit for the session (±15% since 2026-04-20). */

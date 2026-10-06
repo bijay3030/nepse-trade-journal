@@ -128,6 +128,24 @@ RSpec.describe Setups::SnapshotBuilder do
     expect(laggard.setup_snapshots.sole).to have_attributes(setup_type: nil, zone_state: "no_setup")
   end
 
+  it "prefers a board setup over a newer one in the same zone state" do
+    stock = stock_with_history("PICK", Array.new(100) { |i| 100.0 + i * 1.0 })
+    allow(Watchlist::EntryZoneSuggester).to receive(:call) do |_stock, type, **|
+      case type
+      when "ma_pullback"
+        { success: true, levels: { entry_zone_low: 196.0, entry_zone_high: 200.0, invalidation_price: 188.0, target_price: 230.0, pivot_price: nil }, pattern: { quality: 40, details: {} } }
+      when "undercut_rally"
+        { success: true, levels: { entry_zone_low: 195.0, entry_zone_high: 201.0, invalidation_price: 190.0, target_price: 215.0, pivot_price: nil }, pattern: { quality: 100, details: {} } }
+      else
+        { success: false, error: "No #{type}" }
+      end
+    end
+
+    described_class.call
+
+    expect(stock.setup_snapshots.sole.setup_type).to eq("ma_pullback")
+  end
+
   it "uses a newer pattern's own quality and prefers a setup in its zone" do
     stock = stock_with_history("BANK", Array.new(100) { |i| 100.0 + i * 1.0 }) # ends at 199
     allow(Watchlist::EntryZoneSuggester).to receive(:call) do |_stock, type, **|

@@ -32,6 +32,15 @@ RSpec.describe Telegram::Notifier do
       expect(described_class.watchlist_alert(zone_alert(at: Time.zone.parse("2026-09-30 07:00")), client: client)).to eq(:sent)
     end
 
+    it "sends heads-up alerts with their detail, without blocking the zone alert that day" do
+      early = zone_alert("approaching_zone")
+      early.update!(message: "NABIL is 2.5% below its 500.00 pivot at 488.00.")
+
+      expect(described_class.watchlist_alert(early, client: client)).to eq(:sent)
+      expect(client).to have_received(:send_message).with("42", /🟡 <b>NABIL<\/b> is approaching its entry zone\n.*\nNABIL is 2.5% below its 500.00 pivot/)
+      expect(described_class.watchlist_alert(zone_alert, client: client)).to eq(:sent)
+    end
+
     it "skips other alert kinds, unlinked users and users who switched these off" do
       expect(described_class.watchlist_alert(zone_alert("invalidated"), client: client)).to eq(:skipped)
       user.update!(telegram_watchlist_alerts: false)

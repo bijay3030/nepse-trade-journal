@@ -149,7 +149,9 @@ module Setups
       end
       return { type: nil, zone_state: "no_setup", quality: 0 } if candidates.empty?
 
-      candidates.min_by { [ ZONE_PRIORITY.fetch(_1[:zone_state]), -_1[:quality] ] }
+      # In the same zone state, setups that can reach the board come first, so a newer
+      # setup never pushes a board setup off the snapshot.
+      candidates.min_by { [ ZONE_PRIORITY.fetch(_1[:zone_state]), Readiness::BOARD_SETUP_TYPES.include?(_1[:type]) ? 0 : 1, -_1[:quality] ] }
     end
 
     def zone_state(close, levels)

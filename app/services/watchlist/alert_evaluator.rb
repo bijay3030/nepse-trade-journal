@@ -5,6 +5,18 @@ module Watchlist
   class AlertEvaluator
     BREAKOUT_VOLUME_MULTIPLE = 1.5
     AVERAGE_VOLUME_SESSIONS = 50
+    # Heads-up: within APPROACH_PCT below the zone; it can alert again once the price
+    # has been APPROACH_RESET_PCT away.
+    APPROACH_PCT = 3.0
+    APPROACH_RESET_PCT = 5.0
+    # Pullback to a rising 21-day EMA: within EMA_NEAR_PCT of it, after being at least
+    # EMA_PULLED_FROM_PCT above it in the last EMA_LOOKBACK sessions, on projected volume
+    # under the 50-day average.
+    EMA_PERIOD = 21
+    EMA_NEAR_PCT = 1.5
+    EMA_PULLED_FROM_PCT = 3.0
+    EMA_LOOKBACK = 10
+    EMA_RISING_SESSIONS = 5
     STATUS_FOR_STATE = {
       "below_zone" => "watching", "in_zone" => "in_zone",
       "extended" => "extended", "invalidated" => "invalidated"
@@ -51,12 +63,71 @@ module Watchlist
       updates[:touched_zone_on] = Nepse::MarketHours.today if %w[in_zone extended].include?(current)
       updates[:status] = STATUS_FOR_STATE.fetch(current) unless WatchlistItem::STICKY_STATUSES.include?(item.status)
 
+      updates.merge!(approach_updates(item, current, price))
+
       alert = nil
       WatchlistItem.transaction do
-        item.update!(updates)
-        alert = build_alert(item, previous, current, price)&.tap(&:save!) if previous && previous != current
+        alert = build_alert(item, previous, current, price) if previous && previous != current
+        alert ||= early_alert(item, current, price)
+        item.update!(updates.merge(alert&.kind == "approaching_zone" ? { approach_alerted: true } : {}))
+        alert&.save!
       end
       alert
+    end
+
+    def approach_updates(item, current, price)
+      distance = (item.entry_zone_low.to_f - price) / price * 100
+      far = current == "invalidated" || (current == "below_zone" && distance > APPROACH_RESET_PCT)
+      far && item.approach_alerted ? { approach_alerted: false } : {}
+    end
+
+    # Heads-up alerts while nothing else changed: approaching the zone, or a pullback
+    # to the rising 21-day average.
+    def early_alert(item, current, price)
+      approaching_alert(item, current, price) || ema_pullback_alert(item, current, price)
+    end
+
+    def approaching_alert(item, current, price)
+      return unless current == "below_zone" && !item.approach_alerted
+
+      distance = (item.entry_zone_low.to_f - price) / price * 100
+      return unless distance.positive? && distance <= APPROACH_PCT
+
+      level = Setups::Types.breakout?(item.setup_type) && item.pivot_price ? "its #{fmt(item.pivot_price)} pivot" : "its entry zone (#{zone(item)})"
+      item.alerts.build(user: item.user, kind: "approaching_zone", price: price,
+                        message: "#{item.stock.symbol} is #{format('%.1f', distance)}% below #{level} at #{fmt(price)}.")
+    end
+
+    def ema_pullback_alert(item, current, price)
+      return if current == "invalidated"
+      return if item.alerts.where(kind: "pullback_21ema").where(created_at: Nepse::MarketHours.today.in_time_zone(Nepse::MarketHours::TIME_ZONE).all_day).exists?
+
+      ema = ema_context(item.stock) or return
+      return unless ema[:rising] && ema[:pulled_from] && (price / ema[:value] - 1).abs * 100 <= EMA_NEAR_PCT
+
+      ratio = relative_volume(item.stock)
+      return unless ratio && ratio < 1.0
+
+      item.alerts.build(user: item.user, kind: "pullback_21ema", price: price, relative_volume: ratio,
+                        message: "#{item.stock.symbol} pulled back to its rising 21-day average (#{fmt(ema[:value])}) at #{fmt(price)} on lighter volume (projected #{ratio}x).")
+    end
+
+    # The 21-day EMA of closes before today, whether it's rising, and whether the price
+    # was well above it recently. Cached per stock and session.
+    def ema_context(stock)
+      today = Nepse::MarketHours.today
+      Rails.cache.fetch("watchlist:ema21:#{stock.id}:#{today}", expires_in: 12.hours) do
+        closes = stock.daily_prices.where("traded_on < ?", today).order(traded_on: :desc).limit(80).pluck(:close_price).reverse.map(&:to_f)
+        series = Setups::MovingAverage.ema_series(closes, EMA_PERIOD)
+        next if series.size <= [ EMA_RISING_SESSIONS, EMA_LOOKBACK ].max
+
+        recent_closes = closes.last(EMA_LOOKBACK)
+        recent_emas = series.last(EMA_LOOKBACK)
+        {
+          value: series.last, rising: series.last > series[-1 - EMA_RISING_SESSIONS],
+          pulled_from: recent_closes.zip(recent_emas).any? { |close, ema| close >= ema * (1 + EMA_PULLED_FROM_PCT / 100) }
+        }
+      end
     end
 
     def build_alert(item, previous, current, price)

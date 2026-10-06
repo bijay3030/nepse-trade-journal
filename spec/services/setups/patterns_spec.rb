@@ -76,4 +76,58 @@ RSpec.describe Setups::Patterns do
       expect(described_class.bullish_candle_at?(candle(104, open: 100, high: 105, low: 103), 100)).to be(false) # low not near support
     end
   end
+
+  # Trading days (Sunday-Thursday) from Sunday 2026-06-07.
+  def sessions(count) = (0..).lazy.map { Date.new(2026, 6, 7) + _1 }.reject { _1.friday? || _1.saturday? }.first(count)
+
+  def dated(closes, sma_50: ->(i) { 80.0 + i * 0.5 }, sma_200: nil, volume: 1000, lows: {})
+    sessions(closes.size).each_with_index.map do |date, i|
+      close = closes[i]
+      candle(close, low: lows.fetch(i, close - 1), volume: volume.is_a?(Proc) ? volume.(i) : volume, sma_50: sma_50.(i), sma_200: sma_200)
+        .merge(traded_on: date.iso8601)
+    end
+  end
+
+  describe ".three_weeks_tight" do
+    # 45 sessions rising from 100 to 144, then three weeks closing at 150, 151 and 150.5.
+    let(:rise) { Array.new(45) { 100.0 + _1 } }
+
+    it "finds three weekly closes within 1.5% above a rising 50-day, with the pattern high as pivot" do
+      tight = [ 148.0, 149.0, 150.5, 149.5, 150.0 ] + [ 150.5, 151.5, 150.0, 151.0, 151.0 ] + [ 150.0, 150.8, 151.2, 150.4, 150.5 ]
+      result = described_class.three_weeks_tight(dated(rise + tight, volume: ->(i) { i < 45 ? 1000 : 600 }))
+
+      expect(result).to include(success: true, zone_low: 152.5, invalidation: 147.0, pivot: 152.5)
+      expect(result[:zone_high]).to be_within(0.01).of(157.08)
+      expect(result[:details]).to include(weekly_closes: [ 150.0, 151.0, 150.5 ], spread_pct: 0.67, volume_quiet: true)
+      expect(result[:quality]).to eq(80)
+    end
+
+    it "rejects loose weekly closes or a stock under its 50-day" do
+      loose = [ 148.0 ] * 5 + [ 152.0 ] * 5 + [ 156.0 ] * 5
+
+      expect(described_class.three_weeks_tight(dated(rise + loose))[:error]).to eq("Weekly closes aren't within 1.5% of each other")
+      expect(described_class.three_weeks_tight(dated(rise + [ 150.0 ] * 15, sma_50: ->(_) { 160.0 }))[:success]).to be(false)
+    end
+  end
+
+  describe ".undercut_rally" do
+    # 30 sessions holding above a 100 low, a dip to 97 three sessions ago, then a close back at 101.
+    def shakeout(last_close: 101.0, dip: 97.0)
+      closes = Array.new(30) { 105.0 + (_1 % 3) } + [ 103.0, 99.0, dip + 1, 100.5, last_close ]
+      lows = { 10 => 100.0, 32 => dip }
+      dated(closes, sma_200: 90.0, lows: lows, volume: ->(i) { i == 33 ? 2000 : 1000 })
+    end
+
+    it "finds a dip under a prior low that closes back above it" do
+      result = described_class.undercut_rally(shakeout)
+
+      expect(result).to include(success: true, zone_low: 100.0, zone_high: 103.0, pivot: nil, invalidation: 96.03)
+      expect(result[:details]).to include(prior_low: 100.0, undercut_low: 97.0, undercut_pct: 3.0, reclaimed_on_volume: true)
+    end
+
+    it "needs the close back above the prior low, and a shallow undercut" do
+      expect(described_class.undercut_rally(shakeout(last_close: 99.5))[:error]).to eq("Not back above the prior low")
+      expect(described_class.undercut_rally(shakeout(dip: 90.0))[:error]).to match(/more than 8.0% below/)
+    end
+  end
 end

@@ -81,7 +81,7 @@ describe("AddToWatchlistButton", () => {
     expect(await screen.findByText(/Not a qualified VCP yet \(score 35/)).toBeInTheDocument()
   })
 
-  it("offers all four setup types and shows what a flat-base breakout found", async () => {
+  it("offers all six setup types and shows what a flat-base breakout found", async () => {
     mockGet.mockImplementation((path: string, config?: { params?: { setup_type?: string } }) => {
       if (path === "/watchlist_items") return Promise.resolve({ data: [] })
       if (config?.params?.setup_type === "base_breakout") {
@@ -92,7 +92,7 @@ describe("AddToWatchlistButton", () => {
     renderWithClient(<AddToWatchlistButton symbol="NABIL" />)
 
     await userEvent.click(await screen.findByRole("button", { name: "Add NABIL to watchlist" }))
-    expect(screen.getAllByRole("radio")).toHaveLength(4)
+    expect(screen.getAllByRole("radio")).toHaveLength(6)
     await userEvent.click(screen.getByRole("radio", { name: /Flat-base breakout/ }))
 
     expect(await screen.findByText("31-session base, 8% deep")).toBeInTheDocument()

@@ -15,6 +15,8 @@ import type { SetupType } from "./types"
 function patternSummary(type: SetupType, details: Record<string, string | number | boolean | null>) {
   if (type === "ma_pullback") return `rising ${details.anchor} average at ${details.anchor_value}`
   if (type === "base_breakout") return `${details.base_sessions}-session base, ${details.base_depth_pct}% deep`
+  if (type === "three_weeks_tight") return `weekly closes within ${details.spread_pct}%`
+  if (type === "undercut_rally") return `dipped ${details.undercut_pct}% under ${details.prior_low}, back above it`
   return ""
 }
 
