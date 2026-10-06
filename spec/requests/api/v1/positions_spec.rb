@@ -59,4 +59,34 @@ RSpec.describe "Positions", type: :request do
     expect(body["sectors"].sole).to include("symbols" => [ stock.symbol ])
     expect(body["positions"].sole).to include("symbol" => stock.symbol, "share_of_risk_pct" => 100.0)
   end
+
+  describe "closing and reviewing" do
+    let(:position) do
+      post "/api/v1/positions", params: { watchlist_item_id: item.id, price: 500, quantity: 100, traded_on: "2026-09-24" }, headers: headers, as: :json
+      user.positions.sole
+    end
+
+    it "sells, closes with realized results, takes a review and reports stats" do
+      post "/api/v1/positions/#{position.id}/sell", params: { price: 560, quantity: 100, traded_on: "2026-10-01" }, headers: headers, as: :json
+
+      body = response.parsed_body
+      expect(body).to include("status" => "closed", "warning" => nil, "average_sell_price" => 560.0)
+      expect(body["realized"]["tax"]).to be_within(0.01).of(body["realized"]["gain"] * 0.1)
+
+      patch "/api/v1/positions/#{position.id}/review", params: { review_plan_followed: "partly", review_tags: [ "sold_too_early" ], review_lesson: "Let it run" },
+                                                     headers: headers, as: :json
+      expect(response.parsed_body["review"]).to include("plan_followed" => "partly", "tags" => [ "sold_too_early" ], "lesson" => "Let it run")
+
+      get "/api/v1/positions/stats", headers: headers
+      expect(response.parsed_body).to include("closed" => 1, "win_rate_pct" => 100.0, "reviewed" => 1, "plan_followed_pct" => 0.0)
+    end
+
+    it "rejects an oversized sell and unknown review tags" do
+      post "/api/v1/positions/#{position.id}/sell", params: { price: 560, quantity: 500 }, headers: headers, as: :json
+      expect(response).to have_http_status(:unprocessable_entity)
+
+      patch "/api/v1/positions/#{position.id}/review", params: { review_tags: [ "lucky" ] }, headers: headers, as: :json
+      expect(response.parsed_body["error"]).to include("unknown tags: lucky")
+    end
+  end
 end

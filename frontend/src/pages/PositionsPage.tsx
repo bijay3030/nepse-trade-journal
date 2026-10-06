@@ -1,10 +1,12 @@
-import { Pencil, Plus, Trash2 } from "lucide-react"
+import { Minus, Pencil, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
 
 import { Badge, Button, Card, Input, LoadingSpinner, Textarea } from "../components/ui"
 import { usePortfolio, usePositions, useRemoveFill, useUpdatePosition } from "../features/positions/api"
 import { BuyDialog } from "../features/positions/BuyDialog"
+import { ClosedPositions } from "../features/positions/ClosedPositions"
+import { SellDialog } from "../features/positions/SellDialog"
 import { HeatCard, SectorCard } from "../features/positions/PortfolioCards"
 import { PositionAlertsPanel } from "../features/positions/PositionAlertsPanel"
 import { useTradingSettings } from "../features/sizing/api"
@@ -66,6 +68,7 @@ function PlanEditor({ position, onDone }: { position: Position; onDone: () => vo
 function PositionCard({ position }: { position: Position }) {
   const [editing, setEditing] = useState(false)
   const [adding, setAdding] = useState(false)
+  const [selling, setSelling] = useState(false)
   const [showFills, setShowFills] = useState(false)
   const removeFill = useRemoveFill()
   const toStop = ((position.stop_price / position.last_price - 1) * 100)
@@ -135,10 +138,12 @@ function PositionCard({ position }: { position: Position }) {
           <div className="mt-3 flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={() => setEditing(true)} className="inline-flex items-center gap-1.5"><Pencil className="h-3.5 w-3.5" /> Edit stop / target</Button>
             <Button size="sm" variant="outline" onClick={() => setAdding(true)} className="inline-flex items-center gap-1.5"><Plus className="h-3.5 w-3.5" /> Add a buy</Button>
+            <Button size="sm" variant="outline" onClick={() => setSelling(true)} className="inline-flex items-center gap-1.5"><Minus className="h-3.5 w-3.5" /> Record a sell</Button>
             <Button size="sm" variant="ghost" onClick={() => setShowFills((open) => !open)}>{showFills ? "Hide fills" : `Fills (${position.fills.length})`}</Button>
           </div>
         )}
       </Card>
+      {selling && <SellDialog position={position} onClose={() => setSelling(false)} />}
       {adding && (
         <BuyDialog symbol={position.symbol} currentPrice={position.last_price} existingStop={position.stop_price} target={position.target_price} onClose={() => setAdding(false)} />
       )}
@@ -147,6 +152,7 @@ function PositionCard({ position }: { position: Position }) {
 }
 
 export function PositionsPage() {
+  const [tab, setTab] = useState<"open" | "closed">("open")
   const { data, isLoading, isError, refetch } = usePositions("open")
   const portfolio = usePortfolio().data
   const sectorLimit = useTradingSettings().data?.max_sector_pct ?? 30
@@ -172,7 +178,16 @@ export function PositionsPage() {
         <p className="mt-1 text-sm text-slate">Stocks you've bought, tracked against your stop and target. Prices update every few minutes during market hours.</p>
       </header>
 
-      {data.length === 0 ? (
+      <div className="inline-flex rounded-xl border border-mist/80 bg-slate/5 p-1" role="tablist">
+        {(["open", "closed"] as const).map((id) => (
+          <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
+            className={cn("rounded-lg px-4 py-1.5 text-sm font-semibold", tab === id ? "bg-white text-ink shadow-sm" : "text-slate")}>
+            {id === "open" ? `Open (${data.length})` : "Closed"}
+          </button>
+        ))}
+      </div>
+
+      {tab === "closed" ? <ClosedPositions /> : data.length === 0 ? (
         <Card className="p-10 text-center">
           <p className="font-semibold text-ink">No open positions.</p>
           <p className="mt-1 text-sm text-slate">

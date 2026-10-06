@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_06_110047) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_06_110804) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -181,6 +181,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_06_110047) do
     t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "review_plan_followed"
+    t.jsonb "review_tags", default: [], null: false
+    t.text "review_lesson"
+    t.datetime "reviewed_at"
     t.index ["stock_id"], name: "index_positions_on_stock_id"
     t.index ["user_id", "stock_id"], name: "index_positions_one_open_per_stock", unique: true, where: "((status)::text = 'open'::text)"
     t.index ["user_id"], name: "index_positions_on_user_id"
