@@ -15,6 +15,7 @@ module Nepse
     def self.publish
       Nepse::VolumeProfile.record!
       Watchlist::AlertEvaluator.call
+      Positions::Monitor.call
       broadcast
     end
 

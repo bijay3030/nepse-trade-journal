@@ -62,6 +62,9 @@ Rails.application.routes.draw do
       resources :watchlist_alerts, only: [:index] do
         post :mark_read, on: :collection
       end
+      resources :position_alerts, only: [:index] do
+        post :mark_read, on: :collection
+      end
 
       resources :trade_plans, only: [:index, :create, :show, :destroy] do
         resource :trade_execution, only: :create

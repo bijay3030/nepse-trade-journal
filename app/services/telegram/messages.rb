@@ -39,6 +39,24 @@ module Telegram
       lines.compact.join("\n")
     end
 
+    POSITION_TITLES = {
+      "stop_hit" => "🔴 hit your stop", "target_reached" => "🎯 reached your target", "one_r" => "🟢 is up 1R",
+      "profit_zone" => "🟢 is in the +20% profit zone", "fifty_day_break" => "🟠 broke its 50-day average",
+      "climax_run" => "🟠 made a climax-style run", "time_stop" => "⏳ hasn't moved (time stop)"
+    }.freeze
+
+    # A sell rule triggered for an open position.
+    def position_alert(alert)
+      position = alert.position
+      [
+        "<b>#{h(position.stock.symbol)}</b> #{POSITION_TITLES.fetch(alert.kind)}",
+        h(alert.message),
+        "#{position.quantity} shares · average #{money(position.average_price)} · stop #{money(position.stop_price)}" \
+        "#{position.target_price ? " · target #{money(position.target_price)}" : ''}",
+        FOOTER
+      ].join("\n")
+    end
+
     # Stocks that newly met every entry-zone rule on the nightly snapshot.
     def entry_zone_board(snapshots, traded_on)
       shown = snapshots.first(BOARD_LIMIT)

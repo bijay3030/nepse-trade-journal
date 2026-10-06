@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_06_074319) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_06_075138) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -139,6 +139,22 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_06_074319) do
     t.string "name", null: false
     t.index ["user_id", "name"], name: "index_portfolios_on_user_id_and_name", unique: true
     t.index ["user_id"], name: "index_portfolios_on_user_id"
+  end
+
+  create_table "position_alerts", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "position_id", null: false
+    t.string "kind", null: false
+    t.string "key", default: "", null: false
+    t.text "message", null: false
+    t.decimal "price", precision: 12, scale: 2
+    t.datetime "read_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["position_id", "kind", "key"], name: "index_position_alerts_on_position_id_and_kind_and_key", unique: true
+    t.index ["position_id"], name: "index_position_alerts_on_position_id"
+    t.index ["user_id", "read_at"], name: "index_position_alerts_on_user_id_and_read_at"
+    t.index ["user_id"], name: "index_position_alerts_on_user_id"
   end
 
   create_table "position_fills", force: :cascade do |t|
@@ -524,6 +540,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_06_074319) do
   add_foreign_key "holdings", "stocks"
   add_foreign_key "market_index_histories", "market_indices"
   add_foreign_key "portfolios", "users"
+  add_foreign_key "position_alerts", "positions", on_delete: :cascade
+  add_foreign_key "position_alerts", "users", on_delete: :cascade
   add_foreign_key "position_fills", "positions", on_delete: :cascade
   add_foreign_key "positions", "stocks"
   add_foreign_key "positions", "users"

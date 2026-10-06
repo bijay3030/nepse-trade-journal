@@ -20,6 +20,7 @@ class User < ApplicationRecord
   has_many :daily_digests, dependent: :delete_all
   has_many :telegram_deliveries, dependent: :delete_all
   has_many :positions, dependent: :destroy
+  has_many :position_alerts, dependent: :delete_all
 
   validates :jti, presence: true, uniqueness: true
   validates :trading_capital, numericality: { greater_than: 0 }, allow_nil: true

@@ -345,6 +345,17 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H19.5 | `/screener` → All setups | Some rows show the new setup labels; none of them on Entry zone now |
 | H19.6 | `/backtest` | The setup-type chart lists the new types once snapshots are rebuilt |
 
+## H20. Sell-rule alerts *(market hours for H20.1–H20.3)*
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H20.1 | An open position's price falls to its stop | "Position alerts" on /watchlist: "Stop hit … Selling at the stop: -Rs N after costs." (+ "settle (T+2) … from D" if bought in the last 2 sessions); Telegram "🔴 hit your stop"; no repeat on the next sync |
+| H20.2 | Price reaches +1R while the stop is below break-even | "Up 1R" with **Move stop to break-even (N)**; clicking it updates the stop; the button disappears |
+| H20.3 | Price 20%+ above the average / at the target | "+20% zone" / "Target reached" |
+| H20.4 | After the end-of-day sync, a position that closed under its 50-day on heavy volume | "50-day break" with the volume multiple |
+| H20.5 | A position held 15+ sessions under +0.5R | "Time stop" after the close |
+| H20.6 | Menu badge on Watchlist | Counts unread watchlist and position alerts; "Mark all read" clears each panel |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

@@ -40,3 +40,23 @@ export type Position = {
 }
 
 export type BuyInput = { watchlist_item_id?: number; symbol?: string; price: number; quantity: number; traded_on: string }
+
+export type PositionAlertKind = "stop_hit" | "target_reached" | "one_r" | "profit_zone" | "fifty_day_break" | "climax_run" | "time_stop"
+
+/** GET /position_alerts (Positions::Monitor). */
+export type PositionAlert = {
+  id: number
+  position_id: number
+  symbol: string
+  kind: PositionAlertKind
+  message: string
+  price: number | null
+  read_at: string | null
+  created_at: string
+  position_open: boolean
+  stop_price: number
+  /** Only on an open position's +1R alert: the stop that makes the trade risk-free after costs. */
+  break_even_price: number | null
+}
+
+export type PositionAlertsResponse = { unread_count: number; alerts: PositionAlert[] }

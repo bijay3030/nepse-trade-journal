@@ -26,6 +26,7 @@ import {
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
+import { usePositionAlerts } from "../features/positions/api"
 import { useWatchlistAlerts } from "../features/watchlist/api"
 import { useStockPrices } from "../hooks/useStockPrices"
 import { tradingDaysLabel } from "../lib/marketHours"
@@ -71,7 +72,7 @@ export function PlatformLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { connectionStatus, market, refresh, lastUpdatedAt } = useStockPrices()
-  const unreadAlerts = useWatchlistAlerts().data?.unread_count ?? 0
+  const unreadAlerts = (useWatchlistAlerts().data?.unread_count ?? 0) + (usePositionAlerts().data?.unread_count ?? 0)
   const status = market.statusLabel
 
   useEffect(() => {
