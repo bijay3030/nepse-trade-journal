@@ -21,6 +21,15 @@ module Telegram
       deliver(user, Messages.watchlist_alert(alert), client) ? :sent : :failed
     end
 
+    # A position's sell-rule alert, for users who get watchlist alerts. Each alert is
+    # already unique per rule and level, so there's no per-day deduplication.
+    def position_alert(alert, client: Client.new)
+      user = alert.user
+      return :skipped unless user.telegram_chat_id.present? && user.telegram_watchlist_alerts
+
+      deliver(user, Messages.position_alert(alert), client) ? :sent : :failed
+    end
+
     # After the nightly snapshot: one message per user with the stocks new on the board.
     def entry_zone_board(traded_on = StockSetupSnapshot.maximum(:traded_on), client: Client.new)
       return {} unless traded_on

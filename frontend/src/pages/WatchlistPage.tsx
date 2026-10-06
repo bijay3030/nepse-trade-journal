@@ -24,6 +24,7 @@ import { LevelFields } from "../features/watchlist/LevelFields"
 import { draftToLevels, levelsToDraft, type LevelDraft } from "../features/watchlist/levels"
 import { BookCloseBadge } from "../features/corporate/BookCloseBadge"
 import { BuyDialog } from "../features/positions/BuyDialog"
+import { PositionAlertsPanel } from "../features/positions/PositionAlertsPanel"
 import { SizingLine } from "../features/sizing/SizingLine"
 import { EntryChecklistPanel } from "../features/watchlist/EntryChecklistPanel"
 import { PriceLadder } from "../features/watchlist/PriceLadder"
@@ -259,6 +260,7 @@ export function WatchlistPage() {
         </p>
       </div>
 
+      <PositionAlertsPanel />
       <AlertsPanel />
 
       <div className="inline-flex rounded-xl border border-mist/80 bg-slate/5 p-1" role="tablist">

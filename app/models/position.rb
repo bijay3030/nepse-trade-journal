@@ -8,6 +8,7 @@ class Position < ApplicationRecord
   belongs_to :user
   belongs_to :stock
   belongs_to :watchlist_item, optional: true
+  has_many :alerts, class_name: "PositionAlert", dependent: :delete_all
   has_many :fills, -> { order(:traded_on, :id) }, class_name: "PositionFill", dependent: :delete_all, inverse_of: :position
 
   validates :status, inclusion: { in: STATUSES }

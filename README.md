@@ -335,6 +335,25 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
 
+## Sell-rule alerts for positions
+
+`Positions::Monitor` checks open positions and records a `PositionAlert` once per rule
+and level (a new stop level can alert again). They appear under **Position alerts** on
+the Watchlist page (counted in the menu badge) and on Telegram, for users with watchlist
+alerts on. Rule checks, not advice: nothing is sold or changed automatically.
+
+| Alert | When | Checked |
+| ----- | ---- | ------- |
+| Stop hit | price at or below your stop (with the loss after costs, and the T+2 date if the shares haven't settled) | live |
+| Target reached | price at or above your target | live |
+| Up 1R | up one R while the stop is below break-even; the panel offers **Move stop to break-even** | live |
+| +20% zone | 20%+ above your average price | live |
+| 50-day break | closes below the 50-day average, from above it, on above-average volume | close |
+| Climax run | a 3+ ADR up day on the heaviest volume in 50 sessions, 25%+ above the 50-day | close |
+| Time stop | 15+ sessions held and still under +0.5R | close |
+
+Live rules run after every price sync; close rules after the end-of-day sync.
+
 ## Heads-up alerts and secondary setups
 
 Two early alerts for tracked stocks (in-app and Telegram, marked 🟡; they're

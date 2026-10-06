@@ -19,7 +19,7 @@ class SyncMarketPricesJob < ApplicationJob
     end
 
     # The forced run is the end-of-day one: judge each setup on the close.
-    result = result.merge(close: Watchlist::CloseEvaluator.call) if result[:success]
+    result = result.merge(close: Watchlist::CloseEvaluator.call, positions: Positions::Monitor.call(close: true)) if result[:success]
     result
   end
 end

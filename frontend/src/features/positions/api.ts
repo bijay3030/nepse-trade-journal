@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import api from "../../lib/axios"
-import type { BuyInput, Position } from "./types"
+import type { BuyInput, Position, PositionAlertsResponse } from "./types"
 
 const KEY = ["positions"]
 
@@ -40,5 +40,24 @@ export function useRemoveFill() {
   return useMutation({
     mutationFn: async ({ positionId, fillId }: { positionId: number; fillId: number }) => (await api.delete(`/positions/${positionId}/fills/${fillId}`)).data,
     onSuccess: invalidate,
+  })
+}
+
+const ALERTS_KEY = [...KEY, "alerts"]
+
+export function usePositionAlerts() {
+  return useQuery({
+    queryKey: ALERTS_KEY,
+    queryFn: async () => (await api.get<PositionAlertsResponse>("/position_alerts")).data,
+    refetchInterval: 60_000,
+    retry: 1,
+  })
+}
+
+export function useMarkPositionAlertsRead() {
+  const client = useQueryClient()
+  return useMutation({
+    mutationFn: async (ids?: number[]) => (await api.post<{ updated: number }>("/position_alerts/mark_read", ids ? { ids } : {})).data,
+    onSuccess: () => client.invalidateQueries({ queryKey: ALERTS_KEY }),
   })
 }
