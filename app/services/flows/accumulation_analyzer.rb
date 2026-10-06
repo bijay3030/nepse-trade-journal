@@ -17,15 +17,21 @@ module Flows
     # orders can dominate, so the state stays neutral and the result is marked thin.
     MIN_WINDOW_TURNOVER = 20_000_000
 
-    # { stock_id => result } for many stocks with one query.
+    # Stocks per query in for_stocks: a session has ~12,000 broker rows across the
+    # market, so loading every stock at once costs over 100 MB.
+    SLICE = 40
+
+    # { stock_id => result } for many stocks, SLICE stocks per query.
     def self.for_stocks(stock_ids, as_of: nil)
       dates = session_dates(as_of)
       return {} if dates.empty?
 
-      rows = StockBrokerFlow.where(stock_id: stock_ids, traded_on: dates)
-        .pluck(:stock_id, :traded_on, :broker_no, :buy_quantity, :sell_quantity, :buy_amount, :sell_amount)
       names = Broker.pluck(:broker_no, :name).to_h
-      rows.group_by(&:first).to_h { |stock_id, stock_rows| [ stock_id, new(stock_rows, dates, names).call ] }
+      Array(stock_ids).each_slice(SLICE).each_with_object({}) do |slice, results|
+        rows = StockBrokerFlow.where(stock_id: slice, traded_on: dates)
+          .pluck(:stock_id, :traded_on, :broker_no, :buy_quantity, :sell_quantity, :buy_amount, :sell_amount)
+        rows.group_by(&:first).each { |stock_id, stock_rows| results[stock_id] = new(stock_rows, dates, names).call }
+      end
     end
 
     def self.call(stock, as_of: nil)

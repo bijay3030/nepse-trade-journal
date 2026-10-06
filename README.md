@@ -335,6 +335,12 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
 
+## Deployment
+
+Free hosting on Render (API and frontend) with the database on Supabase: see
+[docs/deploy-render.md](docs/deploy-render.md). In production, a `DATABASE_URL` switches
+the app to one database (the job queue shares it; cache and Action Cable stay in memory).
+
 ## EPS growth
 
 `Fundamentals::EpsGrowth` gives the year-on-year EPS growth of each stock's latest

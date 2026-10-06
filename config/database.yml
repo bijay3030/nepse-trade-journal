@@ -81,13 +81,16 @@ test:
 # the values provided in this file. Alternatively, you can specify a connection
 # URL environment variable explicitly:
 #
-#   production:
-#     url: <%= ENV["MY_APP_DATABASE_URL"] %>
-#
-# Read https://guides.rubyonrails.org/configuring.html#configuring-a-database
-# for a full overview on how database connection configuration can be specified.
-#
+#   # Hosted with a single database (Render + Supabase): DATABASE_URL is set, and the job
+# queue lives in the primary database (its tables come from a primary migration);
+# the cache and Action Cable use in-memory adapters (config/environments/production.rb).
+# On a server with its own PostgreSQL, the four databases below are used instead.
 production:
+<% if ENV["DATABASE_URL"].present? %>
+  primary:
+    <<: *default
+    url: <%= ENV["DATABASE_URL"] %>
+<% else %>
   primary: &primary_production
     <<: *default
     host: <%= ENV.fetch("DB_HOST", "localhost") %>
@@ -106,3 +109,4 @@ production:
     <<: *primary_production
     database: nepse_trade_journal_production_cable
     migrations_paths: db/cable_migrate
+<% end %>

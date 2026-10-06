@@ -11,6 +11,10 @@ development:
 test:
   <<: *default
 
+# With one database (DATABASE_URL) the cache store is in memory and Solid Cache
+# isn't used, so it needs no database of its own.
 production:
+<% unless ENV["DATABASE_URL"].present? %>
   database: cache
+<% end %>
   <<: *default

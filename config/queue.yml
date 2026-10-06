@@ -3,8 +3,15 @@ default: &default
     - polling_interval: 1
       batch_size: 500
   workers:
-    - queues: "*"
-      threads: 3
+    # Snapshots, backtest and reference syncs, one at a time: each peaks at a few
+    # hundred MB, so two together could exceed a 512 MB host.
+    - queues: heavy
+      threads: 1
+      processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
+      polling_interval: 1
+    # Everything else (price sync, alerts, Telegram) keeps running meanwhile.
+    - queues: default
+      threads: 2
       processes: <%= ENV.fetch("JOB_CONCURRENCY", 1) %>
       polling_interval: 0.1
 

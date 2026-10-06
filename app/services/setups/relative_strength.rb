@@ -21,7 +21,8 @@ module Setups
 
     # { key => score } => { key => 1..99 }
     def ratings(scores)
-      ranked = scores.compact.sort_by { |_key, value| value }
+      # Ties are ranked by key so the ratings never depend on load order.
+      ranked = scores.compact.sort_by { |key, value| [ value, key ] }
       return {} if ranked.empty?
 
       ranked.each_with_index.to_h do |(key, _value), index|

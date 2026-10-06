@@ -19,7 +19,7 @@ shared: &shared
   reference_data_daily:
     class: SyncReferenceDataJob
     args: [ "daily" ]
-    queue: default
+    queue: heavy
     schedule: "45 10 * * 1-5 UTC"
 
   # Links and unlinks Telegram chats from the bot's "/start <code>" and "/stop"
@@ -33,15 +33,22 @@ shared: &shared
   # after the closing prices and reference data.
   setup_snapshots:
     class: BuildSetupSnapshotsJob
-    queue: default
+    queue: heavy
     schedule: "0 11 * * 1-5 UTC"
 
   # Fundamentals: Saturday 9:45 AM Nepal time (takes about an hour).
   reference_data_weekly:
     class: SyncReferenceDataJob
     args: [ "weekly" ]
-    queue: default
+    queue: heavy
     schedule: "0 4 * * 6 UTC"
+
+  # Trims old broker flows, snapshots and intraday samples when RETAIN_* limits are set,
+  # and clears finished jobs: 9:30 PM Nepal time.
+  data_retention:
+    class: DataRetentionJob
+    queue: heavy
+    schedule: "45 15 * * * UTC"
 
 production:
   <<: *shared

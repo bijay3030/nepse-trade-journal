@@ -43,12 +43,15 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Replace the default in-process memory cache store with a durable alternative.
-  config.cache_store = :solid_cache_store
+  # One database (DATABASE_URL, e.g. Supabase's free 500 MB): the job queue shares the
+  # primary database and the cache stays in memory, which also keeps the connection
+  # count low for a pooled database. Otherwise each gets its own database.
+  single_database = ENV["DATABASE_URL"].present?
+  config.cache_store = single_database ? [ :memory_store, { size: 32.megabytes } ] : :solid_cache_store
 
   # Replace the default in-process and non-durable queuing backend for Active Job.
   config.active_job.queue_adapter = :solid_queue
-  config.solid_queue.connects_to = { database: { writing: :queue } }
+  config.solid_queue.connects_to = { database: { writing: :queue } } unless single_database
 
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
