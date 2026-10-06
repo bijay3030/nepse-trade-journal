@@ -112,6 +112,7 @@ export type ScreenerRow = {
   guards?: Guard[]
   extension?: Extension
   signals?: Signals
+  eps_growth?: EpsGrowth | null
   next_book_close?: BookClose | null
 }
 
@@ -193,6 +194,19 @@ export type Signals = {
   flags?: Array<"pocket_pivot" | "strong_up_down" | "weak_up_down" | "dry_up" | "late_stage_base">
 }
 
+/** Fundamentals::EpsGrowth: year-on-year EPS growth of the latest quarterly report. */
+export type EpsGrowth = {
+  growth_pct: number
+  /** "reported": our stored same quarter a year earlier; "chukul": Chukul's growth rate. */
+  source: "reported" | "chukul"
+  fiscal_year: string
+  quarter: string
+  eps: number | null
+  prior_eps: number | null
+  /** 25%+ (CAN SLIM). */
+  strong: boolean
+}
+
 /** Tradability guards (Setups::Guards) that keep a qualifying chart off the board. */
 export type Guard = "thin_volume" | "upper_circuit" | "lower_circuit" | "extended" | "late_stage_base"
 
@@ -241,6 +255,7 @@ export type ReadinessSnapshot = {
   guards?: Guard[]
   extension?: Extension
   signals?: Signals
+  eps_growth?: EpsGrowth | null
 }
 
 export type BuyZoneRow = ReadinessSnapshot & {
@@ -368,6 +383,7 @@ export type StockAnalysis = {
   rs_line?: RsLine
   /** Today's volume during the session, projected to the close (Nepse::VolumeProfile). */
   volume_pace?: VolumePace | null
+  eps_growth?: EpsGrowth | null
   broker_flow?: BrokerFlow
   corporate_actions?: { upcoming: BookClose | null; history: DividendRow[] }
 }

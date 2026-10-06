@@ -1,4 +1,5 @@
 import { format, parseISO } from "date-fns"
+import { EpsGrowthBadge } from "../features/readiness/EpsGrowthBadge"
 import { ArrowLeft } from "lucide-react"
 import { useMemo } from "react"
 import { useNavigate, useParams } from "react-router-dom"
@@ -377,6 +378,15 @@ function StockAnalysisBody({ symbol, onBack }: { symbol: string; onBack: () => v
       </header>
 
       {data.volume_pace ? <VolumePaceLine pace={data.volume_pace} /> : null}
+      {data.eps_growth ? (
+        <p className="flex flex-wrap items-center gap-2 text-sm text-slate" aria-label="EPS growth">
+          <EpsGrowthBadge growth={data.eps_growth} />
+          <span>
+            {data.eps_growth.quarter} {data.eps_growth.fiscal_year}
+            {data.eps_growth.source === "reported" ? `: EPS ${data.eps_growth.eps} vs ${data.eps_growth.prior_eps} a year earlier` : " (Chukul's growth rate)"}
+          </span>
+        </p>
+      ) : null}
 
       {data.readiness ? <ReadinessCard snapshot={data.readiness} history={data.readiness_history} /> : null}
 

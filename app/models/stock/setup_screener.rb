@@ -14,9 +14,11 @@ class Stock::SetupScreener
     return unless traded_on
 
     market = MarketIndex::Overview.new.call
-    snapshots = StockSetupSnapshot.where(traded_on: traded_on).joins(:stock).merge(Stock.active).includes(:stock).order("stocks.symbol")
+    snapshots = StockSetupSnapshot.where(traded_on: traded_on).joins(:stock).merge(Stock.active).includes(stock: :company_financials).order("stocks.symbol")
     upcoming = CorporateActions::Upcoming.for_stocks(snapshots.map(&:stock_id))
-    results = snapshots.map { |snapshot| snapshot.screener_row.symbolize_keys.merge(readiness(snapshot), next_book_close: upcoming[snapshot.stock_id]) }
+    results = snapshots.map do |snapshot|
+      snapshot.screener_row.symbolize_keys.merge(readiness(snapshot), next_book_close: upcoming[snapshot.stock_id], eps_growth: Fundamentals::EpsGrowth.call(snapshot.stock))
+    end
     { traded_on: traded_on.iso8601, market_regime: market[:regime_status], sectors: results.map { |row| row[:sector] }.uniq.sort, results: results }
   end
 

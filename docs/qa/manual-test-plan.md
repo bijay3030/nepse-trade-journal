@@ -379,6 +379,15 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H22.6 | Remove the closing sell from Fills | Position reopens under Open |
 | H22.7 | A lot held over 365 days | CGT at 7.5% on that lot's gain |
 
+## H23. EPS growth
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H23.1 | `/screener` and **Entry zone now** | "EPS +N% YoY" badges: green at 25%+, red below 0; hover explains the quarter and source |
+| H23.2 | `/screener/NABIL` | Line "EPS +N% YoY · Q4 082/083 (Chukul's growth rate)" |
+| H23.3 | Terminal: `bin/rails runner 'p Nepse::Reference::CoverageReport.call[:eps_growth]'` | with_growth, from_reported_history, quarters_stored |
+| H23.4 | After a new quarter is synced a year after a stored one | Source switches to "reported": "EPS X vs Y a year earlier" |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |
