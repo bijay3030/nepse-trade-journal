@@ -335,6 +335,22 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
 
+## Closing and reviewing positions
+
+- **Record a sell** on an open position (price, quantity, date). Partial sells reduce it;
+  selling every share closes it and archives its watchlist item. Selling shares that
+  haven't settled (T+2) is recorded with a note, since the record mirrors TMS.
+- **P&L after tax** (`Positions::Ledger`): sells are matched to buys first-in,
+  first-out. Costs include commission, SEBON and the DP charge; capital gains tax is 10%
+  on lots held up to 365 days and 7.5% beyond (individuals), on each sell's net gain.
+  The open shares' cost basis is their own lots.
+- **Closed** tab: net P&L after fees and tax, R on the average sell price, days held,
+  MAE/MFE (the worst and best daily low/high while held, in % and R), and a stats strip:
+  win rate, net P&L, expectancy per trade, average R, and how often the plan was followed.
+- **Review:** "Did you follow the plan?" (yes / partly / no), mistake tags (chased the
+  entry, moved the stop down, sold too early, held past the stop, oversized, ignored
+  the market) and a lesson. It can be done later.
+
 ## Portfolio heat and concentration
 
 The **Positions** page shows, from `Positions::Portfolio` (`GET /positions/portfolio`):

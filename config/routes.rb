@@ -54,6 +54,9 @@ Rails.application.routes.draw do
       get "position_sizing", to: "trading_settings#sizing"
       resources :positions, only: [ :index, :show, :create, :update ] do
         get :portfolio, on: :collection
+        get :stats, on: :collection
+        post :sell, on: :member
+        patch :review, on: :member
         delete "fills/:fill_id", action: :destroy_fill, on: :member
       end
       resources :watchlist_items, only: [:index, :create, :update, :destroy] do

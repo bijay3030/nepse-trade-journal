@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import api from "../../lib/axios"
-import type { BuyInput, Portfolio, Position, PositionAlertsResponse } from "./types"
+import type { BuyInput, Portfolio, Position, PositionAlertsResponse, PositionStats, Review, SellInput } from "./types"
 
 const KEY = ["positions"]
 
@@ -68,6 +68,35 @@ export function usePortfolio() {
     queryFn: async () => (await api.get<Portfolio>("/positions/portfolio")).data,
     staleTime: 30_000,
     refetchInterval: 60_000,
+    retry: 1,
+  })
+}
+
+export function useSellPosition() {
+  const invalidate = useInvalidate()
+  return useMutation({
+    mutationFn: async ({ id, ...input }: SellInput & { id: number }) =>
+      (await api.post<Position & { warning: string | null }>(`/positions/${id}/sell`, input)).data,
+    onSuccess: invalidate,
+  })
+}
+
+export function useReviewPosition() {
+  const invalidate = useInvalidate()
+  return useMutation({
+    mutationFn: async ({ id, review }: { id: number; review: Omit<Review, "reviewed_at"> }) =>
+      (await api.patch<Position>(`/positions/${id}/review`, {
+        review_plan_followed: review.plan_followed, review_tags: review.tags, review_lesson: review.lesson,
+      })).data,
+    onSuccess: invalidate,
+  })
+}
+
+export function usePositionStats() {
+  return useQuery({
+    queryKey: [...KEY, "stats"],
+    queryFn: async () => (await api.get<PositionStats>("/positions/stats")).data,
+    staleTime: 30_000,
     retry: 1,
   })
 }

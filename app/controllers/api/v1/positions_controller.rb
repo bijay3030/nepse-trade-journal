@@ -1,7 +1,7 @@
 module Api
   module V1
     class PositionsController < BaseController
-      before_action :set_position, only: %i[show update destroy_fill]
+      before_action :set_position, only: %i[show update destroy_fill sell review]
 
       def index
         positions = current_user.positions.includes(:stock, :fills, :alerts).order(status: :desc, created_at: :desc)
@@ -38,6 +38,30 @@ module Api
         else
           render json: { error: @position.errors.full_messages.to_sentence }, status: :unprocessable_entity
         end
+      end
+
+      # POST /positions/:id/sell
+      def sell
+        position, warning = Positions::Recorder.sell(position: @position, price: params.require(:price), quantity: params.require(:quantity),
+                                                     traded_on: params[:traded_on].presence || Nepse::MarketHours.today)
+        render json: PositionSerializer.new(position).as_json.merge(warning: warning)
+      rescue ArgumentError => e
+        render json: { error: e.message }, status: :unprocessable_entity
+      end
+
+      # PATCH /positions/:id/review
+      def review
+        changes = params.permit(:review_plan_followed, :review_lesson, review_tags: []).merge(reviewed_at: Time.current)
+        if @position.update(changes)
+          render json: @position, serializer: PositionSerializer
+        else
+          render json: { error: @position.errors.full_messages.to_sentence }, status: :unprocessable_entity
+        end
+      end
+
+      # GET /positions/stats: results of closed positions.
+      def stats
+        render json: Positions::Stats.call(current_user.positions.closed.includes(:stock, :fills))
       end
 
       # Removes a mistaken fill; the position goes away with its last fill.

@@ -16,6 +16,27 @@ module Positions
       end
     end
 
+    # Records a sell. Selling every share closes the position (and archives its watchlist
+    # item). Selling shares that haven't settled (T+2) is recorded with a warning: the
+    # record mirrors what was done on TMS.
+    def sell(position:, price:, quantity:, traded_on:)
+      quantity = quantity.to_i
+      traded_on = Date.parse(traded_on.to_s) unless traded_on.is_a?(Date)
+      raise ArgumentError, "You hold #{position.quantity} shares; can't sell #{quantity}" unless quantity.positive? && quantity <= position.quantity
+
+      unsettled = [ quantity - position.settled_quantity(traded_on), 0 ].max
+      Position.transaction do
+        position.fills.create!(side: "sell", price: price, quantity: quantity, traded_on: traded_on)
+        position.reload
+        if position.quantity.zero?
+          position.update!(status: "closed", closed_on: traded_on)
+          position.watchlist_item&.update!(status: "archived")
+        end
+      end
+      warning = "#{unsettled} of these shares hadn't settled (T+2) on #{traded_on.strftime('%-d %b')}" if unsettled.positive?
+      [ position.reload, warning ]
+    end
+
     def remove_fill(fill)
       position = fill.position
       Position.transaction do
@@ -27,6 +48,9 @@ module Positions
           nil
         else
           position.reload
+          # Removing a sell can reopen a closed position.
+          position.update!(status: "open", closed_on: nil) if position.status == "closed" && position.quantity.positive?
+          position
         end
       end
     end

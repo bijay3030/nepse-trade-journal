@@ -367,6 +367,18 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H21.5 | Buy dialog / watchlist size line when the buy would exceed the limit | "This buy takes open risk to N% of capital (limit 6%, now M%). K shares would stay within it" + "Use K" (dialog) |
 | H21.6 | Entry zone now while over/near the limit | Note "Your open risk is N% of capital (limit 6%)…" with a link to Positions |
 
+## H22. Close and review
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H22.1 | `/positions` → a card → **Record a sell**, part of the shares | "Recorded: sold N … M shares left", realized gain / CGT / net; card shows the smaller quantity |
+| H22.2 | Sell shares bought in the last 2 sessions | Dialog notes only N have settled; after saving, "… hadn't settled (T+2) on D" |
+| H22.3 | Sell the rest | Position moves to **Closed**; its watchlist item is archived |
+| H22.4 | **Closed** tab | Net after fees and tax, R, MAE/MFE, days; stats strip (win rate, net, expectancy, average R, plan followed) |
+| H22.5 | **Review this trade** → choose "Partly", a tag, a lesson → Save | Review shown on the card; stats "Plan followed" counts it |
+| H22.6 | Remove the closing sell from Fills | Position reopens under Open |
+| H22.7 | A lot held over 365 days | CGT at 7.5% on that lot's gain |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

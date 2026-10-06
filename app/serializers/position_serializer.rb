@@ -2,7 +2,8 @@ class PositionSerializer < ActiveModel::Serializer
   attributes :id, :symbol, :name, :sector, :status, :setup_type, :watchlist_item_id,
              :quantity, :average_price, :last_price, :change_percent, :price_updated_at,
              :stop_price, :initial_stop_price, :target_price, :unrealized_pnl, :unrealized_pct, :r_multiple,
-             :open_risk, :cost_basis, :net_pnl_if_sold, :break_even_price, :opened_on, :sellable_on, :days_held, :closed_on, :notes, :fills, :latest_alert
+             :open_risk, :cost_basis, :net_pnl_if_sold, :break_even_price, :opened_on, :sellable_on, :days_held, :closed_on, :notes, :fills, :latest_alert,
+             :realized, :average_sell_price, :closed_r_multiple, :excursions, :settled_quantity, :review
 
   def symbol = object.stock.symbol
   def name = object.stock.name
@@ -17,6 +18,12 @@ class PositionSerializer < ActiveModel::Serializer
   def latest_alert
     alert = object.alerts.max_by(&:created_at)
     alert && { id: alert.id, kind: alert.kind, message: alert.message, created_at: alert.created_at, read: alert.read_at.present? }
+  end
+
+  def excursions = object.open? ? nil : object.excursions
+
+  def review
+    { plan_followed: object.review_plan_followed, tags: object.review_tags, lesson: object.review_lesson, reviewed_at: object.reviewed_at }
   end
 
   def fills

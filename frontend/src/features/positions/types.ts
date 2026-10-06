@@ -39,6 +39,36 @@ export type Position = {
   closed_on: string | null
   notes: string | null
   fills: PositionFill[]
+  /** Sells so far, matched FIFO: proceeds and cost after fees, gain, CGT and net. */
+  realized?: { proceeds: number; cost: number; gain: number; tax: number; net: number }
+  average_sell_price?: number | null
+  closed_r_multiple?: number | null
+  /** Closed positions: worst / best move while held (MAE / MFE). */
+  excursions?: { mae_pct?: number; mfe_pct?: number; mae_r?: number | null; mfe_r?: number | null } | null
+  /** Settled (T+2) shares not yet sold. */
+  settled_quantity?: number
+  review?: Review
+}
+
+export type PlanFollowed = "yes" | "partly" | "no"
+export type ReviewTag = "chased_entry" | "moved_stop_down" | "sold_too_early" | "held_past_stop" | "oversized" | "ignored_market"
+export type Review = { plan_followed: PlanFollowed | null; tags: ReviewTag[]; lesson: string | null; reviewed_at: string | null }
+
+export type SellInput = { price: number; quantity: number; traded_on: string }
+
+/** GET /positions/stats (Positions::Stats). */
+export type PositionStats = {
+  closed: number
+  win_rate_pct?: number
+  net_pnl?: number
+  tax_paid?: number
+  avg_win?: number | null
+  avg_loss?: number | null
+  expectancy?: number
+  avg_r?: number | null
+  avg_days_held?: number
+  reviewed?: number
+  plan_followed_pct?: number | null
 }
 
 export type BuyInput = { watchlist_item_id?: number; symbol?: string; price: number; quantity: number; traded_on: string }
