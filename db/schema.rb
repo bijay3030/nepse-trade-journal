@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_06_075138) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_06_110047) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -476,6 +476,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_06_075138) do
     t.decimal "trading_capital", precision: 15, scale: 2
     t.decimal "risk_per_trade_pct", precision: 5, scale: 2, default: "1.0", null: false
     t.decimal "max_open_risk_pct", precision: 5, scale: 2, default: "6.0", null: false
+    t.decimal "max_sector_pct", precision: 5, scale: 2, default: "30.0", null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["jti"], name: "index_users_on_jti", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true

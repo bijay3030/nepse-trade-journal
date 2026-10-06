@@ -34,6 +34,13 @@ export function EntryZoneBoard() {
   return (
     <div className="space-y-3">
       {data.market_direction && <MarketDirectionCard direction={data.market_direction} compact />}
+      {data.portfolio_heat && (data.portfolio_heat.state === "over" || data.portfolio_heat.state === "near") && data.portfolio_heat.pct !== null && (
+        <p className={data.portfolio_heat.state === "over" ? "rounded-xl bg-ember/10 px-4 py-2 text-sm font-semibold text-ember" : "rounded-xl bg-amber-50 px-4 py-2 text-sm text-amber-800"} aria-label="Portfolio heat">
+          Your open risk is {data.portfolio_heat.pct.toFixed(1)}% of capital (limit {data.portfolio_heat.limit_pct}%)
+          {data.portfolio_heat.state === "over" ? ": a new entry would add to it." : ", close to your limit."}{" "}
+          <Link to="/positions" className="underline">Positions</Link>
+        </p>
+      )}
       <p className="text-sm text-slate">
         Price inside a setup's entry zone, at least {criteria.min_trend_rules} of 7 trend rules and readiness {criteria.min_readiness}+,
         on the {data.traded_on ?? "—"} close.

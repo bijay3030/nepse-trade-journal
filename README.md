@@ -335,11 +335,28 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
 
+## Portfolio heat and concentration
+
+The **Positions** page shows, from `Positions::Portfolio` (`GET /positions/portfolio`):
+
+- **Portfolio heat:** what's lost if every stop is hit, after costs, as % of capital,
+  against **Max open risk** (Settings, default 6%). Green, amber from 80% of the limit,
+  red above it. Each position's share of the heat, and cash vs invested.
+- **Sector exposure:** market value per sector as % of capital, flagged over **Max per
+  sector** (Settings, default 30%).
+- **Position alerts** and each position's latest alert on its card. The menu badge on
+  Positions counts unread position alerts; the one on Watchlist counts watchlist alerts.
+
+Warnings, never blocks: when a suggested buy would take heat to 80%+ of the limit, the
+watchlist size line and the buy dialog say so ("This buy takes open risk to 7.2% of
+capital (limit 6%)") with the largest size that fits and a "Use N" button. The Entry
+zone board shows the same note while you're near or over the limit.
+
 ## Sell-rule alerts for positions
 
 `Positions::Monitor` checks open positions and records a `PositionAlert` once per rule
 and level (a new stop level can alert again). They appear under **Position alerts** on
-the Watchlist page (counted in the menu badge) and on Telegram, for users with watchlist
+the Positions page (counted in its menu badge) and on Telegram, for users with watchlist
 alerts on. Rule checks, not advice: nothing is sold or changed automatically.
 
 | Alert | When | Checked |

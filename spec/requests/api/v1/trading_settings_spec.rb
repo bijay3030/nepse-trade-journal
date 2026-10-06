@@ -8,7 +8,7 @@ RSpec.describe "Trading settings and position sizing", type: :request do
 
   it "saves capital and risk limits, rejecting out-of-range values" do
     get "/api/v1/trading_settings", headers: headers
-    expect(json).to eq("trading_capital" => nil, "risk_per_trade_pct" => 1.0, "max_open_risk_pct" => 6.0)
+    expect(json).to eq("trading_capital" => nil, "risk_per_trade_pct" => 1.0, "max_open_risk_pct" => 6.0, "max_sector_pct" => 30.0)
 
     patch "/api/v1/trading_settings", params: { trading_capital: 500_000, risk_per_trade_pct: 1.5 }, headers: headers, as: :json
     expect(json).to include("trading_capital" => 500_000.0, "risk_per_trade_pct" => 1.5)

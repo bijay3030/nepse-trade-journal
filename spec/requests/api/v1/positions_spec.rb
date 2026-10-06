@@ -47,4 +47,16 @@ RSpec.describe "Positions", type: :request do
     get "/api/v1/positions/#{other.id}", headers: headers
     expect(response).to have_http_status(:not_found)
   end
+
+  it "returns portfolio heat and sector exposure" do
+    user.update!(trading_capital: 1_000_000)
+    post "/api/v1/positions", params: { watchlist_item_id: item.id, price: 505, quantity: 100, traded_on: "2026-10-01" }, headers: headers, as: :json
+
+    get "/api/v1/positions/portfolio", headers: headers
+
+    body = response.parsed_body
+    expect(body["heat"]).to include("limit_pct" => 6.0, "state" => "ok")
+    expect(body["sectors"].sole).to include("symbols" => [ stock.symbol ])
+    expect(body["positions"].sole).to include("symbol" => stock.symbol, "share_of_risk_pct" => 100.0)
+  end
 end

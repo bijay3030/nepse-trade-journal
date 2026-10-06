@@ -9,7 +9,7 @@ vi.mock("../../lib/axios", () => ({ default: { get: mockGet, patch: mockPatch } 
 
 describe("TradingSettingsCard", () => {
   it("saves capital and risk, explaining the per-trade budget", async () => {
-    mockGet.mockResolvedValue({ data: { trading_capital: null, risk_per_trade_pct: 1, max_open_risk_pct: 6 } })
+    mockGet.mockResolvedValue({ data: { trading_capital: null, risk_per_trade_pct: 1, max_open_risk_pct: 6, max_sector_pct: 30 } })
     mockPatch.mockImplementation((_path: string, changes: object) => Promise.resolve({ data: changes }))
     renderWithClient(<TradingSettingsCard />)
 
@@ -17,7 +17,7 @@ describe("TradingSettingsCard", () => {
     expect(screen.getByText(/loses at most Rs 5,000, including fees/)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole("button", { name: "Save" }))
-    await waitFor(() => expect(mockPatch).toHaveBeenCalledWith("/trading_settings", { trading_capital: 500000, risk_per_trade_pct: 1, max_open_risk_pct: 6 }))
+    await waitFor(() => expect(mockPatch).toHaveBeenCalledWith("/trading_settings", { trading_capital: 500000, risk_per_trade_pct: 1, max_open_risk_pct: 6, max_sector_pct: 30 }))
     expect(await screen.findByText("Saved.")).toBeInTheDocument()
   })
 })

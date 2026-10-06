@@ -356,6 +356,17 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H20.5 | A position held 15+ sessions under +0.5R | "Time stop" after the close |
 | H20.6 | Menu badge on Watchlist | Counts unread watchlist and position alerts; "Mark all read" clears each panel |
 
+## H21. Portfolio heat and concentration
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H21.1 | Settings → Capital & Risk | Fourth field "Max per sector (% of capital)", default 30; saves |
+| H21.2 | `/positions` with open positions | "Portfolio heat" bar with the limit marker, "X% of capital at risk · limit 6%", room, cash/invested, per-position chips |
+| H21.3 | A sector worth more than 30% of capital | "Sector exposure" shows it in red with "Over your 30% sector limit" |
+| H21.4 | Position alerts | Panel on /positions (not /watchlist); latest alert on each card; Positions menu badge counts unread |
+| H21.5 | Buy dialog / watchlist size line when the buy would exceed the limit | "This buy takes open risk to N% of capital (limit 6%, now M%). K shares would stay within it" + "Use K" (dialog) |
+| H21.6 | Entry zone now while over/near the limit | Note "Your open risk is N% of capital (limit 6%)…" with a link to Positions |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

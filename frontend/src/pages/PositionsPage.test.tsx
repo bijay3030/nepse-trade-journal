@@ -19,9 +19,21 @@ const position: Position = {
   ],
 }
 
+const portfolio = {
+  capital: 1_000_000, open_risk: 6000, market_value: 79_500, invested: 76_500, cash: 923_500,
+  heat: { pct: 0.6, limit_pct: 6, state: "ok", room: 54_000 },
+  positions: [{ position_id: 1, symbol: "NABIL", open_risk: 6000, heat_pct: 0.6, share_of_risk_pct: 100 }],
+  sectors: [{ sector: "Commercial Banks", value: 79_500, pct: 7.95, symbols: ["NABIL"], over: false }],
+}
+
 describe("PositionsPage", () => {
   beforeEach(() => {
-    mockGet.mockReset().mockResolvedValue({ data: [position] })
+    mockGet.mockReset().mockImplementation((path: string) => {
+      if (path === "/positions/portfolio") return Promise.resolve({ data: portfolio })
+      if (path === "/position_alerts") return Promise.resolve({ data: { unread_count: 0, alerts: [] } })
+      if (path === "/trading_settings") return Promise.resolve({ data: { trading_capital: 1_000_000, risk_per_trade_pct: 1, max_open_risk_pct: 6, max_sector_pct: 30 } })
+      return Promise.resolve({ data: [position] })
+    })
     mockPatch.mockReset()
     mockDelete.mockReset()
   })
