@@ -3,13 +3,16 @@ module Telegram
   module Messages
     SETUP_LABELS = {
       "vcp" => "VCP breakout", "pullback" => "Pullback to support",
-      "ma_pullback" => "Pullback to a rising average", "base_breakout" => "Flat-base breakout"
+      "ma_pullback" => "Pullback to a rising average", "base_breakout" => "Flat-base breakout",
+      "three_weeks_tight" => "3-weeks-tight", "undercut_rally" => "Undercut and rally"
     }.freeze
     GUARD_LABELS = { "thin_volume" => "thin volume", "upper_circuit" => "at the upper circuit", "lower_circuit" => "at the lower circuit", "extended" => "extended above the 50-day", "late_stage_base" => "a late-stage (3rd+) base" }.freeze
     ALERT_TITLES = {
       "entered_zone" => "is in its entry zone",
       "breakout_confirmed" => "broke out into its entry zone on volume",
-      "breakout_low_volume" => "broke out into its entry zone, volume not confirmed yet"
+      "breakout_low_volume" => "broke out into its entry zone, volume not confirmed yet",
+      "approaching_zone" => "is approaching its entry zone",
+      "pullback_21ema" => "pulled back to its rising 21-day average"
     }.freeze
     BOOK_CLOSE_DAYS = 10
     BOARD_LIMIT = 10
@@ -24,8 +27,9 @@ module Telegram
       price = alert.price.to_f.positive? ? alert.price.to_f : stock.last_price.to_f
       snapshot = latest_snapshot(stock)
       lines = [
-        "🟢 <b>#{h(stock.symbol)}</b> #{ALERT_TITLES.fetch(alert.kind)}",
+        "#{WatchlistAlert::EARLY_KINDS.include?(alert.kind) ? '🟡' : '🟢'} <b>#{h(stock.symbol)}</b> #{ALERT_TITLES.fetch(alert.kind)}",
         "Price #{money(price)}#{alert.relative_volume ? " · volume #{alert.relative_volume.to_f}x average" : ''}",
+        (alert.message if WatchlistAlert::EARLY_KINDS.include?(alert.kind)),
         "Zone #{money(item.entry_zone_low)}–#{money(item.entry_zone_high)} · stop #{money(item.stop_loss_price.presence || item.invalidation_price)}" \
         "#{item.target_price ? " · target #{money(item.target_price)}" : ''}#{item.risk_reward ? " · R:R #{item.risk_reward}" : ''}",
         context_line(SETUP_LABELS[item.setup_type], snapshot),

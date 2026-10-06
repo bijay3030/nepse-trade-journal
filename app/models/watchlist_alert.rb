@@ -1,8 +1,10 @@
 class WatchlistAlert < ApplicationRecord
   INTRADAY_KINDS = %w[entered_zone breakout_confirmed breakout_low_volume extended invalidated].freeze
+  # Heads-up alerts before an entry (Watchlist::AlertEvaluator).
+  EARLY_KINDS = %w[approaching_zone pullback_21ema].freeze
   CLOSE_KINDS = %w[close_confirmed close_unconfirmed close_failed close_in_zone].freeze
   CORPORATE_KINDS = %w[book_close_soon levels_adjusted].freeze
-  KINDS = (INTRADAY_KINDS + CLOSE_KINDS + CORPORATE_KINDS).freeze
+  KINDS = (INTRADAY_KINDS + EARLY_KINDS + CLOSE_KINDS + CORPORATE_KINDS).freeze
 
   belongs_to :user
   belongs_to :watchlist_item

@@ -5,6 +5,8 @@ export const SETUP_LABELS: Record<SetupType, string> = {
   pullback: "Pullback to support",
   ma_pullback: "Pullback to a rising average",
   base_breakout: "Flat-base breakout",
+  three_weeks_tight: "3-weeks-tight",
+  undercut_rally: "Undercut and rally",
 }
 
 export const SETUP_HELP: Record<SetupType, string> = {
@@ -12,6 +14,8 @@ export const SETUP_HELP: Record<SetupType, string> = {
   pullback: "Zone from the nearest support to 2% above it. Fails 3% below support.",
   ma_pullback: "Uptrend pulling back to its rising 20- or 50-day average. Zone: the average to 2% above; fails 4% below it.",
   base_breakout: "Tight 15-60 session base near the 52-week high. Zone: base high to 3% above; fails at the base low (at most 8% down).",
+  three_weeks_tight: "Three weekly closes within 1.5% of each other above a rising 50-day. Zone: the pattern high to 3% above; fails at its low (at most 8% down).",
+  undercut_rally: "A dip under a prior low that closes back above it. Zone: the reclaimed low to 3% above; fails just under the dip's low (at most 8% down).",
 }
 
 export const STATUS_LABELS: Record<WatchlistStatus, string> = {
@@ -47,6 +51,8 @@ export const ALERT_LABELS: Record<AlertKind, string> = {
   breakout_low_volume: "Breakout, low volume",
   extended: "Extended",
   invalidated: "Invalidated",
+  approaching_zone: "Approaching zone",
+  pullback_21ema: "Pullback to 21-day",
   close_confirmed: "Close confirmed",
   close_unconfirmed: "Close, low volume",
   close_failed: "Failed at close",
@@ -61,6 +67,8 @@ export const ALERT_TONE: Record<AlertKind, "neutral" | "gain" | "loss"> = {
   breakout_low_volume: "neutral",
   extended: "neutral",
   invalidated: "loss",
+  approaching_zone: "neutral",
+  pullback_21ema: "neutral",
   close_confirmed: "gain",
   close_unconfirmed: "neutral",
   close_failed: "loss",

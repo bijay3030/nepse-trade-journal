@@ -2,14 +2,16 @@ module Setups
   # The setup types the app recognises. Breakouts are judged against a pivot and
   # need volume to confirm; pullbacks are judged by holding their zone.
   module Types
-    ALL = %w[vcp pullback ma_pullback base_breakout].freeze
-    BREAKOUTS = %w[vcp base_breakout].freeze
-    PULLBACKS = %w[pullback ma_pullback].freeze
+    ALL = %w[vcp pullback ma_pullback base_breakout three_weeks_tight undercut_rally].freeze
+    BREAKOUTS = %w[vcp base_breakout three_weeks_tight].freeze
+    PULLBACKS = %w[pullback ma_pullback undercut_rally].freeze
     LABELS = {
       "vcp" => "VCP breakout",
       "pullback" => "Pullback to support",
       "ma_pullback" => "Pullback to a rising average",
-      "base_breakout" => "Flat-base breakout"
+      "base_breakout" => "Flat-base breakout",
+      "three_weeks_tight" => "3-weeks-tight",
+      "undercut_rally" => "Undercut and rally"
     }.freeze
 
     module_function

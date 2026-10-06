@@ -24,7 +24,82 @@ module Setups
     BASE_ZONE_PCT = 3.0
     BASE_MAX_RISK_PCT = 8.0
 
+    # 3-weeks-tight (IBD): three weekly closes within TIGHT_PCT of each other (IBD uses
+    # about 1%; NEPSE moves about twice as much) while the stock holds above a rising
+    # 50-day. Weeks run Sunday-Thursday; the current week counts as it stands.
+    # Pivot: the pattern's high; zone: pivot to 3% above; fails at the pattern's low
+    # (at most 8% below the pivot).
+    TIGHT_WEEKS = 3
+    TIGHT_PCT = 1.5
+    TIGHT_ZONE_PCT = 3.0
+
+    # Undercut-and-rally: the price dips below a prior low (the lowest low of the
+    # UNDERCUT_REFERENCE sessions before the last UNDERCUT_RECENT), shaking out holders,
+    # then closes back above it. Zone: the reclaimed low to 3% above; fails 1% under
+    # the undercut low (at most 8% below the zone). Needs a stock above its 200-day
+    # (or a rising 50-day when there's no 200-day yet).
+    UNDERCUT_RECENT = 5
+    UNDERCUT_REFERENCE = 25
+    UNDERCUT_MAX_DEPTH_PCT = 8.0
+    UNDERCUT_ZONE_PCT = 3.0
+
     module_function
+
+    def three_weeks_tight(candles)
+      last = candles.last
+      return fail_with("Not enough history for the 50-day average") unless last && last[:sma_50]
+
+      sma50_then = candles[-1 - MA_SLOPE_SESSIONS]&.dig(:sma_50)
+      return fail_with("Not above a rising 50-day average") unless sma50_then && last[:sma_50] > sma50_then && last[:close] > last[:sma_50]
+
+      weeks = candles.chunk_while { |a, b| week_start(a) == week_start(b) }.to_a.last(TIGHT_WEEKS)
+      return fail_with("Not enough weeks") if weeks.size < TIGHT_WEEKS
+
+      closes = weeks.map { _1.last[:close] }
+      spread = (closes.max / closes.min - 1) * 100
+      return fail_with("Weekly closes aren't within #{TIGHT_PCT}% of each other") if spread > TIGHT_PCT
+
+      bars = weeks.flatten
+      pivot = bars.map { _1[:high] }.max
+      invalidation = [ bars.map { _1[:low] }.min, pivot * (1 - BASE_MAX_RISK_PCT / 100) ].max
+      quiet = average(bars.map { _1[:volume].to_f }) < average(candles.last(50).map { _1[:volume].to_f })
+      quality = 40 + (spread <= 1.0 ? 20 : 0) + (quiet ? 20 : 0) + (last[:sma_200] && last[:sma_50] > last[:sma_200] ? 20 : 0)
+
+      success(
+        zone_low: pivot, zone_high: pivot * (1 + TIGHT_ZONE_PCT / 100), invalidation: invalidation, pivot: pivot, quality: quality,
+        details: { weekly_closes: closes.map { _1.round(2) }, spread_pct: spread.round(2), volume_quiet: quiet }
+      )
+    end
+
+    def undercut_rally(candles)
+      last = candles.last
+      return fail_with("Not enough history") if candles.size < UNDERCUT_RECENT + UNDERCUT_REFERENCE || last[:sma_50].nil?
+
+      sma50_then = candles[-1 - MA_SLOPE_SESSIONS]&.dig(:sma_50)
+      healthy = last[:sma_200] ? last[:close] > last[:sma_200] : sma50_then && last[:sma_50] > sma50_then
+      return fail_with("Not above the 200-day average") unless healthy
+
+      reference = candles[-(UNDERCUT_RECENT + UNDERCUT_REFERENCE)...-UNDERCUT_RECENT].map { _1[:low] }.min
+      recent = candles.last(UNDERCUT_RECENT)
+      undercut = recent.map { _1[:low] }.min
+      return fail_with("No recent dip below a prior low") unless undercut < reference
+      return fail_with("Not back above the prior low") unless last[:close] > reference
+
+      depth = (1 - undercut / reference) * 100
+      return fail_with("The undercut went more than #{UNDERCUT_MAX_DEPTH_PCT}% below the prior low") if depth > UNDERCUT_MAX_DEPTH_PCT
+
+      invalidation = [ undercut * 0.99, reference * (1 - BASE_MAX_RISK_PCT / 100) ].max
+      # The first close back above the prior low after the dip.
+      dip_at = recent.rindex { _1[:low] == undercut }
+      reclaim = recent[dip_at..].find { _1[:close] > reference } || last
+      volume = reclaim[:volume].to_f > average(candles.last(50).map { _1[:volume].to_f })
+      quality = 40 + (volume ? 20 : 0) + (depth <= 3 ? 20 : 0) + (last[:sma_200] && last[:sma_50] > last[:sma_200] ? 20 : 0)
+
+      success(
+        zone_low: reference, zone_high: reference * (1 + UNDERCUT_ZONE_PCT / 100), invalidation: invalidation, pivot: nil, quality: quality,
+        details: { prior_low: reference.round(2), undercut_low: undercut.round(2), undercut_pct: depth.round(2), reclaimed_on_volume: volume }
+      )
+    end
 
     def ma_pullback(candles)
       last = candles.last
@@ -98,6 +173,12 @@ module Setups
       range = candle[:high] - candle[:low]
       candle[:close] > candle[:open] && range.positive? && (candle[:close] - candle[:low]) / range >= 0.5 &&
         candle[:low] <= support * 1.02
+    end
+
+    # NEPSE weeks run Sunday-Thursday: the Sunday on or before the session.
+    def week_start(candle)
+      date = Date.parse(candle[:traded_on].to_s)
+      date - date.wday
     end
 
     def success(**fields) = { success: true, **fields }

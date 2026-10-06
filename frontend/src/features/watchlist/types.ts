@@ -1,7 +1,7 @@
 import type { WatchlistSizing } from "../sizing/types"
 import type { BookClose, LevelAdjustment } from "../corporate/types"
 
-export type SetupType = "vcp" | "pullback" | "ma_pullback" | "base_breakout"
+export type SetupType = "vcp" | "pullback" | "ma_pullback" | "base_breakout" | "three_weeks_tight" | "undercut_rally"
 export type WatchlistStatus = "watching" | "in_zone" | "extended" | "invalidated" | "planned" | "holding" | "archived"
 export type PriceState = "below_zone" | "in_zone" | "extended" | "invalidated"
 export type AlertKind =
@@ -10,6 +10,8 @@ export type AlertKind =
   | "breakout_low_volume"
   | "extended"
   | "invalidated"
+  | "approaching_zone"
+  | "pullback_21ema"
   | "close_confirmed"
   | "close_unconfirmed"
   | "close_failed"

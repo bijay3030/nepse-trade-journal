@@ -334,6 +334,17 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H18.3 | `/screener/SYMBOL` readiness card | The same badges, with explanations on hover |
 | H18.4 | `/backtest` | Charts by base count, pocket pivot, up/down volume and volume dry-up; the guard chart includes "late_stage_base" |
 
+## H19. Heads-up alerts and secondary setups *(market hours for H19.1–H19.3)*
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H19.1 | A tracked VCP stock rises to within 3% of its pivot | Alert "Approaching zone": "SYMBOL is 2.4% below its 500.00 pivot at 488.00."; Telegram 🟡 message with that line |
+| H19.2 | It stays near, then falls 5%+ away and comes back | No repeat while near; one new alert on the return |
+| H19.3 | A tracked stock in an uptrend dips to its rising 21-day average on light volume | Alert "Pullback to 21-day" with the EMA value and projected volume; at most once that day |
+| H19.4 | Add to watchlist dialog | Six setup types, including 3-weeks-tight and Undercut and rally, with what the pattern found |
+| H19.5 | `/screener` → All setups | Some rows show the new setup labels; none of them on Entry zone now |
+| H19.6 | `/backtest` | The setup-type chart lists the new types once snapshots are rebuilt |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

@@ -2,7 +2,9 @@ module Telegram
   # Sends entry-zone messages to linked users, at most one per stock, kind and
   # session (TelegramDelivery). A chat that blocked the bot is unlinked.
   module Notifier
-    ZONE_ALERT_KINDS = %w[entered_zone breakout_confirmed breakout_low_volume].freeze
+    ZONE_ALERT_KINDS = %w[entered_zone breakout_confirmed breakout_low_volume approaching_zone pullback_21ema].freeze
+    # Heads-up alerts are deduplicated separately so they never block the zone alert.
+    EARLY_KINDS = WatchlistAlert::EARLY_KINDS
 
     module_function
 
@@ -13,7 +15,8 @@ module Telegram
 
       stock = alert.watchlist_item.stock
       session = alert.created_at.in_time_zone("Asia/Kathmandu").to_date
-      return :duplicate unless TelegramDelivery.claim(user: user, stock: stock, kind: "watchlist_zone", traded_on: session)
+      delivery_kind = EARLY_KINDS.include?(alert.kind) ? "watchlist_early" : "watchlist_zone"
+      return :duplicate unless TelegramDelivery.claim(user: user, stock: stock, kind: delivery_kind, traded_on: session)
 
       deliver(user, Messages.watchlist_alert(alert), client) ? :sent : :failed
     end

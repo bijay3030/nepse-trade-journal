@@ -19,7 +19,7 @@ RSpec.describe Watchlist::AlertEvaluator do
   end
 
   it "does not alert while the state is unchanged" do
-    expect { move_to(495) }.not_to change(WatchlistAlert, :count)
+    expect { move_to(480) }.not_to change(WatchlistAlert, :count)
     expect(item.last_evaluated_at).to be_present
   end
 
@@ -128,5 +128,55 @@ RSpec.describe Watchlist::AlertEvaluator do
 
     expect { described_class.initial_state!(fresh) }.not_to change(WatchlistAlert, :count)
     expect(fresh.reload).to have_attributes(price_state: "in_zone", status: "in_zone")
+  end
+
+  describe "approaching the zone" do
+    it "alerts once within 3% below the pivot, and again only after moving 5% away" do
+      expect { move_to(488) }.to change(WatchlistAlert, :count).by(1)
+      expect(item.alerts.last).to have_attributes(kind: "approaching_zone", message: "NABIL is 2.5% below its 500.00 pivot at 488.00.")
+      expect(item.approach_alerted).to be(true)
+
+      expect { move_to(492) }.not_to change(WatchlistAlert, :count)
+      move_to(475) # 5.3% away
+      expect(item.approach_alerted).to be(false)
+      expect { move_to(491) }.to change { item.alerts.where(kind: "approaching_zone").count }.by(1)
+    end
+
+    it "names the zone for a pullback setup" do
+      item.update!(setup_type: "ma_pullback", pivot_price: nil)
+      move_to(490)
+
+      expect(item.alerts.last.message).to eq("NABIL is 2.0% below its entry zone (500.00-515.00) at 490.00.")
+    end
+  end
+
+  describe "pullback to the rising 21-day average" do
+    include ActiveSupport::Testing::TimeHelpers
+
+    # 60 sessions rising 2 a day to 458 on 10,000 shares; the 21-day EMA lags about 4% below.
+    let(:closes) { Array.new(60) { 340.0 + _1 * 2 } }
+    let(:ema) { Setups::MovingAverage.ema_series(closes, 21).last }
+
+    before do
+      travel_to ActiveSupport::TimeZone["Asia/Kathmandu"].parse("2026-09-24 14:00")
+      closes.each_with_index { |close, i| create(:stock_daily_price, stock: stock, traded_on: Date.new(2026, 9, 24) - (60 - i), close_price: close, volume: 10_000) }
+      item.update!(setup_type: "ma_pullback", entry_zone_low: 520, entry_zone_high: 530, invalidation_price: 400, pivot_price: nil)
+      Rails.cache.clear
+    end
+
+    after { travel_back }
+
+    it "alerts when the price reaches the rising EMA on lighter projected volume, once a day" do
+      expect { move_to((ema * 1.005).round(2), volume: 5_000) }.to change(WatchlistAlert, :count).by(1)
+      expect(item.alerts.last.kind).to eq("pullback_21ema")
+      expect(item.alerts.last.message).to match(/\ANABIL pulled back to its rising 21-day average \(#{format('%.2f', ema)}\) at [\d.]+ on lighter volume \(projected 0.66x\)\.\z/)
+
+      expect { move_to((ema * 1.002).round(2), volume: 5_500) }.not_to change(WatchlistAlert, :count)
+    end
+
+    it "stays quiet on heavy volume or away from the average" do
+      expect { move_to((ema * 1.005).round(2), volume: 9_000) }.not_to change(WatchlistAlert, :count)
+      expect { move_to((ema * 1.03).round(2), volume: 5_000) }.not_to change(WatchlistAlert, :count)
+    end
   end
 end

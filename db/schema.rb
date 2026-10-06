@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_06_073301) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_06_074319) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -507,6 +507,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_06_073301) do
     t.decimal "last_close_relative_volume", precision: 8, scale: 2
     t.date "touched_zone_on"
     t.jsonb "level_adjustments", default: [], null: false
+    t.boolean "approach_alerted", default: false, null: false
     t.index ["status"], name: "index_watchlist_items_on_status"
     t.index ["stock_id"], name: "index_watchlist_items_on_stock_id"
     t.index ["trade_plan_id"], name: "index_watchlist_items_on_trade_plan_id"

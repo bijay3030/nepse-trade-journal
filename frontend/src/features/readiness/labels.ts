@@ -22,6 +22,8 @@ export const SETUP_TYPE_LABELS = {
   pullback: "Pullback to support",
   ma_pullback: "Pullback to a rising average",
   base_breakout: "Flat-base breakout",
+  three_weeks_tight: "3-weeks-tight",
+  undercut_rally: "Undercut and rally",
 } as const
 
 export const COMPONENT_LABELS = {
