@@ -57,7 +57,7 @@ gem "httparty", "~> 0.24.2"
 gem "pg_enum", "~> 0.2.0", require: false
 
 gem "active_model_serializers", "~> 0.10.16"
-gem "faker", "~> 3.6", groups: [:development, :test]
+gem "faker", "~> 3.8", groups: [:development, :test]
 gem "factory_bot_rails", "~> 6.5", groups: [:development, :test]
 gem "rspec-rails", "~> 8.0", groups: [:development, :test]
 
