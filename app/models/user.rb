@@ -27,7 +27,15 @@ class User < ApplicationRecord
   validates :max_open_risk_pct, numericality: { greater_than: 0, less_than_or_equal_to: 50 }
 
   # Position size for an entry and stop from the user's capital and risk per trade.
-  def size_position(entry:, stop:, target: nil)
-    Positions::Sizer.call(capital: trading_capital, risk_pct: risk_per_trade_pct, entry: entry, stop: stop, target: target)
+  # Outside an uptrend it adds `cautious`: the size at the market state's share of the
+  # usual risk (Setups::MarketDirection), shown alongside, never instead.
+  def size_position(entry:, stop:, target: nil, market: Setups::MarketDirection.current)
+    result = Positions::Sizer.call(capital: trading_capital, risk_pct: risk_per_trade_pct, entry: entry, stop: stop, target: target)
+    factor = market&.dig(:size_factor)
+    return result if result[:error] || factor.nil? || factor >= 1
+
+    cautious = Positions::Sizer.call(capital: trading_capital, risk_pct: risk_per_trade_pct.to_f * factor, entry: entry, stop: stop, target: target)
+    result.merge(cautious: { state: market[:state], label: market[:label], size_factor: factor,
+                             risk_budget: cautious[:risk_budget], quantity: cautious[:quantity].to_i })
   end
 end

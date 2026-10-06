@@ -35,10 +35,27 @@ export type SectorOverviewRow = {
   pct_above_sma50: number
 }
 
+/** Setups::MarketDirection: the NEPSE index's state from distribution and follow-through days. */
+export type MarketDirection = {
+  state: "uptrend" | "under_pressure" | "correction"
+  label: string
+  traded_on: string
+  distribution_days: number
+  distribution_dates: string[]
+  drawdown_pct: number
+  rally_day: number | null
+  follow_through_on: string | null
+  /** Share of the usual risk for a cautious size (1 in an uptrend). */
+  size_factor: number
+  threshold_set: string
+  thresholds: { down_pct: number; up_pct: number }
+}
+
 /** GET /market/overview */
 export type MarketOverview = {
   traded_on: string | null
   regime_status: MarketRegime
+  market_direction?: MarketDirection | null
   nepse_index: number
   index_change_pct: number
   index_sma20: number | null
@@ -221,6 +238,7 @@ export type BuyZoneRow = ReadinessSnapshot & {
 /** GET /screener/buy_zone */
 export type BuyZoneResponse = {
   traded_on: string | null
+  market_direction?: MarketDirection | null
   criteria: {
     zone_state: ZoneState
     min_trend_rules: number

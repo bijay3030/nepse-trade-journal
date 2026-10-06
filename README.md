@@ -334,6 +334,28 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
 
+## Market direction
+
+`Setups::MarketDirection` reads the NEPSE index the way IBD reads US indexes:
+
+- **Distribution day:** the index closes down 0.5%+ on higher turnover than the day
+  before. It counts for 25 sessions, or until the index closes 5% above that day.
+- **Uptrend → under pressure** at 4 distribution days; **correction** at 6, or after a
+  10% fall from the high since the last follow-through.
+- **Follow-through day:** in a correction, a rally attempt starts on the first up close
+  after the low; from day 4 a 1.5%+ gain on higher turnover ends the correction.
+  Closing below the attempt's low restarts it.
+
+The thresholds are scaled to NEPSE (median daily move 0.47%): IBD's 0.2% / 1.2%
+labelled the market "under pressure" on 108 of 232 sessions.
+
+It's shown on Market Overview and above the Entry zone board. Outside an uptrend,
+position sizes also show a **cautious size** (50% of your usual risk under pressure,
+25% in a correction) with a "Use N" button in the buy dialog; nothing is reduced
+automatically. In the Apr–Oct 2026 backtest the state didn't predict later returns:
+stocks did best during the June correction, which bottomed and rallied. So it doesn't
+change readiness or the board, and the backtest page tracks it ("By market direction").
+
 ## Intraday volume pace
 
 Breakouts are judged on the day's **projected** volume, not the volume so far: at 11:30

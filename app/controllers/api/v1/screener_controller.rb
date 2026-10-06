@@ -37,6 +37,7 @@ module Api
         @histories = Setups::ReadinessHistory.for_stocks((snapshots + held_back).map(&:stock_id))
         render json: {
           traded_on: traded_on&.iso8601,
+          market_direction: Setups::MarketDirection.current,
           criteria: {
             zone_state: "in_zone", min_trend_rules: Setups::Readiness::MIN_PRICE_RULES, min_readiness: Setups::Readiness::MIN_READINESS,
             setup_types: Setups::Readiness::BOARD_SETUP_TYPES,

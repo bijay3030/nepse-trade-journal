@@ -1,4 +1,5 @@
 import { format } from "date-fns"
+import { MarketDirectionCard } from "../features/market/MarketDirectionCard"
 import { Activity, BarChart3, Layers, TrendingUp } from "lucide-react"
 import {
   Area,
@@ -82,6 +83,8 @@ export function MarketOverviewPage() {
           Daily snapshot of the NEPSE index, market breadth, and sector performance for {data.traded_on}.
         </p>
       </header>
+
+      {data.market_direction && <MarketDirectionCard direction={data.market_direction} />}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard

@@ -192,6 +192,12 @@ export function BacktestPage() {
             </CardBody>
           </Card>
         )}
+        {results.groups.market_direction && (
+          <Card>
+            <CardHeader title="By market direction" subtitle="NEPSE's state on the signal day, from distribution and follow-through days" />
+            <CardBody><GroupChart groups={results.groups.market_direction} horizon={horizon} /></CardBody>
+          </Card>
+        )}
         {results.groups.guards && (
           <Card>
             <CardHeader title="By tradability guard" subtitle="Charts meeting the entry rules: passed every guard, or held back by thin volume or a circuit" />
