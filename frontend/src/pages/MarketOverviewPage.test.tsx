@@ -25,4 +25,17 @@ describe("MarketOverviewPage", () => {
     expect(screen.getByText(/No market sessions available/)).toBeInTheDocument()
     expect(screen.queryByText("NEPSE Index Trend")).not.toBeInTheDocument()
   })
+
+  it("orders sectors from strongest to weakest against NEPSE and puts the heatmap last", () => {
+    const [banks, hydro] = mockMarketOverview.sectors
+    const sectors = [hydro, { ...banks, sector: "Finance", relative_strength_pct: 0.2, relative_strength_rating: "neutral" as const }, banks]
+    mockUseMarketOverview.mockReturnValue({ data: { ...mockMarketOverview, sectors }, isLoading: false, isError: false })
+    const { container } = render(<MarketOverviewPage />)
+
+    const names = screen.getAllByRole("heading", { level: 4 }).map((heading) => heading.textContent)
+    expect(names).toEqual(["Commercial Banks", "Finance", "Hydropower"])
+
+    const headings = Array.from(container.querySelectorAll("h2, h3")).map((heading) => heading.textContent)
+    expect(headings.at(-1)).toBe("Market Heatmap")
+  })
 })

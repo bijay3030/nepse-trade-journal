@@ -72,6 +72,10 @@ export function MarketOverviewPage() {
 
   const breadthTotal = data.advancing_stocks + data.declining_stocks + data.unchanged_stocks || 1
   const advPct = (data.advancing_stocks / breadthTotal) * 100
+  // Strong to weak: the sector's move against NEPSE today (what the Strong/Weak badge rates).
+  const sectorsByStrength = [...data.sectors].sort(
+    (a, b) => (b.relative_strength_pct ?? -Infinity) - (a.relative_strength_pct ?? -Infinity) || a.sector.localeCompare(b.sector),
+  )
   const decPct = (data.declining_stocks / breadthTotal) * 100
   const unchPct = (data.unchanged_stocks / breadthTotal) * 100
 
@@ -194,13 +198,11 @@ export function MarketOverviewPage() {
         </CardBody>
       </Card>
 
-      <MarketHeatmap />
-
       <Card>
-        <CardHeader title="Sector Overview" subtitle="Performance and breadth by sector." />
+        <CardHeader title="Sector Overview" subtitle="Strongest to weakest against NEPSE today, with breadth." />
         <CardBody>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {data.sectors.map((sector: SectorOverviewRow) => (
+            {sectorsByStrength.map((sector: SectorOverviewRow) => (
               <div key={sector.sector} className="rounded-2xl border border-mist/70 bg-white/70 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <h4 className="font-display text-base font-bold text-ink">{sector.sector}</h4>
@@ -237,6 +239,8 @@ export function MarketOverviewPage() {
           </div>
         </CardBody>
       </Card>
+
+      <MarketHeatmap />
     </div>
   )
 }

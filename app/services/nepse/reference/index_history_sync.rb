@@ -1,7 +1,9 @@
 module Nepse
   module Reference
     # Daily history for the NEPSE index and the sector sub-indices. Chukul first;
-    # Merolagani fills only sessions Chukul does not have.
+    # Merolagani fills only sessions Chukul does not have. Merolagani has no turnover,
+    # so a session it fills keeps the turnover already stored (0 only for a new one):
+    # market direction's distribution days compare each day's turnover with the last.
     class IndexHistorySync
       NEPSE = { symbol: "NEPSE", name: "NEPSE Index", sector: nil, merolagani: "NEPSE" }.freeze
 
@@ -33,7 +35,7 @@ module Nepse
           if definition[:merolagani]
             fallback = @merolagani.fetch(definition[:merolagani], from: @to - @days, to: @to)
             Array(fallback[:bars]).each do |bar|
-              bars[bar[:traded_on]] ||= { traded_on: bar[:traded_on], close: bar[:close_price], turnover: 0.0, source: "merolagani" }
+              bars[bar[:traded_on]] ||= { traded_on: bar[:traded_on], close: bar[:close_price], turnover: nil, source: "merolagani" }
             end
           end
 
@@ -56,13 +58,14 @@ module Nepse
 
         # Change is measured from the stored session just before the first new bar.
         previous = index.persisted? ? index.histories.where("traded_on < ?", bars.first[:traded_on]).order(traded_on: :desc).pick(:index_value)&.to_f : nil
+        stored_turnover = index.persisted? ? index.histories.where(traded_on: bars.map { _1[:traded_on] }).pluck(:traded_on, :turnover).to_h : {}
         now = Time.current
         rows = bars.map do |bar|
           change = previous ? (bar[:close] - previous).round(2) : 0.0
           row = {
             traded_on: bar[:traded_on], index_value: bar[:close].round(2), change_point: change,
             change_percent: previous.to_f.positive? ? ((change / previous) * 100).round(2) : 0.0,
-            turnover: bar[:turnover].to_f.round(2), created_at: now, updated_at: now
+            turnover: (bar[:turnover] || stored_turnover[bar[:traded_on]]).to_f.round(2), created_at: now, updated_at: now
           }
           previous = bar[:close]
           row
