@@ -43,7 +43,8 @@ export function MarketHeatmap() {
   const { data, isLoading, isError, refetch } = useMarketHeatmap()
   const isMobile = useIsMobile()
   const [ref, width] = useWidth(1000)
-  const aspect = isMobile ? 0.8 : 2
+  // Tall enough that most tiles show their symbol and change: the page's last, largest section.
+  const aspect = isMobile ? 0.55 : 1.35
   const height = width / aspect
   const boxes = useMemo(() => (data ? layout(data.sectors, width, height) : []), [data, width, height])
 
