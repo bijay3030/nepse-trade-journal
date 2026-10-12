@@ -294,6 +294,8 @@ Hover over any badge for its explanation.
 
 ### 4.6 Stock page
 
+A full walk-through of this page from first principles, with analogies and NABIL as a worked example, is in [stock-page-guide.md](stock-page-guide.md).
+
 **Why:** everything about one stock in one place before you commit.
 
 **How it works / what's on it** (`/screener/SYMBOL`, e.g. `/screener/NABIL`):
