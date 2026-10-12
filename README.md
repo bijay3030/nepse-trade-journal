@@ -93,9 +93,28 @@ needed. Open **http://localhost:5173** and you land on `/dashboard`.
 
 ### Login in development
 
-There is no login screen yet. In development and test, the API automatically signs
-requests in as a local demo user (created on first request) when no JWT is sent, so
-you can use the app straight away.
+The deployed app requires a login. In development the API signs requests without a token
+in as the first user (`trader@nepse.com`, created on first request), so you can use the
+app straight away. To use the login page locally, e.g. with a separate paper-trading
+account:
+
+```bash
+bin/rails 'users:create[paper@local.test]'          # asks for a password
+VITE_REQUIRE_LOGIN=true npm --prefix frontend run dev
+```
+
+### Catching up after the app was off
+
+The scheduled jobs only run while `bin/dev` is running. After days away, fetch what was
+missed (about 15–30 minutes), then let `bin/dev` take over again:
+
+```bash
+bin/rails "nepse:data:indices[15]"
+bin/rails "nepse:backfill_history[12]"     # last 12 days of prices, all stocks
+bin/rails "nepse:data:floorsheet[6]"       # broker flows not stored yet
+bin/rails nepse:data:dividends
+bin/rails nepse:data:setups                # indicators, then today's snapshots
+```
 
 ### Checking the app
 
