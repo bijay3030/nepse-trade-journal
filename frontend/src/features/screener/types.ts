@@ -1,3 +1,4 @@
+import type { Freshness } from "../readiness/FreshnessBanner"
 import type { BookClose, DividendRow } from "../corporate/types"
 
 // Shared API contract for the market analysis dashboard.
@@ -270,6 +271,7 @@ export type BuyZoneRow = ReadinessSnapshot & {
 export type BuyZoneResponse = {
   traded_on: string | null
   market_direction?: MarketDirection | null
+  freshness?: Freshness | null
   /** The user's open risk against their limit (Positions::Portfolio). */
   portfolio_heat?: { pct: number | null; limit_pct: number; state: "ok" | "near" | "over" | "unknown" } | null
   criteria: {
@@ -291,6 +293,8 @@ export type BuyZoneResponse = {
 /** GET /screener */
 export type ScreenerResponse = {
   traded_on: string | null
+  /** Maintenance::CatchUp.freshness: snapshot date and completed sessions after it. */
+  freshness?: Freshness | null
   market_regime: MarketRegime
   sectors: string[]
   results: ScreenerRow[]

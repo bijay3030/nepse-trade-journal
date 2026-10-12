@@ -39,6 +39,7 @@ module Api
         render json: {
           traded_on: traded_on&.iso8601,
           market_direction: Setups::MarketDirection.current,
+          freshness: Maintenance::CatchUp.freshness,
           portfolio_heat: Positions::Portfolio.heat_for(current_user),
           criteria: {
             zone_state: "in_zone", min_trend_rules: Setups::Readiness::MIN_PRICE_RULES, min_readiness: Setups::Readiness::MIN_READINESS,

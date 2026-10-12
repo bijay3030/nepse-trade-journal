@@ -19,7 +19,8 @@ class Stock::SetupScreener
     results = snapshots.map do |snapshot|
       snapshot.screener_row.symbolize_keys.merge(readiness(snapshot), next_book_close: upcoming[snapshot.stock_id], eps_growth: Fundamentals::EpsGrowth.call(snapshot.stock))
     end
-    { traded_on: traded_on.iso8601, market_regime: market[:regime_status], sectors: results.map { |row| row[:sector] }.uniq.sort, results: results }
+    { traded_on: traded_on.iso8601, market_regime: market[:regime_status], freshness: Maintenance::CatchUp.freshness,
+      sectors: results.map { |row| row[:sector] }.uniq.sort, results: results }
   end
 
   def readiness(snapshot)

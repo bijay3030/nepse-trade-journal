@@ -43,6 +43,13 @@ shared: &shared
     queue: heavy
     schedule: "0 4 * * 6 UTC"
 
+  # Fills in sessions missed while the app was off (Maintenance::CatchUp); does nothing
+  # when the data is current.
+  catch_up:
+    class: CatchUpJob
+    queue: heavy
+    schedule: "20 * * * *"
+
   # Trims old broker flows, snapshots and intraday samples when RETAIN_* limits are set,
   # and clears finished jobs: 9:30 PM Nepal time.
   data_retention:
