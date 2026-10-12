@@ -20,7 +20,7 @@ RSpec.describe Maintenance::CatchUp do
 
   def run(at) = described_class.call(now: zone.parse(at))
 
-  it "backfills sessions stored with far fewer stocks than usual, then the snapshots after the latest" do
+  it "backfills sessions stored with far fewer stocks than usual, then the missing snapshots" do
     sessions.each { |day| stock_rows(day, [ 7, 8 ].include?(day.day) ? 3 : 10) }
     sessions.each { |day| StockBrokerFlow.create!(stock: stocks.first, traded_on: day, broker_no: 1) }
     StockSetupSnapshot.create!(stock: stocks.first, traded_on: Date.new(2026, 10, 6), close_price: 1, zone_state: "no_setup")
@@ -29,7 +29,8 @@ RSpec.describe Maintenance::CatchUp do
 
     expect(result[:price_sessions]).to eq([ Date.new(2026, 10, 7), Date.new(2026, 10, 8) ])
     expect(Nepse::HistoryBackfillService).to have_received(:call).with(days: 7)
-    expect(result[:snapshot_sessions]).to eq([ Date.new(2026, 10, 7), Date.new(2026, 10, 8), Date.new(2026, 10, 9) ])
+    # 6 Oct has a snapshot; 5 Oct is a gap before it, 7-9 Oct come after it.
+    expect(result[:snapshot_sessions]).to eq([ Date.new(2026, 10, 5), Date.new(2026, 10, 7), Date.new(2026, 10, 8), Date.new(2026, 10, 9) ])
     expect(Setups::SnapshotBuilder).to have_received(:call).with(as_of: Date.new(2026, 10, 9))
     expect(result[:flow_sessions]).to be_empty
     expect(Nepse::Reference::IndexHistorySync).not_to have_received(:call) # Friday is stored
@@ -41,10 +42,17 @@ RSpec.describe Maintenance::CatchUp do
       stock_rows(day, 10)
       StockBrokerFlow.create!(stock: stocks.first, traded_on: day, broker_no: 1)
     end
-    StockSetupSnapshot.create!(stock: stocks.first, traded_on: Date.new(2026, 10, 9), close_price: 1, zone_state: "no_setup")
+    sessions.each { StockSetupSnapshot.create!(stock: stocks.first, traded_on: _1, close_price: 1, zone_state: "no_setup") }
 
     expect(run("2026-10-12 16:30")).to include(price_sessions: [], flow_sessions: [], snapshot_sessions: [])
     expect(run("2026-10-12 17:30")[:snapshot_sessions]).to eq([ Date.new(2026, 10, 12) ])
+  end
+
+  it "builds snapshots for gaps before the latest one" do
+    sessions.each { |day| stock_rows(day, 10); StockBrokerFlow.create!(stock: stocks.first, traded_on: day, broker_no: 1) }
+    [ 5, 9 ].each { StockSetupSnapshot.create!(stock: stocks.first, traded_on: Date.new(2026, 10, _1), close_price: 1, zone_state: "no_setup") }
+
+    expect(run("2026-10-12 10:00")[:snapshot_sessions]).to eq([ Date.new(2026, 10, 6), Date.new(2026, 10, 7), Date.new(2026, 10, 8) ])
   end
 
   it "syncs the index when a weekday session is missing, and backfills missing floorsheets" do

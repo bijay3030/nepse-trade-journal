@@ -6,7 +6,7 @@ module Maintenance
   #   2. stock prices for sessions stored with far fewer stocks than usual
   #      (Merolagani backfill), then indicators
   #   3. floorsheets (broker flows) not stored yet
-  #   4. setup snapshots for completed sessions after the latest one, built one
+  #   4. setup snapshots for recent completed sessions that have none, built one
   #      session at a time (point in time, low memory), then the backtest and digest
   #
   # Cheap when nothing is missing: it only reads the database (and syncs the index
@@ -77,14 +77,16 @@ module Maintenance
       catch_up = new(now: now, sync_indices: false)
       latest = StockSetupSnapshot.maximum(:traded_on)
       missing = catch_up.missing_snapshot_sessions(catch_up.recent_sessions)
-      { snapshot_on: latest, behind_sessions: missing.size, latest_session: missing.max || latest }
+      { snapshot_on: latest, behind_sessions: missing.count { latest.nil? || _1 > latest }, latest_session: [ missing.max, latest ].compact.max }
     end
 
+    # Recent completed sessions without snapshots, including gaps before the latest one
+    # (a manual rebuild of today leaves the missed days in between empty).
     def missing_snapshot_sessions(sessions)
-      latest = StockSetupSnapshot.maximum(:traded_on)
-      return [] unless latest
+      return [] unless StockSetupSnapshot.exists?
 
-      sessions.select { _1 > latest && final?(_1, SNAPSHOT_FINAL_MINUTE) }
+      built = StockSetupSnapshot.where(traded_on: sessions).distinct.pluck(:traded_on)
+      (sessions - built).select { final?(_1, SNAPSHOT_FINAL_MINUTE) }
     end
 
     private
