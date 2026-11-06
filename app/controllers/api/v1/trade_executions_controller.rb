@@ -9,7 +9,7 @@ module Api
           create_or_update_holding(execution)
           render json: execution, serializer: TradeExecutionSerializer, status: :created
         else
-          render json: { errors: execution.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: execution.errors.full_messages }, status: :unprocessable_content
         end
       end
 

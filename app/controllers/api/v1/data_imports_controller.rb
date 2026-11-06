@@ -6,7 +6,7 @@ module Api
         if result[:success]
           render json: { message: "Master stocks seeded successfully", details: result }
         else
-          render json: { error: result[:error] || result[:message] }, status: :unprocessable_entity
+          render json: { error: result[:error] || result[:message] }, status: :unprocessable_content
         end
       end
 
@@ -17,7 +17,7 @@ module Api
         if result[:success]
           render json: { message: "Daily prices sync initiated/completed", details: result }
         else
-          render json: { error: result[:error] }, status: :unprocessable_entity
+          render json: { error: result[:error] }, status: :unprocessable_content
         end
       end
 
@@ -53,7 +53,7 @@ module Api
         if result[:success]
           render json: { message: "CSV imported successfully", imported_count: result[:imported] }
         else
-          render json: { error: "CSV import completed with errors", imported_count: result[:imported], errors: result[:errors] }, status: :unprocessable_entity
+          render json: { error: "CSV import completed with errors", imported_count: result[:imported], errors: result[:errors] }, status: :unprocessable_content
         end
       end
     end

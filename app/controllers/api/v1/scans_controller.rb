@@ -17,7 +17,7 @@ module Api
         if current_user.update(scanner_alert_signals: Array(params[:signals]).map(&:to_s).uniq)
           render json: alert_payload
         else
-          render json: { error: current_user.errors.full_messages.to_sentence }, status: :unprocessable_entity
+          render json: { error: current_user.errors.full_messages.to_sentence }, status: :unprocessable_content
         end
       end
 
@@ -25,7 +25,7 @@ module Api
       def crossover_chart
         stock = Stock.active.find_by!(symbol: params[:symbol].to_s.upcase)
         chart = Scans::Crossovers.chart(stock)
-        chart ? render(json: chart) : render(json: { error: "Not enough price history for #{stock.symbol}" }, status: :unprocessable_entity)
+        chart ? render(json: chart) : render(json: { error: "Not enough price history for #{stock.symbol}" }, status: :unprocessable_content)
       end
 
       private

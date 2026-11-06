@@ -31,7 +31,7 @@ RSpec.describe "Positions", type: :request do
     expect(json).to include("stop_price" => 480.0, "target_price" => 600.0, "notes" => "Breakout on volume", "initial_stop_price" => 470.0)
 
     patch "/api/v1/positions/#{id}", params: { stop_price: -1 }, headers: headers, as: :json
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
 
     delete "/api/v1/positions/#{id}/fills/#{Position.find(id).fills.first.id}", headers: headers
     expect(response).to have_http_status(:no_content)
@@ -40,7 +40,7 @@ RSpec.describe "Positions", type: :request do
 
   it "rejects a bad quantity and keeps positions private" do
     post "/api/v1/positions", params: { watchlist_item_id: item.id, price: 505, quantity: 0 }, headers: headers, as: :json
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(json["error"]).to match(/Quantity/)
 
     other = create(:user).positions.create!(stock: stock, stop_price: 470, initial_stop_price: 470)
@@ -83,7 +83,7 @@ RSpec.describe "Positions", type: :request do
 
     it "rejects an oversized sell and unknown review tags" do
       post "/api/v1/positions/#{position.id}/sell", params: { price: 560, quantity: 500 }, headers: headers, as: :json
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
 
       patch "/api/v1/positions/#{position.id}/review", params: { review_tags: [ "lucky" ] }, headers: headers, as: :json
       expect(response.parsed_body["error"]).to include("unknown tags: lucky")

@@ -29,14 +29,14 @@ module Api
         result = import_service.preview(params.require(:csv_content), format: params[:format].presence || "generic")
         render json: result
       rescue ArgumentError => e
-        render json: { error: e.message }, status: :unprocessable_entity
+        render json: { error: e.message }, status: :unprocessable_content
       end
 
       def import_commit
         result = import_service.import(params.require(:csv_content), format: params[:format].presence || "generic")
         render json: result, status: :created
       rescue ArgumentError => e
-        render json: { error: e.message }, status: :unprocessable_entity
+        render json: { error: e.message }, status: :unprocessable_content
       end
 
       def deleted_trades

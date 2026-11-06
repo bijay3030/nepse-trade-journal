@@ -29,14 +29,14 @@ module Api
         )
         render json: position, serializer: PositionSerializer, status: :created
       rescue ActiveRecord::RecordInvalid => e
-        render json: { error: e.record.errors.full_messages.to_sentence }, status: :unprocessable_entity
+        render json: { error: e.record.errors.full_messages.to_sentence }, status: :unprocessable_content
       end
 
       def update
         if @position.update(params.permit(:stop_price, :target_price, :notes))
           render json: @position, serializer: PositionSerializer
         else
-          render json: { error: @position.errors.full_messages.to_sentence }, status: :unprocessable_entity
+          render json: { error: @position.errors.full_messages.to_sentence }, status: :unprocessable_content
         end
       end
 
@@ -46,7 +46,7 @@ module Api
                                                      traded_on: params[:traded_on].presence || Nepse::MarketHours.today)
         render json: PositionSerializer.new(position).as_json.merge(warning: warning)
       rescue ArgumentError => e
-        render json: { error: e.message }, status: :unprocessable_entity
+        render json: { error: e.message }, status: :unprocessable_content
       end
 
       # PATCH /positions/:id/review
@@ -55,7 +55,7 @@ module Api
         if @position.update(changes)
           render json: @position, serializer: PositionSerializer
         else
-          render json: { error: @position.errors.full_messages.to_sentence }, status: :unprocessable_entity
+          render json: { error: @position.errors.full_messages.to_sentence }, status: :unprocessable_content
         end
       end
 
