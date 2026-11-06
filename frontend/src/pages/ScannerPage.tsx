@@ -5,6 +5,8 @@ import { Link } from "react-router-dom"
 import { Badge, Button, Card, CardBody, LoadingSpinner } from "../components/ui"
 import { useCrossoverScan } from "../features/scanner/api"
 import { ChartPanel } from "../features/scanner/ChartPanel"
+import { LevelsTag } from "../features/scanner/LevelsTag"
+import { useStockPrices } from "../hooks/useStockPrices"
 import { SIGNALS } from "../features/scanner/signals"
 import { TelegramAlertControl } from "../features/scanner/TelegramAlertControl"
 import type { CrossoverScan, CrossoverSignal, ScanRow, SignalStats } from "../features/scanner/types"
@@ -74,6 +76,9 @@ export function ScannerPage() {
         return order * direction || a.symbol.localeCompare(b.symbol)
       })
   }, [data, selected, within, hideThin, sort])
+
+  const symbols = useMemo(() => rows.map((row) => row.symbol), [rows])
+  const { getPrice } = useStockPrices(symbols)
 
   if (isLoading) return <div className="flex h-[50vh] items-center justify-center"><LoadingSpinner size="lg" /></div>
   if (isError || !data) {
@@ -159,6 +164,7 @@ export function ScannerPage() {
                   {header("change", "Change", "right")}
                   {header("newest", "Signals (sessions ago)")}
                   {header("aroon", "Aroon Up / Down", "right")}
+                  <th className="px-4 py-3">Levels (rule output)</th>
                   {header("readiness", "Readiness", "right")}
                   <th className="px-4 py-3"><span className="sr-only">Chart</span></th>
                 </tr>
@@ -183,6 +189,7 @@ export function ScannerPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right font-mono text-xs">{row.values.aroon_up ?? "—"} / {row.values.aroon_down ?? "—"}</td>
+                    <td className="px-4 py-3"><LevelsTag levels={row.levels} close={row.close} asOf={data.as_of} live={getPrice(row.symbol)} /></td>
                     <td className="px-4 py-3 text-right">
                       <span className="font-mono font-semibold">{row.readiness ?? "—"}</span>
                       {row.in_buy_zone && <Badge tone="gain" className="ml-2">Entry zone</Badge>}
@@ -234,7 +241,13 @@ function SignalTrackRecord({ backtest, selected }: { backtest: CrossoverScan["ba
                   {ticked.map(({ key, stats }) => (
                     <span key={key} className={cn("font-mono", tone(stats?.avg_return_pct))}>{SIGNALS.find((s) => s.key === key)?.short} {pct(stats?.avg_return_pct)} </span>
                   ))}
-                  vs <span className="font-mono">{pct(baseline20.avg_return_pct)}</span> for the average stock-day.</>
+                  vs <span className="font-mono">{pct(baseline20.avg_return_pct)}</span> for the average stock-day.
+                  {ticked.some(({ key }) => backtest.trades?.[key]?.profit_factor != null) && (
+                    <> Trading the crossover levels: {ticked.map(({ key }) => {
+                      const t = backtest.trades?.[key]
+                      return t?.win_rate_pct != null ? <span key={key} className="font-mono">{SIGNALS.find((s) => s.key === key)?.short} {t.win_rate_pct}% won, PF {t.profit_factor ?? "—"} </span> : null
+                    })}</>
+                  )}</>
               : "how each signal did after it began, against the average stock-day."}
           </p>
           <Button size="sm" variant="ghost" aria-expanded={open} onClick={() => setOpen((value) => !value)}>{open ? "Hide track record" : "Show track record"}</Button>
@@ -274,6 +287,38 @@ function SignalTrackRecord({ backtest, selected }: { backtest: CrossoverScan["ba
                 </tbody>
               </table>
             </div>
+            {backtest.trades && backtest.trade_rules && (
+              <div className="mt-4">
+                <h3 className="text-sm font-bold text-ink">Trading the crossover levels</h3>
+                <p className="text-xs text-slate">
+                  Buy at the next open if it's inside the entry zone; sell at the stop or target ({backtest.trade_rules.reward_multiple}× the risk), or after{" "}
+                  {backtest.trade_rules.max_hold} sessions; {backtest.trade_rules.cost_pct}% round-trip costs. Rows with a board setup use that setup's levels instead.
+                </p>
+                <div className="mt-2 overflow-x-auto">
+                  <table className="w-full text-sm" aria-label="Crossover level trades">
+                    <thead className="text-left text-xs text-slate">
+                      <tr><th className="py-1 pr-4">Signal</th><th className="py-1 pr-4 text-right">Trades</th><th className="py-1 pr-4 text-right">Won</th><th className="py-1 pr-4 text-right">Avg / trade</th><th className="py-1 pr-4 text-right">Avg R</th><th className="py-1 text-right">Profit factor</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-mist/60">
+                      {SIGNALS.map((signal) => {
+                        const t = backtest.trades?.[signal.key]
+                        return (
+                          <tr key={signal.key} className={cn(selected.includes(signal.key) && "font-semibold")}>
+                            <td className="py-1.5 pr-4 text-ink">{signal.label}</td>
+                            <td className="py-1.5 pr-4 text-right font-mono text-slate">{t?.closed ?? 0}</td>
+                            <td className="py-1.5 pr-4 text-right font-mono">{t?.win_rate_pct != null ? `${t.win_rate_pct}%` : "—"}</td>
+                            <td className={cn("py-1.5 pr-4 text-right font-mono", tone(t?.avg_return_pct))}>{pct(t?.avg_return_pct)}</td>
+                            <td className={cn("py-1.5 pr-4 text-right font-mono", tone(t?.avg_r))}>{t?.avg_r != null ? `${t.avg_r > 0 ? "+" : ""}${t.avg_r}R` : "—"}</td>
+                            <td className={cn("py-1.5 text-right font-mono", t?.profit_factor != null && t.profit_factor < 1 ? "text-ember" : "text-ink")}>{t?.profit_factor ?? "—"}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-1 text-xs text-slate">Profit factor = gains ÷ losses; under 1 means the rule lost money overall.</p>
+              </div>
+            )}
             <p className="mt-3 text-xs text-slate">
               ▼ = did worse than the average stock-day. One year of data in a mostly sideways market, where trend-following crosses tend to come
               after a short rise that then fades; they usually do better in trending markets. Treat these signals as a shortlist to study, not entries

@@ -26,6 +26,7 @@ module Scans
       bars = load_bars(now)
       as_of = bars.values.filter_map { _1.last&.first }.max
       snapshots = latest_snapshots
+      setups = latest_setups
       stocks = Stock.where(id: bars.keys).pluck(:id, :symbol, :name, :sector).to_h { |id, *rest| [ id, rest ] }
       rows = bars.filter_map do |stock_id, rows_for_stock|
         next if rows_for_stock.size < MIN_BARS || rows_for_stock.last.first != as_of
@@ -38,20 +39,21 @@ module Scans
           close: closes.last.round(2), change_pct: closes[-2]&.positive? ? ((closes[-1] / closes[-2] - 1) * 100).round(2) : nil,
           signals: SIGNALS.to_h { [ _1, latest_age(series, _1) ] },
           values: values(series),
+          levels: Levels.board(setups[stock_id]) || Levels.crossover(series, closes.size - 1),
           **snapshots.fetch(stock_id, {})
         }
       end
       { as_of: as_of, params: PARAMS, strong_aroon: STRONG_AROON, rows: rows.sort_by { _1[:symbol] } }
     end
 
-    # { stock_id => [[date, high, low, close], ...] } oldest first, completed sessions.
+    # { stock_id => [[date, high, low, close, open], ...] } oldest first, completed sessions.
     def load_bars(now)
       scope = StockDailyPrice.joins(:stock).merge(Stock.active.where(security_type: "Equity"))
                              .where(traded_on: (Nepse::MarketHours.today(now) - HISTORY_DAYS)..)
                              .where("stock_daily_prices.close_price > 0")
       scope = scope.where(traded_on: ...Nepse::MarketHours.today(now)) if Nepse::MarketHours.sync_window?(now)
-      scope.order(:traded_on).pluck(:stock_id, :traded_on, :high_price, :low_price, :close_price)
-           .group_by(&:first).transform_values { |rows| rows.map { |_, d, h, l, c| [ d, h.to_f, l.to_f, c.to_f ] } }
+      scope.order(:traded_on).pluck(:stock_id, :traded_on, :high_price, :low_price, :close_price, :open_price)
+           .group_by(&:first).transform_values { |rows| rows.map { |_, d, h, l, c, o| [ d, h.to_f, l.to_f, c.to_f, o.to_f ] } }
     end
 
     def compute(rows)
@@ -60,7 +62,8 @@ module Scans
       lows = rows.map { [ _1[2].positive? ? _1[2] : _1[3], _1[3] ].min }
       aroon = Indicators::Trend.aroon(highs, lows, PARAMS[:aroon])
       {
-        dates: rows.map(&:first), close: closes,
+        dates: rows.map(&:first), close: closes, high: highs, low: lows,
+        open: rows.map { |row| row[4].to_f.positive? ? row[4] : row[3] },
         ema9: Indicators::Trend.ema(closes, 9), ema21: Indicators::Trend.ema(closes, 21), ema50: Indicators::Trend.ema(closes, 50),
         hma: Indicators::Trend.hma(closes, PARAMS[:hma]),
         alma: Indicators::Trend.alma(closes, PARAMS[:alma][:length], offset: PARAMS[:alma][:offset], sigma: PARAMS[:alma][:sigma]),
@@ -150,6 +153,15 @@ module Scans
 
     def values(series)
       %i[ema9 ema21 ema50 hma alma aroon_up aroon_down].to_h { [ _1, series[_1].last&.round(2) ] }
+    end
+
+    # Setup type, zone state and levels from each stock's latest snapshot.
+    def latest_setups
+      latest = StockSetupSnapshot.maximum(:traded_on)
+      return {} unless latest
+
+      StockSetupSnapshot.where(traded_on: latest).pluck(:stock_id, :setup_type, :zone_state, :entry_zone_low, :entry_zone_high, :invalidation_price, :target_price)
+                        .to_h { |id, *values| [ id, %i[setup_type zone_state entry_zone_low entry_zone_high invalidation_price target_price].zip(values).to_h ] }
     end
 
     # Readiness, board flag and liquidity from each stock's latest snapshot.

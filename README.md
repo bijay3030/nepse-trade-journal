@@ -368,6 +368,14 @@ columns sort by clicking their headers. **Chart** opens a panel with the stock's
 indicator lines and Aroon pane, ▲/▼ where each ticked signal began and ended, and what
 happened after each (`GET /scans/crossovers/:symbol`).
 
+**Levels:** each row shows **Entry · Stop · Target** and where the price is against them
+(in entry zone / wait N% below / extended N% above / below stop; live during the session).
+They come from the stock's setup in the nightly snapshot (the board's rules) when it has
+one, else from a crossover rule (`Scans::Levels`): entry = signal close to +1 ADR, stop just
+under EMA 21 (max 8%), target 2× the risk. The track record trades that rule after every
+signal (next open inside the zone, stop / target / 20 sessions, 0.8% costs): in the year to
+Nov 2026 it lost money for every signal (24–30% of trades won, profit factor 0.36–0.56).
+
 **Telegram:** **Alert me on Telegram** saves the ticked signals as your filter
 (`users.scanner_alert_signals`, `PUT /scans/alert`). After each close (queued by the nightly
 backtest, once the scan is fresh) `Scans::Alerts` sends one message listing the liquid

@@ -407,6 +407,9 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H24.13 | After the next close | One 📈 "Indicator scanner (Mon d close): N stocks newly match …" message with price, signal ages, readiness, "also on Entry zone now" where so, and the track-record line; none if nothing newly matched; not repeated the next day for stocks still matching |
 | H24.14 | Terminal: `bin/rails runner 'p Scans::Alerts.new_matches(Scans::Cache.crossovers, %w[ema_9_21])'` | The stocks whose 9/21 cross began on the latest session (liquid only) |
 | H24.15 | Telegram not linked | "Connect Telegram to get this filter's new matches after each close" with a link to Settings |
+| H24.16 | Any row's **Levels** cell | Chip (In entry zone / Wait: N% below entry / Extended +N% (chasing) / Below stop) and "Entry a–b · Stop c · Target d"; underneath "VCP levels" (or the setup) or "crossover rule"; hover explains the source |
+| H24.17 | *(market hours)* A stock moving through its zone | The chip follows the live price |
+| H24.18 | **Show track record** | "Trading the crossover levels" table: trades, won %, average per trade, average R, profit factor (red under 1) per signal; the summary line adds the ticked signals' won % and PF |
 
 ## I. Plan from setup
 
