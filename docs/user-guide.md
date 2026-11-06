@@ -330,6 +330,11 @@ up, close above ALMA, Aroon Up over Down, Aroon Up ≥ 70); a stock appears when
 all of them, with crosses that began within the chosen window. Explanations of each
 indicator: [indicators-guide.md](indicators-guide.md).
 
+**Telegram:** with Telegram linked (Settings), **Alert me on Telegram** saves the ticked
+signals. After each close you get one message with the liquid stocks that newly match all of
+them (not repeated while they keep matching), with each signal's age, readiness and the
+signals' track record. **Stop alerts** turns it off; ticking other signals offers to switch.
+
 **Use it:** as a shortlist. **Chart** on any row opens a panel with the stock's candles, EMA
 9/21/50, HMA, ALMA and Aroon (each can be switched off; 3M / 6M / 1Y), **▲ where each ticked
 signal began and ▼ where it ended**, and a table of what happened after each one. ← / → (or
@@ -350,6 +355,9 @@ these signals underperformed in the past year.
 6. **Chart** on a row: the panel shows the candles, indicator lines, Aroon pane, ▲/▼ markers
    at each ticked signal's start/end, and the signal history; → moves to the next stock.
 7. Click **Change**, then click it again: the order reverses.
+8. With Telegram linked, tick signals → **Alert me on Telegram**: "Telegram alerts on for this
+   filter". After the next close (4:45 PM + the backtest), a 📈 message lists the stocks that
+   newly matched, or nothing if none did. **Stop alerts** turns it off.
 
 ### 4.7 Watchlist and setups
 

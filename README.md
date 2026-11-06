@@ -368,6 +368,15 @@ columns sort by clicking their headers. **Chart** opens a panel with the stock's
 indicator lines and Aroon pane, ▲/▼ where each ticked signal began and ended, and what
 happened after each (`GET /scans/crossovers/:symbol`).
 
+**Telegram:** **Alert me on Telegram** saves the ticked signals as your filter
+(`users.scanner_alert_signals`, `PUT /scans/alert`). After each close (queued by the nightly
+backtest, once the scan is fresh) `Scans::Alerts` sends one message listing the liquid
+stocks that **newly** match it: every chosen signal holds and the last of them switched on
+that session, so stocks that keep matching aren't repeated. Each line has the price, each
+signal's age, readiness and whether the stock is also on Entry zone now; the message ends
+with the chosen signals' track record on NEPSE. At most once per stock per session; needs
+Telegram linked in Settings.
+
 The page also shows each signal's track record on our NEPSE history
 (`Scans::CrossoverBacktest`): the 5/10/20-session return after every time a signal began,
 against all stock-days. In the year to November 2026 every bullish signal did worse than

@@ -26,6 +26,7 @@ class User < ApplicationRecord
   validates :trading_capital, numericality: { greater_than: 0 }, allow_nil: true
   validates :risk_per_trade_pct, numericality: { greater_than: 0, less_than_or_equal_to: 10 }
   validates :max_open_risk_pct, numericality: { greater_than: 0, less_than_or_equal_to: 50 }
+  validate :scanner_alert_signals_known
   validates :max_sector_pct, numericality: { greater_than: 0, less_than_or_equal_to: 100 }
 
   # Position size for an entry and stop from the user's capital and risk per trade.
@@ -45,6 +46,11 @@ class User < ApplicationRecord
   end
 
   private
+
+  def scanner_alert_signals_known
+    unknown = Array(scanner_alert_signals) - Scans::Crossovers::SIGNALS
+    errors.add(:scanner_alert_signals, "has unknown signals: #{unknown.join(', ')}") if unknown.any?
+  end
 
   # Portfolio heat if this suggested buy is made, and the largest size that stays within
   # max_open_risk_pct (Positions::Portfolio). Information for the trader; nothing is blocked.

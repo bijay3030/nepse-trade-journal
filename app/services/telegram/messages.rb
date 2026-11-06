@@ -76,6 +76,41 @@ module Telegram
       [ header, *blocks, more, FOOTER ].compact.join("\n\n")
     end
 
+    SCANNER_LABELS = {
+      "ema_9_21" => "EMA 9/21 cross", "ema_21_50" => "EMA 21/50 cross", "ema_stack" => "EMA 9 > 21 > 50",
+      "hma_up" => "HMA turned up", "alma_cross" => "close above ALMA", "aroon_cross" => "Aroon Up over Down", "aroon_strong" => "Aroon Up ≥ 70"
+    }.freeze
+
+    # Stocks that newly match a user's saved Indicator Scanner filter (Scans::Alerts).
+    def scanner_alert(rows, signals, scan)
+      shown = rows.first(Scans::Alerts::LIMIT)
+      filter = signals.map { SCANNER_LABELS.fetch(_1) }.join(" + ")
+      lines = shown.map do |row|
+        ages = signals.map { |key| "#{SCANNER_LABELS[key]} #{row[:signals][key].zero? ? 'today' : "#{row[:signals][key]}d"}" }.join(", ")
+        change = row[:change_pct] ? " (#{format('%+.2f', row[:change_pct])}%)" : ""
+        board = row[:in_buy_zone] ? " · also on Entry zone now" : ""
+        "• <b>#{h(row[:symbol])}</b> #{money(row[:close])}#{change} · #{h(ages)} · readiness #{row[:readiness] || '—'}#{board}"
+      end
+      more = rows.size > shown.size ? "…and #{rows.size - shown.size} more on the Indicator Scanner." : nil
+      [
+        "📈 <b>Indicator scanner</b> (#{scan[:as_of].strftime('%b %-d')} close): #{rows.size} #{rows.size == 1 ? 'stock newly matches' : 'stocks newly match'} #{h(filter)}",
+        lines.join("\n"), more, scanner_track_record(signals, scan[:backtest]), FOOTER
+      ].compact.join("\n\n")
+    end
+
+    # "Track record (20 sessions after each signal began): ... vs ... for all stock-days."
+    def scanner_track_record(signals, backtest)
+      stats = backtest&.dig(:signals) or return
+      base = stats.dig("all", 20, :avg_return_pct)
+      parts = signals.filter_map do |key|
+        value = stats.dig(key, 20, :avg_return_pct)
+        "#{SCANNER_LABELS[key]} #{format('%+.1f', value)}%" if value
+      end
+      return if parts.empty? || base.nil?
+
+      "<i>Track record on NEPSE (20 sessions after each signal began): #{h(parts.join(', '))} vs #{format('%+.1f', base)}% for all stock-days.</i>"
+    end
+
     def test_message(user)
       "✅ Test message from NEPSE Trade Journal for #{h(user.email)}. Entry-zone messages will arrive here.\n#{FOOTER}"
     end
