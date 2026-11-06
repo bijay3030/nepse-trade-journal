@@ -7,9 +7,8 @@
 
 # For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 
-# Same Ruby 3.2 line as .ruby-version (3.2.0), on a supported Debian: the 3.2.0
-# images are bullseye-only, whose packages have moved to the Debian archive.
-ARG RUBY_VERSION=3.2.11
+# Same Ruby as .ruby-version, on Debian bookworm.
+ARG RUBY_VERSION=3.4.12
 FROM docker.io/library/ruby:$RUBY_VERSION-slim-bookworm AS base
 
 # Rails app lives here

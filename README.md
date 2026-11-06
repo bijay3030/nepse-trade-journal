@@ -19,17 +19,17 @@ and [PROGRESS.md](./PROGRESS.md) for the build log.
 
 | Tool       | Version            | Notes                                                       |
 | ---------- | ------------------ | ----------------------------------------------------------- |
-| Ruby       | 3.2.0              | Pinned in `.ruby-version`. Use rbenv/asdf, **not** macOS system Ruby (2.6). |
+| Ruby       | 3.4.12             | Pinned in `.ruby-version`. Use rbenv/asdf, **not** macOS system Ruby (2.6). `rbenv install 3.4.12` (update ruby-build first: `brew upgrade ruby-build`). |
 | Bundler    | 2.x                | `gem install bundler`                                       |
 | PostgreSQL | 14+                | Must be running locally (`pg_isready` should say "accepting connections"). |
 | Node.js    | 20+                | With npm.                                                   |
 
-With rbenv, make sure the shims are on your `PATH` so `ruby -v` prints 3.2.0 in the
+With rbenv, make sure the shims are on your `PATH` so `ruby -v` prints 3.4.12 in the
 project folder:
 
 ```bash
 eval "$(rbenv init -)"
-ruby -v   # => ruby 3.2.0
+ruby -v   # => ruby 3.4.12
 ```
 
 ## Running locally

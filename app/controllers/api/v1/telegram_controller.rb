@@ -42,7 +42,7 @@ module Api
 
       def test
         return not_configured unless Telegram::Client.configured?
-        return render(json: { error: "Connect Telegram first" }, status: :unprocessable_entity) if current_user.telegram_chat_id.blank?
+        return render(json: { error: "Connect Telegram first" }, status: :unprocessable_content) if current_user.telegram_chat_id.blank?
 
         Telegram::Client.new.send_message(current_user.telegram_chat_id, Telegram::Messages.test_message(current_user))
         render json: status_payload.merge(sent: true)

@@ -10,7 +10,7 @@ module Api
         if current_user.update(params.permit(:trading_capital, :risk_per_trade_pct, :max_open_risk_pct, :max_sector_pct))
           render json: payload
         else
-          render json: { error: current_user.errors.full_messages.to_sentence }, status: :unprocessable_entity
+          render json: { error: current_user.errors.full_messages.to_sentence }, status: :unprocessable_content
         end
       end
 

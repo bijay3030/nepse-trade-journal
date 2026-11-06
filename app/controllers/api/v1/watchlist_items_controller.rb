@@ -16,7 +16,7 @@ module Api
         stock = Stock.active.find_by!(symbol: params[:symbol].to_s.upcase)
         result = Watchlist::EntryZoneSuggester.call(stock, params[:setup_type].presence || "vcp")
         render json: result.merge(symbol: stock.symbol, current_price: stock.last_price.to_f),
-               status: result[:success] ? :ok : :unprocessable_entity
+               status: result[:success] ? :ok : :unprocessable_content
       end
 
       def create
@@ -26,7 +26,7 @@ module Api
         manual = level_params.to_h.symbolize_keys.compact_blank
 
         if manual.empty? && !suggestion[:success]
-          return render json: { error: suggestion[:error] }, status: :unprocessable_entity
+          return render json: { error: suggestion[:error] }, status: :unprocessable_content
         end
 
         suggested = suggestion[:success] ? suggestion[:levels].slice(*LEVEL_FIELDS) : {}
@@ -43,7 +43,7 @@ module Api
           Watchlist::AlertEvaluator.initial_state!(item)
           render json: item, serializer: WatchlistItemSerializer, status: :created
         else
-          render json: { error: item.errors.full_messages.to_sentence }, status: :unprocessable_entity
+          render json: { error: item.errors.full_messages.to_sentence }, status: :unprocessable_content
         end
       end
 
@@ -58,7 +58,7 @@ module Api
           Watchlist::AlertEvaluator.initial_state!(@item) if restoring || level_params.present?
           render json: @item.reload, serializer: WatchlistItemSerializer
         else
-          render json: { error: @item.errors.full_messages.to_sentence }, status: :unprocessable_entity
+          render json: { error: @item.errors.full_messages.to_sentence }, status: :unprocessable_content
         end
       end
 
@@ -90,7 +90,7 @@ module Api
         end
         render json: { trade_plan_id: plan.id, watchlist_item: WatchlistItemSerializer.new(@item.reload).as_json }, status: :created
       rescue ActiveRecord::RecordInvalid => e
-        render json: { error: e.record.errors.full_messages.to_sentence }, status: :unprocessable_entity
+        render json: { error: e.record.errors.full_messages.to_sentence }, status: :unprocessable_content
       end
 
       private

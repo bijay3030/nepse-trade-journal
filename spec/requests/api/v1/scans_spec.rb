@@ -27,7 +27,7 @@ RSpec.describe "Indicator scans", type: :request do
     expect(response.parsed_body["candles"].size).to eq(90)
 
     get "/api/v1/scans/crossovers/NEWLY", headers: headers
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
   end
 
   it "saves and reads the Telegram alert filter, rejecting unknown signals" do
@@ -38,7 +38,7 @@ RSpec.describe "Indicator scans", type: :request do
     expect(response.parsed_body["signals"]).to eq(%w[ema_9_21 aroon_strong])
 
     put "/api/v1/scans/alert", params: { signals: [ "golden_goose" ] }, headers: headers, as: :json
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.parsed_body["error"]).to include("golden_goose")
 
     put "/api/v1/scans/alert", params: { signals: [] }, headers: headers, as: :json

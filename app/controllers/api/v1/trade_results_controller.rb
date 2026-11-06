@@ -11,7 +11,7 @@ module Api
 
           render json: result, serializer: TradeResultSerializer, status: :created
         else
-          render json: { errors: result.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: result.errors.full_messages }, status: :unprocessable_content
         end
       end
 

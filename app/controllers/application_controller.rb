@@ -6,6 +6,6 @@ class ApplicationController < ActionController::API
   def with_current_attributes
     yield
   ensure
-    Current.reset_all
+    Current.reset
   end
 end

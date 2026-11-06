@@ -15,7 +15,7 @@ module Api
         if plan.save
           render json: plan, serializer: TradePlanSerializer, status: :created
         else
-          render json: { errors: plan.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: plan.errors.full_messages }, status: :unprocessable_content
         end
       end
 

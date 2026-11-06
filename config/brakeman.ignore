@@ -1,0 +1,17 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "d2987a36574f1ec95272e08181a7d9593e533745a8cc74dd157e151581fbfae0",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/controllers/api/v1/stocks_controller.rb",
+      "line": 19,
+      "code": "Arel.sql(\"#{(params[:sort_by] or \"symbol\")} #{(\"desc\" or \"asc\")} NULLS LAST\")",
+      "confidence": "High",
+      "note": "False positive: sort_column is params[:sort_by] only when it is in allowed_sort_columns (else \"symbol\"), and sort_direction is \"asc\" or \"desc\" (lines 16-17). Reviewed 2026-11-06."
+    }
+  ],
+  "brakeman_version": "8.1.0"
+}

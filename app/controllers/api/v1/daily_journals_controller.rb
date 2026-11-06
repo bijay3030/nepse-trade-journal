@@ -13,7 +13,7 @@ module Api
         if entry.save
           render json: entry.as_json, status: :created
         else
-          render json: { errors: entry.errors.full_messages }, status: :unprocessable_entity
+          render json: { errors: entry.errors.full_messages }, status: :unprocessable_content
         end
       end
 

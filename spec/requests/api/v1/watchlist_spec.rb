@@ -51,7 +51,7 @@ RSpec.describe "Api::V1::Watchlist", type: :request do
 
     post "/api/v1/watchlist_items", params: { symbol: "NABIL" }, headers: headers, as: :json
 
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(json["error"]).to eq("No VCP pivot found for NABIL.")
   end
 
@@ -62,7 +62,7 @@ RSpec.describe "Api::V1::Watchlist", type: :request do
 
     item_id = WatchlistItem.last.id
     patch "/api/v1/watchlist_items/#{item_id}", params: { invalidation_price: 580 }, headers: headers, as: :json
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(json["error"]).to eq("Invalidation price must be below the entry zone")
   end
 

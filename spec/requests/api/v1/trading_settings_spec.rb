@@ -14,7 +14,7 @@ RSpec.describe "Trading settings and position sizing", type: :request do
     expect(json).to include("trading_capital" => 500_000.0, "risk_per_trade_pct" => 1.5)
 
     patch "/api/v1/trading_settings", params: { risk_per_trade_pct: 25 }, headers: headers, as: :json
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
   end
 
   it "suggests a size and prices a typed quantity" do
