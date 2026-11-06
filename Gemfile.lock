@@ -154,7 +154,7 @@ GEM
       reline (>= 0.4.2)
     json (2.19.1)
     jsonapi-renderer (0.2.2)
-    jwt (3.1.2)
+    jwt (3.3.0)
       base64
     kamal (2.12.0)
       activesupport (>= 7.0)
@@ -400,7 +400,7 @@ DEPENDENCIES
   factory_bot_rails (~> 6.5)
   faker (~> 3.6)
   httparty (~> 0.24.2)
-  jwt (~> 3.1)
+  jwt (~> 3.3)
   kamal
   pg (~> 1.1)
   pg_enum (~> 0.2.0)
@@ -469,7 +469,7 @@ CHECKSUMS
   irb (1.17.0) sha256=168c4ddb93d8a361a045c41d92b2952c7a118fa73f23fe14e55609eb7a863aae
   json (2.19.1) sha256=dd94fdc59e48bff85913829a32350b3148156bc4fd2a95a2568a78b11344082d
   jsonapi-renderer (0.2.2) sha256=b5c44b033d61b4abdb6500fa4ab84807ca0b36ea0e59e47a2c3ca7095a6e447b
-  jwt (3.1.2) sha256=af6991f19a6bb4060d618d9add7a66f0eeb005ac0bc017cd01f63b42e122d535
+  jwt (3.3.0) sha256=44cc34fbc341c148233cf66641522b4bce0dfb1ce55e8073f05c56f44f4ee546
   kamal (2.12.0) sha256=c51d1ab085e515470f98d0c0f043637122b5ebf76e8b610cb1fbbed0b7f9b8fa
   language_server-protocol (3.17.0.5) sha256=fd1e39a51a28bf3eec959379985a72e296e9f9acfce46f6a79d31ca8760803cc
   logger (1.7.0) sha256=196edec7cc44b66cfb40f9755ce11b392f21f7967696af15d274dde7edff0203

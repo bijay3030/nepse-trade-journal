@@ -49,7 +49,7 @@ end
 
 
 gem "devise", "~> 5.0"
-gem "jwt", "~> 3.1"
+gem "jwt", "~> 3.3"
 gem "rack-cors", "~> 3.0"
 gem "sidekiq", "~> 8.1"
 gem "httparty", "~> 0.24.2"
