@@ -6,6 +6,7 @@ import { Badge, Button, Card, CardBody, LoadingSpinner } from "../components/ui"
 import { useCrossoverScan } from "../features/scanner/api"
 import { ChartPanel } from "../features/scanner/ChartPanel"
 import { SIGNALS } from "../features/scanner/signals"
+import { TelegramAlertControl } from "../features/scanner/TelegramAlertControl"
 import type { CrossoverScan, CrossoverSignal, ScanRow, SignalStats } from "../features/scanner/types"
 import { cn } from "../lib/cn"
 
@@ -137,6 +138,7 @@ export function ScannerPage() {
               <input type="checkbox" checked={hideThin} onChange={(event) => setHideThin(event.target.checked)} />
               Hide thinly traded stocks
             </label>
+            <TelegramAlertControl selected={selected} />
             <span className="ml-auto font-semibold text-ink" aria-live="polite">{rows.length} of {data.rows.length} stocks</span>
           </div>
         </Card>

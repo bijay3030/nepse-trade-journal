@@ -6,8 +6,8 @@ import type { CrossoverScan, ScanRow } from "../features/scanner/types"
 import { renderWithClient } from "../test/renderWithClient"
 import { ScannerPage } from "./ScannerPage"
 
-const { mockGet } = vi.hoisted(() => ({ mockGet: vi.fn() }))
-vi.mock("../lib/axios", () => ({ default: { get: mockGet } }))
+const { mockGet, mockPut } = vi.hoisted(() => ({ mockGet: vi.fn(), mockPut: vi.fn() }))
+vi.mock("../lib/axios", () => ({ default: { get: mockGet, put: mockPut } }))
 vi.mock("lightweight-charts", () => {
   const series = { setData: vi.fn(), createPriceLine: vi.fn() }
   return {
@@ -47,9 +47,16 @@ const scan: CrossoverScan = {
   },
 }
 
+let alert: { signals: string[]; telegram_linked: boolean } = { signals: [], telegram_linked: true }
+
 describe("ScannerPage", () => {
   beforeEach(() => {
-    mockGet.mockReset().mockImplementation((path: string) => Promise.resolve({ data: path === "/scans/crossovers" ? scan : chartFor(path.split("/").pop() as string) }))
+    mockGet.mockReset().mockImplementation((path: string) => {
+      if (path === "/scans/alert") return Promise.resolve({ data: alert })
+      return Promise.resolve({ data: path === "/scans/crossovers" ? scan : chartFor(path.split("/").pop() as string) })
+    })
+    mockPut.mockReset().mockImplementation((_path: string, body: { signals: string[] }) => Promise.resolve({ data: { signals: body.signals, telegram_linked: true } }))
+    alert = { signals: [], telegram_linked: true }
   })
 
   it("lists stocks whose 9/21 cross began in the last 3 sessions, hiding thin stocks", async () => {
@@ -117,5 +124,27 @@ describe("ScannerPage", () => {
     expect(await screen.findByRole("dialog", { name: "THIN chart" })).toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: "Close chart" }))
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+  })
+
+  it("saves the ticked signals as the Telegram alert filter, and stops it", async () => {
+    renderWithClient(<ScannerPage />)
+
+    await userEvent.click(await screen.findByRole("button", { name: "Alert me on Telegram" }))
+    expect(mockPut).toHaveBeenCalledWith("/scans/alert", { signals: ["ema_9_21"] })
+    expect(await screen.findByText("Telegram alerts on for this filter")).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("checkbox", { name: "Aroon Up ≥ 70" }))
+    expect(screen.getByLabelText("Telegram alerts")).toHaveTextContent("Telegram alerts on for: 9/21")
+    expect(screen.getByRole("button", { name: "Alert me for this filter instead" })).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("button", { name: "Stop alerts" }))
+    expect(mockPut).toHaveBeenLastCalledWith("/scans/alert", { signals: [] })
+  })
+
+  it("asks to connect Telegram first", async () => {
+    alert = { signals: [], telegram_linked: false }
+    renderWithClient(<ScannerPage />)
+
+    expect(await screen.findByRole("link", { name: "Connect Telegram" })).toHaveAttribute("href", "/settings")
   })
 })

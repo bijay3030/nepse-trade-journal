@@ -5,8 +5,10 @@ class BacktestJob < ApplicationJob
   def perform
     result = Backtest::Runner.call
     Rails.logger.info("BacktestJob: run #{result[:run_id].inspect}")
-    # Warm the indicator scan so the first visit after the close is fast.
+    # Warm the indicator scan so the first visit after the close is fast, then tell
+    # users about new matches for their saved scanner filter.
     Scans::Cache.crossovers
+    TelegramScannerJob.perform_later
     GC.start
     result
   end

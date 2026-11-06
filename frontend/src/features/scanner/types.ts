@@ -55,3 +55,6 @@ export type CrossoverChart = {
   episodes: Record<CrossoverSignal, SignalEpisode[]>
   signals: Record<CrossoverSignal, number | null>
 }
+
+/** GET/PUT /scans/alert: the filter Telegram messages are sent for (empty = off). */
+export type ScannerAlert = { signals: CrossoverSignal[]; telegram_linked: boolean }
