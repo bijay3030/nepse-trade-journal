@@ -330,6 +330,13 @@ up, close above ALMA, Aroon Up over Down, Aroon Up ≥ 70); a stock appears when
 all of them, with crosses that began within the chosen window. Explanations of each
 indicator: [indicators-guide.md](indicators-guide.md).
 
+**Levels column:** **Entry · Stop · Target** for each row, coloured green / red, with where
+the price is now: *In entry zone*, *Wait: N% below entry*, *Extended +N% (chasing)* or
+*Below stop* (live during market hours). Most rows use their board setup's levels (label
+e.g. "VCP levels"); others use the crossover rule ("crossover rule"), whose trades lost money
+in the backtest (see **Show track record → Trading the crossover levels**). Rule output,
+not advice.
+
 **Telegram:** with Telegram linked (Settings), **Alert me on Telegram** saves the ticked
 signals. After each close you get one message with the liquid stocks that newly match all of
 them (not repeated while they keep matching), with each signal's age, readiness and the
@@ -358,6 +365,8 @@ these signals underperformed in the past year.
 8. With Telegram linked, tick signals → **Alert me on Telegram**: "Telegram alerts on for this
    filter". After the next close (4:45 PM + the backtest), a 📈 message lists the stocks that
    newly matched, or nothing if none did. **Stop alerts** turns it off.
+9. Each row's **Levels** cell: a state chip and "Entry a–b · Stop c · Target d" with the
+   source underneath; during market hours the chip follows the live price.
 
 ### 4.7 Watchlist and setups
 

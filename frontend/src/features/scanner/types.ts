@@ -9,10 +9,32 @@ export type ScanRow = {
   /** Sessions since each signal began (0 = latest session), or null when it doesn't hold. */
   signals: Record<CrossoverSignal, number | null>
   values: { ema9: number | null; ema21: number | null; ema50: number | null; hma: number | null; alma: number | null; aroon_up: number | null; aroon_down: number | null }
+  /** Entry / stop / target: the snapshot setup's ("board_setup") or the crossover rule's. */
+  levels?: RowLevels | null
   readiness?: number | null
   in_buy_zone?: boolean | null
   guards?: string[] | null
   avg_turnover?: number | null
+}
+
+export type RowLevels = {
+  entry_low: number
+  entry_high: number
+  stop: number
+  target: number | null
+  source: "board_setup" | "crossover"
+  setup_type: string | null
+}
+
+/** Trades with the crossover levels after each time a signal began (Scans::CrossoverBacktest). */
+export type TradeStats = {
+  closed: number
+  skipped: number
+  win_rate_pct?: number
+  avg_return_pct?: number
+  avg_r?: number
+  profit_factor?: number | null
+  exits?: Record<string, number>
 }
 
 export type SignalStats = { n: number; avg_return_pct?: number; median_return_pct?: number; win_rate_pct?: number; avg_excess_pct?: number | null }
@@ -27,6 +49,8 @@ export type CrossoverScan = {
     period: { from: string | null; to: string | null }
     horizons: number[]
     signals: Record<"all" | CrossoverSignal, Record<string, SignalStats>>
+    trades?: Record<CrossoverSignal, TradeStats>
+    trade_rules?: { max_hold: number; cost_pct: number; reward_multiple: number; max_stop_pct: number }
   }
 }
 
