@@ -29,3 +29,29 @@ export type CrossoverScan = {
     signals: Record<"all" | CrossoverSignal, Record<string, SignalStats>>
   }
 }
+
+export type SignalEpisode = {
+  start_on: string
+  start_price: number
+  end_on: string | null
+  end_price: number | null
+  sessions: number
+  change_pct: number
+  /** Still holds at the latest session. */
+  open: boolean
+}
+
+export type IndicatorLine = Array<number | null>
+
+/** GET /scans/crossovers/:symbol */
+export type CrossoverChart = {
+  symbol: string
+  name: string
+  sector: string
+  params: CrossoverScan["params"]
+  strong_aroon: number
+  candles: Array<{ traded_on: string; open: number; high: number; low: number; close: number; volume: number }>
+  lines: Record<"ema9" | "ema21" | "ema50" | "hma" | "alma" | "aroon_up" | "aroon_down", IndicatorLine>
+  episodes: Record<CrossoverSignal, SignalEpisode[]>
+  signals: Record<CrossoverSignal, number | null>
+}

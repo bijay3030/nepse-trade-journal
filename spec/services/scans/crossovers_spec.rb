@@ -48,4 +48,31 @@ RSpec.describe Scans::Crossovers do
     expect(row[:values][:aroon_up]).to eq(100.0)
     expect(result[:as_of]).to eq(days.last)
   end
+
+  it "lists each run of a signal: where it began, where it ended and the change in between" do
+    # Down, up, down, up: the 9/21 cross happens twice; the second run is still on.
+    closes = Array.new(40) { 200.0 - _1 } + Array.new(25) { 161.0 + _1 * 2 } + Array.new(25) { 209.0 - _1 * 2 } + Array.new(20) { 161.0 + _1 * 3 }
+    v = series(closes)
+    episodes = described_class.episodes(v, "ema_9_21")
+
+    expect(episodes.size).to eq(2)
+    expect(episodes.first).to include(open: false, end_on: be_a(Date), end_price: be_a(Float))
+    expect(episodes.first[:sessions]).to eq(described_class.ends(v, "ema_9_21").first - described_class.onsets(v, "ema_9_21").first)
+    expect(episodes.last).to include(open: true, end_on: nil)
+    expect(episodes.last[:change_pct]).to be_positive
+  end
+
+  it "builds a stock's chart: candles, indicator lines and episodes" do
+    stock = create(:stock, symbol: "RISE", security_type: "Equity")
+    (1..90).each { |i| create(:stock_daily_price, stock: stock, traded_on: Date.new(2026, 6, 1) + i, open_price: 99 + i, close_price: 100 + i, high_price: 101 + i, low_price: 98 + i, volume: 1000) }
+
+    chart = described_class.chart(stock, now: Time.zone.parse("2026-09-30 12:00"))
+
+    expect(chart[:candles].size).to eq(90)
+    expect(chart[:candles].last).to include(close: 190.0, open: 189.0, volume: 1000)
+    expect(chart[:lines][:ema9].size).to eq(90)
+    expect(chart[:lines][:ema50].compact.size).to eq(41)
+    expect(chart[:episodes].keys).to match_array(described_class::SIGNALS)
+    expect(described_class.chart(create(:stock), now: Time.current)).to be_nil
+  end
 end

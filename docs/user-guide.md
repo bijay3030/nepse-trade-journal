@@ -330,8 +330,12 @@ up, close above ALMA, Aroon Up over Down, Aroon Up ≥ 70); a stock appears when
 all of them, with crosses that began within the chosen window. Explanations of each
 indicator: [indicators-guide.md](indicators-guide.md).
 
-**Use it:** as a shortlist. Open the stock's page and judge it with the board's rules; the
-track-record table shows these signals underperformed in the past year.
+**Use it:** as a shortlist. **Chart** on any row opens a panel with the stock's candles, EMA
+9/21/50, HMA, ALMA and Aroon (each can be switched off; 3M / 6M / 1Y), **▲ where each ticked
+signal began and ▼ where it ended**, and a table of what happened after each one. ← / → (or
+the arrow keys) step through the results; Esc closes. Columns sort by clicking their
+headers. Then judge the stock with the board's rules on its page; the track record shows
+these signals underperformed in the past year.
 
 **QA:**
 
@@ -341,8 +345,11 @@ track-record table shows these signals underperformed in the past year.
    reads today, 1d, 2d or 3d.
 3. Tick "Aroon Up ≥ 70" too: the list narrows; every row has both badges.
 4. Untick "Hide thinly traded stocks": the count grows.
-5. Track-record table: switching 5/10/20 sessions changes the numbers; rows worse than the
-   baseline show ▼.
+5. The track-record line summarises the ticked signals; **Show track record** opens the
+   table, where 5/10/20 sessions change the numbers and rows worse than the baseline show ▼.
+6. **Chart** on a row: the panel shows the candles, indicator lines, Aroon pane, ▲/▼ markers
+   at each ticked signal's start/end, and the signal history; → moves to the next stock.
+7. Click **Change**, then click it again: the order reverses.
 
 ### 4.7 Watchlist and setups
 
