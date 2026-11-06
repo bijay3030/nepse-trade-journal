@@ -17,6 +17,7 @@ module Scans
     PARAMS = { ema: [ 9, 21, 50 ], hma: 21, alma: { length: 9, offset: 0.85, sigma: 6.0 }, aroon: 25 }.freeze
     STRONG_AROON = 70.0
     MIN_BARS = 60
+    CHART_SESSIONS = 260
     HISTORY_DAYS = 500
 
     module_function
@@ -84,6 +85,48 @@ module Scans
     # The bars where the condition starts (false/unknown the bar before, true now).
     def onsets(series, signal)
       (1...series[:close].size).select { |i| holds?(series, signal, i) && known?(series, signal, i - 1) && !holds?(series, signal, i - 1) }
+    end
+
+    # The bars where the condition stops (true the bar before, false now).
+    def ends(series, signal)
+      (1...series[:close].size).select { |i| known?(series, signal, i) && !holds?(series, signal, i) && holds?(series, signal, i - 1) }
+    end
+
+    # Each run of the signal inside the data: where it began (the cross), where it
+    # ended (or nil if it still holds) and the price change in between.
+    def episodes(series, signal)
+      closes = series[:close]
+      ends_at = ends(series, signal)
+      onsets(series, signal).map do |start|
+        finish = ends_at.find { _1 > start }
+        stop = finish || closes.size - 1
+        {
+          start_on: series[:dates][start], start_price: closes[start].round(2),
+          end_on: finish && series[:dates][finish], end_price: finish && closes[finish].round(2),
+          sessions: stop - start, change_pct: ((closes[stop] / closes[start] - 1) * 100).round(2), open: finish.nil?
+        }
+      end
+    end
+
+    # Candles, indicator lines and signal episodes for one stock's chart (completed
+    # sessions, last CHART_SESSIONS of them; indicators use the full history first).
+    def chart(stock, now: Time.current)
+      scope = stock.daily_prices.where("close_price > 0").where(traded_on: (Nepse::MarketHours.today(now) - HISTORY_DAYS)..)
+      scope = scope.where(traded_on: ...Nepse::MarketHours.today(now)) if Nepse::MarketHours.sync_window?(now)
+      rows = scope.order(:traded_on).pluck(:traded_on, :open_price, :high_price, :low_price, :close_price, :volume)
+      return if rows.size < MIN_BARS
+
+      series = compute(rows.map { |d, _o, h, l, c, _v| [ d, h.to_f, l.to_f, c.to_f ] })
+      first = [ rows.size - CHART_SESSIONS, 0 ].max
+      from = rows[first].first
+      line = ->(key) { series[key][first..].map { _1&.round(2) } }
+      {
+        symbol: stock.symbol, name: stock.name, sector: stock.sector, params: PARAMS, strong_aroon: STRONG_AROON,
+        candles: rows[first..].map { |d, o, h, l, c, v| { traded_on: d, open: (o.to_f.positive? ? o : c).to_f, high: [ h.to_f, c.to_f ].max, low: (l.to_f.positive? ? l : c).to_f, close: c.to_f, volume: v.to_i } },
+        lines: %i[ema9 ema21 ema50 hma alma aroon_up aroon_down].to_h { [ _1, line.(_1) ] },
+        episodes: SIGNALS.to_h { |signal| [ signal, episodes(series, signal).select { _1[:start_on] >= from } ] },
+        signals: SIGNALS.to_h { [ _1, latest_age(series, _1) ] }
+      }
     end
 
     # Sessions since the current run of the condition began, or nil if it doesn't hold

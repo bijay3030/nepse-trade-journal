@@ -397,7 +397,10 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H24.3 | Also tick "Aroon Up ≥ 70" | Fewer rows, each with both badges; the Aroon column ≥ 70 |
 | H24.4 | Tick only "EMA 9 > 21 > 50" | Stocks whose stack began any time ago (badge age can exceed the window) |
 | H24.5 | Untick "Hide thinly traded stocks" | Count rises |
-| H24.6 | Track-record table, switch 5 / 10 / 20 sessions | Numbers change; baseline row first; ▼ on signals worse than it |
+| H24.6 | **Show track record**, switch 5 / 10 / 20 sessions | Numbers change; baseline row first; ▼ on signals worse than it; the summary line above names the ticked signals' 20-session averages |
+| H24.9 | **Chart** on a row | Panel with candles, EMA 9/21/50, HMA, ALMA, Aroon pane; ▲ below bars where each ticked signal began, ▼ above where it ended; "What happened after each signal" lists them with change and sessions ("still on … so far" for the current one) |
+| H24.10 | In the panel: toggle lines / Aroon, switch 3M / 6M / 1Y, → and ←, Esc | Lines and pane appear/disappear; range changes; next/previous stock ("2 of 5"); panel closes |
+| H24.11 | Click a column header twice | Sorted, then reversed (arrow shows the direction); the filter bar stays at the top while scrolling |
 | H24.7 | Compare a stock with TradingView (same settings, daily) | EMA/HMA/ALMA/Aroon values match within rounding |
 | H24.8 | During market hours | The scan still shows yesterday's session (today's bar isn't complete) |
 

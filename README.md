@@ -363,7 +363,10 @@ anything buy or sell.
 50, HMA 21 turned up, close above ALMA 9, Aroon 25 Up above Down, Aroon Up ≥ 70. Crosses must
 have begun within the chosen window (latest / 3 / 5 / 10 sessions); the two states (the
 stack, Aroon ≥ 70) match while they hold. Thin stocks are hidden by default. Each row shows
-every signal with its age, Aroon values, readiness and whether the stock is on the board.
+every signal with its age, Aroon values, readiness and whether the stock is on the board;
+columns sort by clicking their headers. **Chart** opens a panel with the stock's candles,
+indicator lines and Aroon pane, ▲/▼ where each ticked signal began and ended, and what
+happened after each (`GET /scans/crossovers/:symbol`).
 
 The page also shows each signal's track record on our NEPSE history
 (`Scans::CrossoverBacktest`): the 5/10/20-session return after every time a signal began,

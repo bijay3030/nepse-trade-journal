@@ -67,6 +67,7 @@ Rails.application.routes.draw do
         post :trade_plan, on: :member
       end
       get "scans/crossovers", to: "scans#crossovers"
+      get "scans/crossovers/:symbol", to: "scans#crossover_chart"
       resources :watchlist_alerts, only: [:index] do
         post :mark_read, on: :collection
       end
