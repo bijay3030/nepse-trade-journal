@@ -388,6 +388,19 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H23.3 | Terminal: `bin/rails runner 'p Nepse::Reference::CoverageReport.call[:eps_growth]'` | with_growth, from_reported_history, quarters_stored |
 | H23.4 | After a new quarter is synced a year after a stored one | Source switches to "reported": "EPS X vs Y a year earlier" |
 
+## H24. Indicator Scanner
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H24.1 | Sidebar → **Indicator Scanner** (`/scanner`) | Heading with the latest completed session and settings (EMA 9/21/50, HMA 21, ALMA 9/0.85/6, Aroon 25) |
+| H24.2 | Default (EMA 9/21, last 3 sessions, thin hidden) | Rows whose "9/21" badge is today–3d; count "N of 276 stocks" |
+| H24.3 | Also tick "Aroon Up ≥ 70" | Fewer rows, each with both badges; the Aroon column ≥ 70 |
+| H24.4 | Tick only "EMA 9 > 21 > 50" | Stocks whose stack began any time ago (badge age can exceed the window) |
+| H24.5 | Untick "Hide thinly traded stocks" | Count rises |
+| H24.6 | Track-record table, switch 5 / 10 / 20 sessions | Numbers change; baseline row first; ▼ on signals worse than it |
+| H24.7 | Compare a stock with TradingView (same settings, daily) | EMA/HMA/ALMA/Aroon values match within rounding |
+| H24.8 | During market hours | The scan still shows yesterday's session (today's bar isn't complete) |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

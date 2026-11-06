@@ -1,5 +1,10 @@
 import { Link } from "react-router-dom"
 
+import { useMemo } from "react"
+import { useStockPrices } from "../../hooks/useStockPrices"
+import type { LiveStockPrice } from "../../stores/stockPricesStore"
+import { FreshnessBanner } from "./FreshnessBanner"
+import { LiveStatus } from "./LiveStatus"
 import { MarketDirectionCard } from "../market/MarketDirectionCard"
 import { Badge, Button, Card, LoadingSpinner } from "../../components/ui"
 import { useBuyZone } from "../screener/api"
@@ -19,6 +24,8 @@ const price = (value: number | null) => (value === null ? "—" : value.toLocale
 // Stocks meeting the entry-zone criteria on the latest nightly snapshot, highest readiness first.
 export function EntryZoneBoard() {
   const { data, isLoading, isError, refetch } = useBuyZone()
+  const symbols = useMemo(() => [...(data?.results ?? []), ...(data?.held_back ?? [])].map((row) => row.symbol), [data])
+  const { getPrice } = useStockPrices(symbols)
 
   if (isLoading) return <div className="flex justify-center py-12"><LoadingSpinner /></div>
   if (isError || !data) {
@@ -34,6 +41,7 @@ export function EntryZoneBoard() {
   const heldBack = data.held_back ?? []
   return (
     <div className="space-y-3">
+      <FreshnessBanner freshness={data.freshness} />
       {data.market_direction && <MarketDirectionCard direction={data.market_direction} compact />}
       {data.portfolio_heat && (data.portfolio_heat.state === "over" || data.portfolio_heat.state === "near") && data.portfolio_heat.pct !== null && (
         <p className={data.portfolio_heat.state === "over" ? "rounded-xl bg-ember/10 px-4 py-2 text-sm font-semibold text-ember" : "rounded-xl bg-amber-50 px-4 py-2 text-sm text-amber-800"} aria-label="Portfolio heat">
@@ -60,7 +68,7 @@ export function EntryZoneBoard() {
         </Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {data.results.map((row) => <BoardCard key={row.symbol} row={row} />)}
+          {data.results.map((row) => <BoardCard key={row.symbol} row={row} live={getPrice(row.symbol)} />)}
         </div>
       )}
       {heldBack.length > 0 && (
@@ -92,7 +100,7 @@ function guardFacts(row: BuyZoneRow) {
   return facts.join(" · ") || (row.guards ?? []).map((guard) => GUARD_LABELS[guard]).join(", ")
 }
 
-function BoardCard({ row }: { row: BuyZoneRow }) {
+function BoardCard({ row, live }: { row: BuyZoneRow; live?: LiveStockPrice }) {
   return (
     <article aria-label={`${row.symbol} entry zone`}>
       <Card className="flex h-full gap-3 p-4">
@@ -116,6 +124,7 @@ function BoardCard({ row }: { row: BuyZoneRow }) {
           <p className="mt-1 text-sm text-ink">
             {row.setup_type ? SETUP_TYPE_LABELS[row.setup_type] : "—"} · close {price(row.close_price)}
           </p>
+          <LiveStatus live={live} snapshotOn={row.traded_on} zoneLow={row.entry_zone_low} zoneHigh={row.entry_zone_high} stop={row.invalidation_price} />
           <p className="text-xs text-slate">
             Zone {price(row.entry_zone_low)}–{price(row.entry_zone_high)} · invalidation {price(row.invalidation_price)}
           </p>

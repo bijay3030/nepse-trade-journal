@@ -1,4 +1,7 @@
 import { useMemo, useState } from "react"
+import { FreshnessBanner } from "../features/readiness/FreshnessBanner"
+import { LiveStatus } from "../features/readiness/LiveStatus"
+import { useStockPrices } from "../hooks/useStockPrices"
 import { ChevronDown, FilterX, Search, X } from "lucide-react"
 import { Link } from "react-router-dom"
 
@@ -112,10 +115,14 @@ function FilterSelect({
 function ScreenerTable({
   rows,
   showSetupColumn,
+  snapshotOn,
 }: {
   rows: ScreenerRow[]
   showSetupColumn: boolean
+  snapshotOn: string | null
 }) {
+  const symbols = useMemo(() => rows.map((row) => row.symbol), [rows])
+  const { getPrice } = useStockPrices(symbols)
   return (
     <Card className="overflow-hidden border-mist/80 bg-white shadow-sm">
       <div className="overflow-x-auto">
@@ -150,7 +157,10 @@ function ScreenerTable({
                   </td>
                 )}
                 <td className="py-3 px-4 font-bold"><Link className="rounded text-ink underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ink" to={`/screener/${encodeURIComponent(row.symbol)}`}>{row.symbol}</Link></td>
-                <td className="py-3 px-4 text-right font-mono">{formatPrice(row.current_price)}</td>
+                <td className="py-3 px-4 text-right font-mono">
+                  {formatPrice(row.current_price)}
+                  <LiveStatus live={getPrice(row.symbol)} snapshotOn={snapshotOn} zoneLow={row.entry_zone_low} zoneHigh={row.entry_zone_high} stop={row.invalidation_price} />
+                </td>
                 <td className="py-3 px-4 text-right font-mono">{row.vcp_score}</td>
                 <td className="py-3 px-4">
                   {row.readiness_score === undefined ? (
@@ -304,6 +314,7 @@ export function ScreenerPage({ initialTab = "entry" }: { initialTab?: TabId } = 
       </div>
 
       {tab === "entry" ? <EntryZoneBoard /> : (<>
+        <FreshnessBanner freshness={data?.freshness} />
       {(
         <Card className="p-4 bg-white/90 border-slate/15 space-y-4 shadow-sm">
           <div className="relative">
@@ -404,6 +415,7 @@ export function ScreenerPage({ initialTab = "entry" }: { initialTab?: TabId } = 
         <ScreenerTable
           rows={activeRows}
           showSetupColumn={tab === "breakout"}
+          snapshotOn={data?.traded_on ?? null}
         />
       )}
       </>)}

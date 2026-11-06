@@ -1,4 +1,5 @@
 import { Suspense, lazy } from "react"
+import { ScannerPage } from "./pages/ScannerPage"
 import { Navigate, Route, Routes } from "react-router-dom"
 import { LoadingSpinner } from "./components/ui"
 import { RequireAuth } from "./components/RequireAuth"
@@ -41,6 +42,7 @@ function App() {
           <Route path="market" element={<MarketOverviewPage />} />
           <Route path="screener" element={<ScreenerPage />} />
           <Route path="screener/:symbol" element={<StockAnalysisPage />} />
+          <Route path="scanner" element={<ScannerPage />} />
           <Route path="watchlist" element={<WatchlistPage />} />
           <Route path="positions" element={<PositionsPage />} />
           <Route path="digest" element={<DigestPage />} />

@@ -13,6 +13,8 @@ and [PROGRESS.md](./PROGRESS.md) for the build log.
 
 ---
 
+**New here?** [docs/user-guide.md](docs/user-guide.md) explains every feature (why, how, how to use it, how to test it) and how to paper trade with the app; [docs/stock-page-guide.md](docs/stock-page-guide.md) explains the single-stock page from first principles.
+
 ## Prerequisites
 
 | Tool       | Version            | Notes                                                       |
@@ -91,9 +93,28 @@ needed. Open **http://localhost:5173** and you land on `/dashboard`.
 
 ### Login in development
 
-There is no login screen yet. In development and test, the API automatically signs
-requests in as a local demo user (created on first request) when no JWT is sent, so
-you can use the app straight away.
+The deployed app requires a login. In development the API signs requests without a token
+in as the first user (`trader@nepse.com`, created on first request), so you can use the
+app straight away. To use the login page locally, e.g. with a separate paper-trading
+account:
+
+```bash
+bin/rails 'users:create[paper@local.test]'          # asks for a password
+VITE_REQUIRE_LOGIN=true npm --prefix frontend run dev
+```
+
+### Catching up after the app was off
+
+The scheduled jobs only run while `bin/dev` is running. After days away, fetch what was
+missed (about 15–30 minutes), then let `bin/dev` take over again:
+
+```bash
+bin/rails "nepse:data:indices[15]"
+bin/rails "nepse:backfill_history[12]"     # last 12 days of prices, all stocks
+bin/rails "nepse:data:floorsheet[6]"       # broker flows not stored yet
+bin/rails nepse:data:dividends
+bin/rails nepse:data:setups                # indicators, then today's snapshots
+```
 
 ### Checking the app
 
@@ -334,6 +355,22 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
+
+## Indicator Scanner
+
+`/scanner` lists stocks matching every ticked trend signal, on completed sessions
+(`Scans::Crossovers`, TradingView defaults): EMA 9 above 21, EMA 21 above 50, EMA 9 > 21 >
+50, HMA 21 turned up, close above ALMA 9, Aroon 25 Up above Down, Aroon Up ≥ 70. Crosses must
+have begun within the chosen window (latest / 3 / 5 / 10 sessions); the two states (the
+stack, Aroon ≥ 70) match while they hold. Thin stocks are hidden by default. Each row shows
+every signal with its age, Aroon values, readiness and whether the stock is on the board.
+
+The page also shows each signal's track record on our NEPSE history
+(`Scans::CrossoverBacktest`): the 5/10/20-session return after every time a signal began,
+against all stock-days. In the year to November 2026 every bullish signal did worse than
+the average stock-day, so treat them as a shortlist, not entries. The scan and its backtest
+are cached per session and warmed after the nightly backtest. Indicator explanations:
+[docs/indicators-guide.md](docs/indicators-guide.md).
 
 ## Deployment
 

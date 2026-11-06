@@ -5,6 +5,8 @@ class BacktestJob < ApplicationJob
   def perform
     result = Backtest::Runner.call
     Rails.logger.info("BacktestJob: run #{result[:run_id].inspect}")
+    # Warm the indicator scan so the first visit after the close is fast.
+    Scans::Cache.crossovers
     GC.start
     result
   end

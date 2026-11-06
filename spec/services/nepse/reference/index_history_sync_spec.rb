@@ -35,4 +35,17 @@ RSpec.describe Nepse::Reference::IndexHistorySync do
 
     expect(MarketIndex.find_by!(symbol: "BANKINGIND")).to have_attributes(name: "Commercial Banks Index", sector: "Commercial Banks")
   end
+
+  it "keeps the stored turnover when Chukul is down and Merolagani (which has none) fills in" do
+    described_class.call(days: 30, chukul: chukul, merolagani: merolagani, to: Date.new(2026, 9, 28))
+    allow(chukul).to receive(:history).with("NEPSE", anything).and_return({ success: false, error: "HTTP 502" })
+    allow(merolagani).to receive(:fetch).with("NEPSE", anything).and_return({ success: true, bars: [
+      { traded_on: Date.new(2026, 9, 28), close_price: 2607.92 }, { traded_on: Date.new(2026, 9, 29), close_price: 2611.0 }
+    ] })
+
+    described_class.call(days: 30, chukul: chukul, merolagani: merolagani, to: Date.new(2026, 9, 29))
+
+    turnover = MarketIndex.find_by!(symbol: "NEPSE").histories.chronological.pluck(:traded_on, :turnover).to_h { [ _1.day, _2.to_f ] }
+    expect(turnover).to include(28 => 5.1e9, 29 => 0.0)
+  end
 end
