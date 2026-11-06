@@ -356,6 +356,22 @@ during the session). The backtest doesn't trade held-back signals. Where to see 
 These are rule checks on stored data, not recommendations; the app never labels
 anything buy or sell.
 
+## Indicator Scanner
+
+`/scanner` lists stocks matching every ticked trend signal, on completed sessions
+(`Scans::Crossovers`, TradingView defaults): EMA 9 above 21, EMA 21 above 50, EMA 9 > 21 >
+50, HMA 21 turned up, close above ALMA 9, Aroon 25 Up above Down, Aroon Up ≥ 70. Crosses must
+have begun within the chosen window (latest / 3 / 5 / 10 sessions); the two states (the
+stack, Aroon ≥ 70) match while they hold. Thin stocks are hidden by default. Each row shows
+every signal with its age, Aroon values, readiness and whether the stock is on the board.
+
+The page also shows each signal's track record on our NEPSE history
+(`Scans::CrossoverBacktest`): the 5/10/20-session return after every time a signal began,
+against all stock-days. In the year to November 2026 every bullish signal did worse than
+the average stock-day, so treat them as a shortlist, not entries. The scan and its backtest
+are cached per session and warmed after the nightly backtest. Indicator explanations:
+[docs/indicators-guide.md](docs/indicators-guide.md).
+
 ## Deployment
 
 Free hosting on Render (API and frontend) with the database on Supabase: see

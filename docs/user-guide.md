@@ -320,6 +320,30 @@ A full walk-through of this page from first principles, with analogies and NABIL
    average"; before 11:15 it says it's too early to project.
 4. Broker flow card lists top buyers and sellers with broker names.
 
+### 4.6b Indicator Scanner
+
+**Why:** many traders scan for moving-average crossovers and Aroon trends. This page finds
+them across every stock and shows how each signal has actually done on NEPSE.
+
+**How it works:** tick signals (EMA 9/21 cross, 21/50 cross, 9 > 21 > 50 stack, HMA turned
+up, close above ALMA, Aroon Up over Down, Aroon Up ≥ 70); a stock appears when it matches
+all of them, with crosses that began within the chosen window. Explanations of each
+indicator: [indicators-guide.md](indicators-guide.md).
+
+**Use it:** as a shortlist. Open the stock's page and judge it with the board's rules; the
+track-record table shows these signals underperformed in the past year.
+
+**QA:**
+
+1. `/scanner` (sidebar **Indicator Scanner**): the date of the latest completed session and
+   the settings line.
+2. With "EMA 9 crossed above 21" ticked and "Last 3 sessions", every row's "9/21" badge
+   reads today, 1d, 2d or 3d.
+3. Tick "Aroon Up ≥ 70" too: the list narrows; every row has both badges.
+4. Untick "Hide thinly traded stocks": the count grows.
+5. Track-record table: switching 5/10/20 sessions changes the numbers; rows worse than the
+   baseline show ▼.
+
 ### 4.7 Watchlist and setups
 
 **Why:** good entries come from waiting for a stock to reach its zone, not chasing it.
