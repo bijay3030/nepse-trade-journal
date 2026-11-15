@@ -14,7 +14,9 @@ module Api
 
       # PUT /scans/alert { signals: [...] } (empty to stop).
       def update_alert
-        if current_user.update(scanner_alert_signals: Array(params[:signals]).map(&:to_s).uniq)
+        changes = { scanner_alert_signals: Array(params[:signals]).map(&:to_s).uniq }
+        changes[:scanner_alert_volume] = ActiveModel::Type::Boolean.new.cast(params[:volume]) if params.key?(:volume)
+        if current_user.update(changes)
           render json: alert_payload
         else
           render json: { error: current_user.errors.full_messages.to_sentence }, status: :unprocessable_content
@@ -31,7 +33,7 @@ module Api
       private
 
       def alert_payload
-        { signals: current_user.scanner_alert_signals, telegram_linked: current_user.telegram_chat_id.present? }
+        { signals: current_user.scanner_alert_signals, volume: current_user.scanner_alert_volume, telegram_linked: current_user.telegram_chat_id.present? }
       end
     end
   end

@@ -8,7 +8,8 @@ RSpec.describe Scans::Alerts do
   end
 
   def row(symbol, signals, extra = {})
-    { symbol: symbol, close: 512.0, change_pct: 2.1, signals: none.merge(signals), readiness: 64, in_buy_zone: false, guards: [], **extra }
+    { symbol: symbol, close: 512.0, change_pct: 2.1, signals: none.merge(signals), signal_volume: { "ema_9_21" => 1.8, "aroon_strong" => 1.1 },
+      readiness: 64, in_buy_zone: false, guards: [], **extra }
   end
 
   let(:scan) do
@@ -25,6 +26,10 @@ RSpec.describe Scans::Alerts do
 
   it "finds liquid stocks where the whole combination switched on at the latest session" do
     expect(described_class.new_matches(scan, %w[ema_9_21 aroon_strong]).map { _1[:symbol] }).to eq([ "NEWX" ])
+    # With the volume rule, the day it began (9/21 today) had 1.8x volume: still a match.
+    expect(described_class.new_matches(scan, %w[ema_9_21 aroon_strong], volume: true).map { _1[:symbol] }).to eq([ "NEWX" ])
+    quiet = scan.merge(rows: scan[:rows].map { _1.merge(signal_volume: { "ema_9_21" => 1.2 }) })
+    expect(described_class.new_matches(quiet, %w[ema_9_21 aroon_strong], volume: true)).to eq([])
     expect(described_class.new_matches(scan, %w[aroon_strong]).map { _1[:symbol] }).to eq([]) # Aroon began 3 days ago for NEWX
     expect(described_class.new_matches(scan, [])).to eq([])
   end
@@ -41,9 +46,9 @@ RSpec.describe Scans::Alerts do
     it "sends one message per user with the new matches and the track record, once per session" do
       expect(described_class.deliver(scan: scan, today: today, client: client)).to eq(user.id => :sent)
       expect(client).to have_received(:send_message).once.with("42", satisfy { |text|
-        text.include?("📈 <b>Indicator scanner</b> (Nov 6 close): 1 stock newly matches EMA 9/21 cross + Aroon Up ≥ 70") &&
-          text.include?("• <b>NEWX</b> 512.00 (+2.10%) · EMA 9/21 cross today, Aroon Up ≥ 70 3d · readiness 64 · also on Entry zone now") &&
-          text.include?("Track record on NEPSE (20 sessions after each signal began): EMA 9/21 cross -2.8%, Aroon Up ≥ 70 -2.7% vs -0.1% for all stock-days.") &&
+        text.include?("📈 <b>Indicator scanner</b> (Nov 6 close): 1 stock newly matches EMA 9/21 cross + Aroon Up ≥ 70 on 1.5x volume") &&
+          text.include?("• <b>NEWX</b> 512.00 (+2.10%) · EMA 9/21 cross today, Aroon Up ≥ 70 3d · volume 1.8x · readiness 64 · also on Entry zone now") &&
+          text.include?("Track record on NEPSE since 2020 (20 sessions after each signal began): EMA 9/21 cross -2.8%, Aroon Up ≥ 70 -2.7% vs -0.1% for all stock-days.") &&
           text.include?("Rule checks, not a recommendation.")
       })
 

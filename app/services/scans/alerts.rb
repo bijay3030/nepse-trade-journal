@@ -9,12 +9,17 @@ module Scans
 
     module_function
 
-    def new_matches(scan, signals)
+    # volume: the day the combination began (its youngest signal's) needs
+    # Crossovers::STRONG_VOLUME x average volume.
+    def new_matches(scan, signals, volume: false)
       return [] if signals.empty?
 
       scan[:rows].select do |row|
         ages = signals.map { row[:signals][_1] }
-        ages.none?(&:nil?) && ages.min.zero? && !Array(row[:guards]).include?("thin_volume")
+        next false unless ages.none?(&:nil?) && ages.min.zero? && !Array(row[:guards]).include?("thin_volume")
+
+        youngest = signals.min_by { row[:signals][_1] }
+        !volume || (row.dig(:signal_volume, youngest) || 0) >= Crossovers::STRONG_VOLUME
       end
     end
 
@@ -24,14 +29,14 @@ module Scans
 
       User.where.not(telegram_chat_id: nil).where("jsonb_array_length(scanner_alert_signals) > 0").find_each.to_h do |user|
         signals = user.scanner_alert_signals & Crossovers::SIGNALS
-        matches = new_matches(scan, signals)
+        matches = new_matches(scan, signals, volume: user.scanner_alert_volume)
         next [ user.id, :none ] if matches.empty?
 
         stocks = Stock.where(symbol: matches.map { _1[:symbol] }).index_by(&:symbol)
         fresh = matches.select { (stock = stocks[_1[:symbol]]) && TelegramDelivery.claim(user: user, stock: stock, kind: "scanner_alert", traded_on: today) }
         next [ user.id, :duplicate ] if fresh.empty?
 
-        text = Telegram::Messages.scanner_alert(fresh, signals, scan)
+        text = Telegram::Messages.scanner_alert(fresh, signals, scan, volume: user.scanner_alert_volume)
         [ user.id, Telegram::Notifier.deliver(user, text, client) ? :sent : :failed ]
       end
     end

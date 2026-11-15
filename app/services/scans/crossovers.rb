@@ -3,18 +3,25 @@ module Scans
   # market hours today's still-moving bar is left out, like the board):
   #
   #   ema_9_21     EMA 9 crossed above EMA 21 (and is still above)
-  #   ema_21_50    EMA 21 crossed above EMA 50 (and is still above)
   #   ema_stack    EMA 9 > EMA 21 > EMA 50 (age = sessions since it formed)
-  #   hma_up       HMA 21 turned from falling to rising (and is still rising)
-  #   alma_cross   close crossed above ALMA 9 (and is still above)
+  #   hma_up       HMA 55 turned from falling to rising (and is still rising)
+  #   alma_cross   close crossed above ALMA 21 (and is still above)
   #   aroon_cross  Aroon Up crossed above Aroon Down (and is still above)
   #   aroon_strong Aroon Up at or above STRONG_AROON (age = sessions since it got there)
   #
-  # Each signal's value is its age in sessions (0 = the latest session) or nil. The page
-  # filters by age ("within N sessions"). Settings are TradingView's defaults.
+  # Each signal's value is its age in sessions (0 = the latest session) or nil, with the
+  # volume on the day it began against the 50 sessions before (signal_volume). The page
+  # filters by age ("within N sessions") and volume.
+  #
+  # Settings follow docs/research/indicator-turning-points-2020-2026.md: of 18 settings
+  # tested on every 15% NEPSE trend change since 2020, HMA 55 was the best balance (HMA 21
+  # fired too often), ALMA 21 steadier than ALMA 9, EMA 21/50 no better than random (so it
+  # was dropped), and a signal on 1.5x average volume won 3-7 points more.
   module Crossovers
-    SIGNALS = %w[ema_9_21 ema_21_50 ema_stack hma_up alma_cross aroon_cross aroon_strong].freeze
-    PARAMS = { ema: [ 9, 21, 50 ], hma: 21, alma: { length: 9, offset: 0.85, sigma: 6.0 }, aroon: 25 }.freeze
+    SIGNALS = %w[ema_9_21 ema_stack hma_up alma_cross aroon_cross aroon_strong].freeze
+    PARAMS = { ema: [ 9, 21, 50 ], hma: 55, alma: { length: 21, offset: 0.85, sigma: 6.0 }, aroon: 25 }.freeze
+    STRONG_VOLUME = 1.5
+    VOLUME_SESSIONS = 50
     STRONG_AROON = 70.0
     MIN_BARS = 60
     CHART_SESSIONS = 260
@@ -37,7 +44,8 @@ module Scans
         {
           symbol: symbol, name: name, sector: sector,
           close: closes.last.round(2), change_pct: closes[-2]&.positive? ? ((closes[-1] / closes[-2] - 1) * 100).round(2) : nil,
-          signals: SIGNALS.to_h { [ _1, latest_age(series, _1) ] },
+          signals: (ages = SIGNALS.to_h { [ _1, latest_age(series, _1) ] }),
+          signal_volume: ages.to_h { |key, age| [ key, age && volume_ratio(series, closes.size - 1 - age) ] },
           values: values(series),
           levels: Levels.board(setups[stock_id]) || Levels.crossover(series, closes.size - 1),
           **snapshots.fetch(stock_id, {})
@@ -46,14 +54,14 @@ module Scans
       { as_of: as_of, params: PARAMS, strong_aroon: STRONG_AROON, rows: rows.sort_by { _1[:symbol] } }
     end
 
-    # { stock_id => [[date, high, low, close, open], ...] } oldest first, completed sessions.
+    # { stock_id => [[date, high, low, close, open, volume], ...] } oldest first, completed sessions.
     def load_bars(now)
       scope = StockDailyPrice.joins(:stock).merge(Stock.active.where(security_type: "Equity"))
                              .where(traded_on: (Nepse::MarketHours.today(now) - HISTORY_DAYS)..)
                              .where("stock_daily_prices.close_price > 0")
       scope = scope.where(traded_on: ...Nepse::MarketHours.today(now)) if Nepse::MarketHours.sync_window?(now)
-      scope.order(:traded_on).pluck(:stock_id, :traded_on, :high_price, :low_price, :close_price, :open_price)
-           .group_by(&:first).transform_values { |rows| rows.map { |_, d, h, l, c, o| [ d, h.to_f, l.to_f, c.to_f, o.to_f ] } }
+      scope.order(:traded_on).pluck(:stock_id, :traded_on, :high_price, :low_price, :close_price, :open_price, :volume)
+           .group_by(&:first).transform_values { |rows| rows.map { |_, d, h, l, c, o, v| [ d, h.to_f, l.to_f, c.to_f, o.to_f, v.to_i ] } }
     end
 
     def compute(rows)
@@ -64,6 +72,7 @@ module Scans
       {
         dates: rows.map(&:first), close: closes, high: highs, low: lows,
         open: rows.map { |row| row[4].to_f.positive? ? row[4] : row[3] },
+        volume: rows.map { _1[5].to_i },
         ema9: Indicators::Trend.ema(closes, 9), ema21: Indicators::Trend.ema(closes, 21), ema50: Indicators::Trend.ema(closes, 50),
         hma: Indicators::Trend.hma(closes, PARAMS[:hma]),
         alma: Indicators::Trend.alma(closes, PARAMS[:alma][:length], offset: PARAMS[:alma][:offset], sigma: PARAMS[:alma][:sigma]),
@@ -76,7 +85,6 @@ module Scans
       s = series
       case signal
       when "ema_9_21" then above?(s[:ema9][i], s[:ema21][i])
-      when "ema_21_50" then above?(s[:ema21][i], s[:ema50][i])
       when "ema_stack" then above?(s[:ema9][i], s[:ema21][i]) && above?(s[:ema21][i], s[:ema50][i])
       when "hma_up" then i.positive? && above?(s[:hma][i], s[:hma][i - 1])
       when "alma_cross" then above?(s[:close][i], s[:alma][i])
@@ -119,7 +127,7 @@ module Scans
       rows = scope.order(:traded_on).pluck(:traded_on, :open_price, :high_price, :low_price, :close_price, :volume)
       return if rows.size < MIN_BARS
 
-      series = compute(rows.map { |d, _o, h, l, c, _v| [ d, h.to_f, l.to_f, c.to_f ] })
+      series = compute(rows.map { |d, o, h, l, c, v| [ d, h.to_f, l.to_f, c.to_f, o.to_f, v.to_i ] })
       first = [ rows.size - CHART_SESSIONS, 0 ].max
       from = rows[first].first
       line = ->(key) { series[key][first..].map { _1&.round(2) } }
@@ -144,12 +152,21 @@ module Scans
     end
 
     def known?(series, signal, i)
-      keys = { "ema_9_21" => %i[ema9 ema21], "ema_21_50" => %i[ema21 ema50], "ema_stack" => %i[ema9 ema21 ema50],
+      keys = { "ema_9_21" => %i[ema9 ema21], "ema_stack" => %i[ema9 ema21 ema50],
                "hma_up" => %i[hma], "alma_cross" => %i[alma], "aroon_cross" => %i[aroon_up aroon_down], "aroon_strong" => %i[aroon_up] }.fetch(signal)
       i >= (signal == "hma_up" ? 1 : 0) && keys.all? { series[_1][i] && (signal != "hma_up" || series[:hma][i - 1]) }
     end
 
     def above?(a, b) = a && b && a > b
+
+    # Volume on bar i against the average of the VOLUME_SESSIONS before it, or nil.
+    def volume_ratio(series, i)
+      volumes = series[:volume]
+      return if volumes.nil? || i < VOLUME_SESSIONS
+
+      average = volumes[(i - VOLUME_SESSIONS)...i].sum.to_f / VOLUME_SESSIONS
+      average.positive? ? (volumes[i] / average).round(2) : nil
+    end
 
     def values(series)
       %i[ema9 ema21 ema50 hma alma aroon_up aroon_down].to_h { [ _1, series[_1].last&.round(2) ] }

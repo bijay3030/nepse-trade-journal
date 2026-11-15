@@ -11,7 +11,7 @@ RSpec.describe "Indicator scans", type: :request do
     get "/api/v1/scans/crossovers", headers: headers
 
     body = response.parsed_body
-    expect(body["params"]).to include("hma" => 21, "aroon" => 25)
+    expect(body["params"]).to include("hma" => 55, "aroon" => 25, "alma" => include("length" => 21))
     expect(body["rows"].sole["symbol"]).to eq("RISE")
     expect(body["backtest"]["signals"].keys).to include("all", "ema_9_21", "aroon_strong")
     expect(body["backtest"]["signals"]["all"]["5"]["n"]).to be_positive
@@ -32,7 +32,7 @@ RSpec.describe "Indicator scans", type: :request do
 
   it "saves and reads the Telegram alert filter, rejecting unknown signals" do
     put "/api/v1/scans/alert", params: { signals: %w[ema_9_21 aroon_strong] }, headers: headers, as: :json
-    expect(response.parsed_body).to eq("signals" => %w[ema_9_21 aroon_strong], "telegram_linked" => false)
+    expect(response.parsed_body).to eq("signals" => %w[ema_9_21 aroon_strong], "volume" => true, "telegram_linked" => false)
 
     get "/api/v1/scans/alert", headers: headers
     expect(response.parsed_body["signals"]).to eq(%w[ema_9_21 aroon_strong])
@@ -40,6 +40,9 @@ RSpec.describe "Indicator scans", type: :request do
     put "/api/v1/scans/alert", params: { signals: [ "golden_goose" ] }, headers: headers, as: :json
     expect(response).to have_http_status(:unprocessable_content)
     expect(response.parsed_body["error"]).to include("golden_goose")
+
+    put "/api/v1/scans/alert", params: { signals: %w[ema_9_21], volume: false }, headers: headers, as: :json
+    expect(response.parsed_body).to include("signals" => %w[ema_9_21], "volume" => false)
 
     put "/api/v1/scans/alert", params: { signals: [] }, headers: headers, as: :json
     expect(response.parsed_body["signals"]).to eq([])

@@ -77,16 +77,18 @@ module Telegram
     end
 
     SCANNER_LABELS = {
-      "ema_9_21" => "EMA 9/21 cross", "ema_21_50" => "EMA 21/50 cross", "ema_stack" => "EMA 9 > 21 > 50",
-      "hma_up" => "HMA turned up", "alma_cross" => "close above ALMA", "aroon_cross" => "Aroon Up over Down", "aroon_strong" => "Aroon Up ≥ 70"
+      "ema_9_21" => "EMA 9/21 cross", "ema_stack" => "EMA 9 > 21 > 50",
+      "hma_up" => "HMA 55 turned up", "alma_cross" => "close above ALMA 21", "aroon_cross" => "Aroon Up over Down", "aroon_strong" => "Aroon Up ≥ 70"
     }.freeze
 
     # Stocks that newly match a user's saved Indicator Scanner filter (Scans::Alerts).
-    def scanner_alert(rows, signals, scan)
+    def scanner_alert(rows, signals, scan, volume: false)
       shown = rows.first(Scans::Alerts::LIMIT)
-      filter = signals.map { SCANNER_LABELS.fetch(_1) }.join(" + ")
+      filter = signals.map { SCANNER_LABELS.fetch(_1) }.join(" + ") + (volume ? " on #{Scans::Crossovers::STRONG_VOLUME}x volume" : "")
       lines = shown.map do |row|
         ages = signals.map { |key| "#{SCANNER_LABELS[key]} #{row[:signals][key].zero? ? 'today' : "#{row[:signals][key]}d"}" }.join(", ")
+        youngest = signals.min_by { row[:signals][_1] }
+        ages += " · volume #{row.dig(:signal_volume, youngest)}x" if row.dig(:signal_volume, youngest)
         change = row[:change_pct] ? " (#{format('%+.2f', row[:change_pct])}%)" : ""
         board = row[:in_buy_zone] ? " · also on Entry zone now" : ""
         "• <b>#{h(row[:symbol])}</b> #{money(row[:close])}#{change} · #{h(ages)} · readiness #{row[:readiness] || '—'}#{board}"
@@ -108,7 +110,7 @@ module Telegram
       end
       return if parts.empty? || base.nil?
 
-      "<i>Track record on NEPSE (20 sessions after each signal began): #{h(parts.join(', '))} vs #{format('%+.1f', base)}% for all stock-days.</i>"
+      "<i>Track record on NEPSE since 2020 (20 sessions after each signal began): #{h(parts.join(', '))} vs #{format('%+.1f', base)}% for all stock-days.</i>"
     end
 
     def test_message(user)
