@@ -101,6 +101,10 @@ sessions after a signal began:
   the 2022 fall HMA 55, the 9/21 cross and Aroon still averaged +1.8% to +3.6% while the
   average stock-day lost 0.9%; in 2026, a sideways market, every signal did worse than the
   baseline (about −3% against −1%).
+- **NEPSE's phase matters too** (its 20-day average against the 50-day, shown in a banner on
+  the scanner): signals that began in a NEPSE uptrend did best (HMA 55 +7.3% against +2.5%
+  for all stock-days), while in downtrends every signal did worse than the average
+  stock-day (HMA 55 +0.8% against +1.8%).
 - **The crossover levels** (entry at the signal, stop under EMA 21, target 2× the risk) still
   lost money after costs for every signal (profit factor 0.68–0.98), so use the board's
   setups for entries and these signals as a shortlist.

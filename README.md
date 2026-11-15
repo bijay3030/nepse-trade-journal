@@ -404,6 +404,14 @@ the regular history):
 bin/rails nepse:data:archive_history            # or "nepse:data:archive_history[NABIL NICA]"
 ```
 
+**Market phase:** a banner at the top says whether NEPSE is in an uptrend, sideways or a
+downtrend (`Scans::MarketPhase`: its 20-session average against the 50-session one, 1%
+band, the same rule as Market Overview) and for how long, with how the ticked signals did
+in that phase since 2020. The backtest tags each signal with the phase on its signal day;
+NEPSE's 2020–2025 closes are in `market_index_archives` (filled by the same
+`archive_history` task). Since 2020, in uptrends every signal except ALMA did better than
+the average stock-day (HMA 55 +7.3% against +2.5%); in downtrends every signal did worse.
+
 The scan and its backtest are cached per session and warmed after the nightly backtest. Indicator explanations:
 [docs/indicators-guide.md](docs/indicators-guide.md).
 

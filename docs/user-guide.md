@@ -335,11 +335,25 @@ The settings come from a test of every 15% trend change on NEPSE from 2020 to 20
 volume added 3–7 points to every signal, and the slow 21/50 cross was dropped. Explanations of each
 indicator: [indicators-guide.md](indicators-guide.md).
 
-**Levels column:** **Entry · Stop · Target** for each row, coloured green / red, with where
+**Layout:** top to bottom: the **market phase** banner (NEPSE uptrend / sideways / downtrend,
+how long, and how the ticked signals did in that phase since 2020); the filters (**Signals**,
+then **Options** and the Telegram button); the **track record** summary for each ticked
+signal (average 20-session return, how often it went up, the result on 1.5× volume and the
+crossover-level trades, each against the average stock-day), with **Track record details**
+for the full tables (all signals, by phase, by year, trades); then one **card per stock**. The
+bar above the cards (count, active filters, **Sort by** and the reverse button) stays at the
+top while you scroll.
+
+**Each card:** symbol and sector, close and change, the signals that hold (ticked ones first,
+green, with their age and "· N× vol" when they began on strong volume), the levels with a
+bar from stop (red) through the entry zone (green) to the target with a marker at the price,
+readiness (with a meter and the Entry zone badge), Aroon Up/Down and **Chart**.
+
+**Levels:** **Entry · Stop · Target** for each stock, coloured green / red, with where
 the price is now: *In entry zone*, *Wait: N% below entry*, *Extended +N% (chasing)* or
 *Below stop* (live during market hours). Most rows use their board setup's levels (label
 e.g. "VCP levels"); others use the crossover rule ("crossover rule"), whose trades lost money
-in the backtest (see **Show track record → Trading the crossover levels**). Rule output,
+in the backtest (see **Track record details → Trading the crossover levels**). Rule output,
 not advice.
 
 **Telegram:** with Telegram linked (Settings), **Alert me on Telegram** saves the ticked
@@ -365,17 +379,21 @@ sideways years these signals did no better than average.
 4. Untick "Hide thinly traded stocks": the count grows. Untick "Volume ≥ 1.5× on the
    signal day": the count grows again, and rows without "· N× vol" on their newest signal
    appear.
-5. The track-record line ("since 2020") summarises the ticked signals, with their result on
-   1.5× volume; **Show track record** opens the table (5/10/20 sessions change the numbers;
-   "vs baseline" is the difference from all stock-days) and the **By year** table, where ▼
-   marks years a signal did worse than the baseline.
-6. **Chart** on a row: the panel shows the candles, indicator lines, Aroon pane, ▲/▼ markers
+5. The **NEPSE** banner shows the phase (e.g. "Sideways for 17 sessions"), the 20- and
+   50-day averages, and a pill per ticked signal with its result in that phase ("better /
+   worse than average / about average"). Tick another signal: a pill appears for it.
+6. The track record ("since 2020") shows four numbers per ticked signal; **Track record
+   details** opens the tables (5/10/20 sessions change the first; "vs baseline" is the
+   difference from all stock-days), **By NEPSE phase** and **By year**, where ▼ marks a
+   signal that did worse than the baseline.
+7. **Chart** on a row: the panel shows the candles, indicator lines, Aroon pane, ▲/▼ markers
    at each ticked signal's start/end, and the signal history; → moves to the next stock.
-7. Click **Change**, then click it again: the order reverses.
-8. With Telegram linked, tick signals → **Alert me on Telegram**: "Telegram alerts on for this
+8. **Sort by** → Change today, then the reverse button: the order reverses. Scroll down: the
+   bar with the count and Sort by stays under the page header.
+9. With Telegram linked, tick signals → **Alert me on Telegram**: "Telegram alerts on for this
    filter". After the next close (4:45 PM + the backtest), a 📈 message lists the stocks that
    newly matched, or nothing if none did. **Stop alerts** turns it off.
-9. Each row's **Levels** cell: a state chip and "Entry a–b · Stop c · Target d" with the
+10. Each row's **Levels** cell: a state chip and "Entry a–b · Stop c · Target d" with the
    source underneath; during market hours the chip follows the live price.
 
 ### 4.7 Watchlist and setups
