@@ -31,7 +31,7 @@ export function useScannerAlert() {
 export function useSaveScannerAlert() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: async (signals: CrossoverSignal[]) => (await api.put<ScannerAlert>("/scans/alert", { signals })).data,
+    mutationFn: async (alert: { signals: CrossoverSignal[]; volume: boolean }) => (await api.put<ScannerAlert>("/scans/alert", alert)).data,
     onSuccess: (data) => client.setQueryData(ALERT_KEY, data),
   })
 }

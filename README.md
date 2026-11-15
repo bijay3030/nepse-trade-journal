@@ -260,6 +260,7 @@ Notes:
 | `bin/rails "nepse:data:floorsheet[120]"` | Floorsheet for recent sessions not stored yet (~3s each) |
 | `bin/rails nepse:data:setups` | Rebuild entry-readiness snapshots (indicators first) |
 | `bin/rails nepse:data:report` | How complete the data is, per field |
+| `bin/rails nepse:data:archive_history` | 2020+ prices for the scanner's track record (once; ~35 MB) |
 
 Schedule (with `bin/dev`): securities, dividends, index history, broker names and the
 day's floorsheet daily at 4:30 PM Nepal time; entry readiness at 4:45 PM; fundamentals
@@ -359,10 +360,14 @@ anything buy or sell.
 ## Indicator Scanner
 
 `/scanner` lists stocks matching every ticked trend signal, on completed sessions
-(`Scans::Crossovers`, TradingView defaults): EMA 9 above 21, EMA 21 above 50, EMA 9 > 21 >
-50, HMA 21 turned up, close above ALMA 9, Aroon 25 Up above Down, Aroon Up ≥ 70. Crosses must
-have begun within the chosen window (latest / 3 / 5 / 10 sessions); the two states (the
-stack, Aroon ≥ 70) match while they hold. Thin stocks are hidden by default. Each row shows
+(`Scans::Crossovers`, settings chosen from the 2020–2026 study below): EMA 9 above 21,
+EMA 9 > 21 > 50, HMA 55 turned up, close above ALMA 21, Aroon 25 Up above Down, Aroon Up ≥
+70. Crosses must have begun within the chosen window (latest / 3 / 5 / 10 sessions); the two
+states (the stack, Aroon ≥ 70) match while they hold. Thin stocks are hidden by default, and
+so are stocks whose newest ticked signal began on less than 1.5× its 50-session average
+volume (**Volume ≥ 1.5× on the signal day**, on by default; in the study it added 3–7
+points to every signal's win rate). The EMA 21/50 cross was dropped: it was late and no
+better than a random entry. Each row shows
 every signal with its age, Aroon values, readiness and whether the stock is on the board;
 columns sort by clicking their headers. **Chart** opens a panel with the stock's candles,
 indicator lines and Aroon pane, ▲/▼ where each ticked signal began and ended, and what
@@ -373,11 +378,11 @@ happened after each (`GET /scans/crossovers/:symbol`).
 They come from the stock's setup in the nightly snapshot (the board's rules) when it has
 one, else from a crossover rule (`Scans::Levels`): entry = signal close to +1 ADR, stop just
 under EMA 21 (max 8%), target 2× the risk. The track record trades that rule after every
-signal (next open inside the zone, stop / target / 20 sessions, 0.8% costs): in the year to
-Nov 2026 it lost money for every signal (24–30% of trades won, profit factor 0.36–0.56).
+signal (next open inside the zone, stop / target / 20 sessions, 0.8% costs): from 2020 to
+Nov 2026 it lost money after costs for every signal (profit factor 0.68–0.98).
 
-**Telegram:** **Alert me on Telegram** saves the ticked signals as your filter
-(`users.scanner_alert_signals`, `PUT /scans/alert`). After each close (queued by the nightly
+**Telegram:** **Alert me on Telegram** saves the ticked signals and the volume filter as
+your filter (`users.scanner_alert_signals`, `users.scanner_alert_volume`, `PUT /scans/alert`). After each close (queued by the nightly
 backtest, once the scan is fresh) `Scans::Alerts` sends one message listing the liquid
 stocks that **newly** match it: every chosen signal holds and the last of them switched on
 that session, so stocks that keep matching aren't repeated. Each line has the price, each
@@ -385,11 +390,21 @@ signal's age, readiness and whether the stock is also on Entry zone now; the mes
 with the chosen signals' track record on NEPSE. At most once per stock per session; needs
 Telegram linked in Settings.
 
-The page also shows each signal's track record on our NEPSE history
+The page also shows each signal's track record on NEPSE since 2020
 (`Scans::CrossoverBacktest`): the 5/10/20-session return after every time a signal began,
-against all stock-days. In the year to November 2026 every bullish signal did worse than
-the average stock-day, so treat them as a shortlist, not entries. The scan and its backtest
-are cached per session and warmed after the nightly backtest. Indicator explanations:
+against all stock-days, with the same for signals on 1.5× volume and a by-year table. The
+2020–2025 prices live in `stock_price_archives` (`Scans::History`), which only this
+backtest reads, so the board, base counts, indicators and market direction still use the
+regular price history. Since 2020, HMA 55 on 1.5× volume did best (+4.2% over 20 sessions,
+54% went up, against +2.1% and 48% for all stock-days); in 2026 every signal did worse than
+the baseline. Fill the archive once (~5 minutes per 100 stocks; it skips days already in
+the regular history):
+
+```bash
+bin/rails nepse:data:archive_history            # or "nepse:data:archive_history[NABIL NICA]"
+```
+
+The scan and its backtest are cached per session and warmed after the nightly backtest. Indicator explanations:
 [docs/indicators-guide.md](docs/indicators-guide.md).
 
 How these indicators did at every 15% trend change from 2020 to 2026 (by year, market

@@ -1,4 +1,4 @@
-export type CrossoverSignal = "ema_9_21" | "ema_21_50" | "ema_stack" | "hma_up" | "alma_cross" | "aroon_cross" | "aroon_strong"
+export type CrossoverSignal = "ema_9_21" | "ema_stack" | "hma_up" | "alma_cross" | "aroon_cross" | "aroon_strong"
 
 export type ScanRow = {
   symbol: string
@@ -8,6 +8,8 @@ export type ScanRow = {
   change_pct: number | null
   /** Sessions since each signal began (0 = latest session), or null when it doesn't hold. */
   signals: Record<CrossoverSignal, number | null>
+  /** The signal day's volume ÷ the previous 50 sessions' average, per signal that holds. */
+  signal_volume?: Partial<Record<CrossoverSignal, number | null>>
   values: { ema9: number | null; ema21: number | null; ema50: number | null; hma: number | null; alma: number | null; aroon_up: number | null; aroon_down: number | null }
   /** Entry / stop / target: the snapshot setup's ("board_setup") or the crossover rule's. */
   levels?: RowLevels | null
@@ -37,7 +39,7 @@ export type TradeStats = {
   exits?: Record<string, number>
 }
 
-export type SignalStats = { n: number; avg_return_pct?: number; median_return_pct?: number; win_rate_pct?: number; avg_excess_pct?: number | null }
+export type SignalStats = { n: number; avg_return_pct?: number; win_rate_pct?: number }
 
 /** GET /scans/crossovers */
 export type CrossoverScan = {
@@ -48,7 +50,14 @@ export type CrossoverScan = {
   backtest: {
     period: { from: string | null; to: string | null }
     horizons: number[]
+    /** The horizon by_year is measured over. */
+    year_horizon: number
+    /** Volume multiple for signals_with_volume. */
+    strong_volume: number
     signals: Record<"all" | CrossoverSignal, Record<string, SignalStats>>
+    /** The same samples, only signals that began on strong_volume x average volume. */
+    signals_with_volume?: Record<CrossoverSignal, Record<string, SignalStats>>
+    by_year?: Record<"all" | CrossoverSignal, Record<string, SignalStats>>
     trades?: Record<CrossoverSignal, TradeStats>
     trade_rules?: { max_hold: number; cost_pct: number; reward_multiple: number; max_stop_pct: number }
   }
@@ -81,4 +90,5 @@ export type CrossoverChart = {
 }
 
 /** GET/PUT /scans/alert: the filter Telegram messages are sent for (empty = off). */
-export type ScannerAlert = { signals: CrossoverSignal[]; telegram_linked: boolean }
+/** volume: only send matches whose newest signal began on 1.5x average volume. */
+export type ScannerAlert = { signals: CrossoverSignal[]; volume: boolean; telegram_linked: boolean }

@@ -1,37 +1,67 @@
 module Scans
-  # How each Scans::Crossovers signal played out on our NEPSE history: every session
-  # where a signal began (the cross, the turn, the stack forming) is a sample, and its
-  # return over the next 5, 10 and 20 sessions (close to close, before costs) is
-  # compared with NEPSE over the same sessions and with all stock-days (the baseline).
-  # Indicators only use bars up to the signal day, so there's no look-ahead.
+  # How each Scans::Crossovers signal played out on NEPSE history since 2020 (archived
+  # prices plus the regular ones, Scans::History): every session where a signal began is
+  # a sample, and its return over the next 5, 10 and 20 sessions (close to close, before
+  # costs) is compared with all stock-days (the baseline), overall, by year, and for
+  # signals that began on STRONG_VOLUME x average volume. Indicators only use bars up to
+  # the signal day, so there's no look-ahead. Stocks are processed one at a time.
   module CrossoverBacktest
     HORIZONS = [ 5, 10, 20 ].freeze
+    YEAR_HORIZON = 20
     # Trades with Scans::Levels' crossover levels, on the board backtest's terms.
     MAX_HOLD = Backtest::Runner::MAX_HOLD
     COST_PCT = Backtest::Runner::ROUND_TRIP_COST_PCT
     MIN_RISK_PCT = Backtest::Runner::MIN_RISK_PCT
 
+    # Running count / sum / wins, so seven years of samples aren't kept in memory.
+    class Tally
+      def initialize = @n = @sum = @wins = 0
+      def add(value)
+        @n += 1
+        @sum += value
+        @wins += 1 if value.positive?
+      end
+
+      def to_h
+        return { n: 0 } if @n.zero?
+
+        { n: @n, avg_return_pct: (@sum / @n).round(2), win_rate_pct: (@wins * 100.0 / @n).round(1) }
+      end
+    end
+
     module_function
 
     def call(now: Time.current)
-      bars = Crossovers.load_bars(now)
-      nepse = MarketIndexHistory.joins(:market_index).where(market_indices: { symbol: "NEPSE" }).pluck(:traded_on, :index_value).to_h { [ _1, _2.to_f ] }
-      samples = Hash.new { |h, k| h[k] = [] }
+      keys = [ "all" ] + Crossovers::SIGNALS
+      tallies = keys.to_h { |key| [ key, HORIZONS.to_h { [ _1, Tally.new ] } ] }
+      with_volume = Crossovers::SIGNALS.to_h { |key| [ key, HORIZONS.to_h { [ _1, Tally.new ] } ] }
+      years = Hash.new { |h, key| h[key] = Hash.new { |y, year| y[year] = Tally.new } }
       trades = Hash.new { |h, k| h[k] = [] }
-      dates = []
+      first = last = nil
 
-      bars.each_value do |rows|
+      History.each_stock(now: now) do |_stock_id, rows|
         next if rows.size < Crossovers::MIN_BARS
 
         series = Crossovers.compute(rows)
         closes = series[:close]
-        dates.concat(series[:dates])
-        forward = ->(i) { HORIZONS.to_h { |h| [ h, sample(series[:dates], closes, nepse, i, h) ] } }
-        (0...closes.size).each { |i| samples["all"] << forward.(i) if closes[i].positive? }
+        first = [ first, series[:dates].first ].compact.min
+        last = [ last, series[:dates].last ].compact.max
+        add = lambda do |key, i, volume_ok|
+          HORIZONS.each do |h|
+            next if i + h >= closes.size || !closes[i].positive?
+
+            value = (closes[i + h] / closes[i] - 1) * 100
+            tallies[key][h].add(value)
+            with_volume[key][h].add(value) if volume_ok
+            years[key][series[:dates][i].year].add(value) if h == YEAR_HORIZON
+          end
+        end
+        (0...closes.size).each { |i| add.("all", i, false) }
         Crossovers::SIGNALS.each do |signal|
           busy_until = -1
           Crossovers.onsets(series, signal).each do |i|
-            samples[signal] << forward.(i)
+            ratio = Crossovers.volume_ratio(series, i)
+            add.(signal, i, ratio && ratio >= Crossovers::STRONG_VOLUME)
             next if i <= busy_until
 
             trade = simulate(series, i) or next
@@ -43,8 +73,10 @@ module Scans
       end
 
       {
-        period: { from: dates.min, to: dates.max }, horizons: HORIZONS,
-        signals: ([ "all" ] + Crossovers::SIGNALS).to_h { |key| [ key, HORIZONS.to_h { |h| [ h, stats(samples[key].filter_map { _1[h] }) ] } ] },
+        period: { from: first, to: last }, horizons: HORIZONS, year_horizon: YEAR_HORIZON, strong_volume: Crossovers::STRONG_VOLUME,
+        signals: tallies.transform_values { |by_h| by_h.transform_values(&:to_h) },
+        signals_with_volume: with_volume.transform_values { |by_h| by_h.transform_values(&:to_h) },
+        by_year: keys.to_h { |key| [ key, years[key].sort.to_h.transform_values(&:to_h) ] },
         trades: Crossovers::SIGNALS.to_h { |key| [ key, trade_stats(trades[key]) ] },
         trade_rules: { max_hold: MAX_HOLD, cost_pct: COST_PCT, reward_multiple: Levels::REWARD_MULTIPLE, max_stop_pct: Levels::MAX_STOP_PCT }
       }
@@ -95,28 +127,5 @@ module Scans
       }
     end
 
-    # [return %, excess over NEPSE %] h sessions after bar i, or nil near the end.
-    def sample(dates, closes, nepse, i, h)
-      j = i + h
-      return if j >= closes.size || !closes[i].positive?
-
-      stock = (closes[j] / closes[i] - 1) * 100
-      a, b = nepse[dates[i]], nepse[dates[j]]
-      [ stock, a && b ? stock - (b / a - 1) * 100 : nil ]
-    end
-
-    def stats(values)
-      return { n: 0 } if values.empty?
-
-      returns = values.map(&:first).sort
-      excess = values.filter_map(&:last)
-      {
-        n: values.size,
-        avg_return_pct: (returns.sum / returns.size).round(2),
-        median_return_pct: returns[returns.size / 2].round(2),
-        win_rate_pct: (returns.count(&:positive?) * 100.0 / returns.size).round(1),
-        avg_excess_pct: excess.empty? ? nil : (excess.sum / excess.size).round(2)
-      }
-    end
   end
 end

@@ -392,24 +392,25 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 
 | # | Steps | Expected |
 | - | ----- | -------- |
-| H24.1 | Sidebar → **Indicator Scanner** (`/scanner`) | Heading with the latest completed session and settings (EMA 9/21/50, HMA 21, ALMA 9/0.85/6, Aroon 25) |
-| H24.2 | Default (EMA 9/21, last 3 sessions, thin hidden) | Rows whose "9/21" badge is today–3d; count "N of 276 stocks" |
+| H24.1 | Sidebar → **Indicator Scanner** (`/scanner`) | Heading with the latest completed session and settings (EMA 9/21/50, HMA 55, ALMA 21/0.85/6, Aroon 25); six signal chips, no "EMA 21 crossed above 50" |
+| H24.2 | Default (EMA 9/21, last 3 sessions, thin hidden, volume ≥ 1.5× ticked) | Rows whose "9/21" badge is today–3d and shows "· N× vol" with N ≥ 1.5; count "N of 276 stocks" |
 | H24.3 | Also tick "Aroon Up ≥ 70" | Fewer rows, each with both badges; the Aroon column ≥ 70 |
 | H24.4 | Tick only "EMA 9 > 21 > 50" | Stocks whose stack began any time ago (badge age can exceed the window) |
-| H24.5 | Untick "Hide thinly traded stocks" | Count rises |
-| H24.6 | **Show track record**, switch 5 / 10 / 20 sessions | Numbers change; baseline row first; ▼ on signals worse than it; the summary line above names the ticked signals' 20-session averages |
+| H24.5 | Untick "Hide thinly traded stocks", then "Volume ≥ 1.5× on the signal day" | Count rises each time; the second adds rows whose 9/21 badge has no "× vol" (hover shows the multiple) |
+| H24.6 | **Show track record**, switch 5 / 10 / 20 sessions | Period from 2020; numbers change; baseline row first; "vs baseline" and "On 1.5× volume" columns; **By year** table 2020–2026 with ▼ where a signal did worse than that year's baseline; the summary line ("since 2020") names the ticked signals' 20-session averages and their volume results |
 | H24.7 | Compare a stock with TradingView (same settings, daily) | EMA/HMA/ALMA/Aroon values match within rounding |
 | H24.8 | During market hours | The scan still shows yesterday's session (today's bar isn't complete) |
 | H24.9 | **Chart** on a row | Panel with candles, EMA 9/21/50, HMA, ALMA, Aroon pane; ▲ below bars where each ticked signal began, ▼ above where it ended; "What happened after each signal" lists them with change and sessions ("still on … so far" for the current one) |
 | H24.10 | In the panel: toggle lines / Aroon, switch 3M / 6M / 1Y, → and ←, Esc | Lines and pane appear/disappear; range changes; next/previous stock ("2 of 5"); panel closes |
 | H24.11 | Click a column header twice | Sorted, then reversed (arrow shows the direction); the filter bar stays at the top while scrolling |
-| H24.12 | Telegram linked; tick EMA 9/21 + Aroon ≥ 70 → **Alert me on Telegram** | "Telegram alerts on for this filter"; reload keeps it; ticking another signal shows "on for: 9/21 + Aroon≥70" and "Alert me for this filter instead" |
-| H24.13 | After the next close | One 📈 "Indicator scanner (Mon d close): N stocks newly match …" message with price, signal ages, readiness, "also on Entry zone now" where so, and the track-record line; none if nothing newly matched; not repeated the next day for stocks still matching |
+| H24.12 | Telegram linked; tick EMA 9/21 + Aroon ≥ 70 → **Alert me on Telegram** | "Telegram alerts on for this filter"; reload keeps it; ticking another signal shows "on for: 9/21 + Aroon≥70 on 1.5× volume" and "Alert me for this filter instead"; unticking the volume filter also offers to switch |
+| H24.13 | After the next close | One 📈 "Indicator scanner (Mon d close): N stocks newly match …" message (filter "… on 1.5x volume") with price, signal ages, volume multiple, readiness, "also on Entry zone now" where so, and the track-record line; none if nothing newly matched; not repeated the next day for stocks still matching |
 | H24.14 | Terminal: `bin/rails runner 'p Scans::Alerts.new_matches(Scans::Cache.crossovers, %w[ema_9_21])'` | The stocks whose 9/21 cross began on the latest session (liquid only) |
 | H24.15 | Telegram not linked | "Connect Telegram to get this filter's new matches after each close" with a link to Settings |
 | H24.16 | Any row's **Levels** cell | Chip (In entry zone / Wait: N% below entry / Extended +N% (chasing) / Below stop) and "Entry a–b · Stop c · Target d"; underneath "VCP levels" (or the setup) or "crossover rule"; hover explains the source |
 | H24.17 | *(market hours)* A stock moving through its zone | The chip follows the live price |
 | H24.18 | **Show track record** | "Trading the crossover levels" table: trades, won %, average per trade, average R, profit factor (red under 1) per signal; the summary line adds the ticked signals' won % and PF |
+| H24.19 | Terminal: `bin/rails runner 'p StockPriceArchive.count, StockPriceArchive.minimum(:traded_on)'` | Hundreds of thousands of rows from 2020-01; the board, base counts and NEPSE direction are unchanged by it |
 
 ## I. Plan from setup
 

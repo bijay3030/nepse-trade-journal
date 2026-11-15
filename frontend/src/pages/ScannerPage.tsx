@@ -7,7 +7,7 @@ import { useCrossoverScan } from "../features/scanner/api"
 import { ChartPanel } from "../features/scanner/ChartPanel"
 import { LevelsTag } from "../features/scanner/LevelsTag"
 import { useStockPrices } from "../hooks/useStockPrices"
-import { SIGNALS } from "../features/scanner/signals"
+import { SIGNALS, STRONG_VOLUME } from "../features/scanner/signals"
 import { TelegramAlertControl } from "../features/scanner/TelegramAlertControl"
 import type { CrossoverScan, CrossoverSignal, ScanRow, SignalStats } from "../features/scanner/types"
 import { cn } from "../lib/cn"
@@ -38,10 +38,26 @@ function matches(row: ScanRow, selected: CrossoverSignal[], within: number) {
 }
 
 // The youngest of the ticked signals (or of all signals when none is ticked).
-function newest(row: ScanRow, selected: CrossoverSignal[]) {
+function youngest(row: ScanRow, selected: CrossoverSignal[]): CrossoverSignal | null {
   const keys = selected.length > 0 ? selected : SIGNALS.map((signal) => signal.key)
-  const ages = keys.map((key) => row.signals[key]).filter((age): age is number => age !== null)
-  return ages.length > 0 ? Math.min(...ages) : Number.POSITIVE_INFINITY
+  let best: CrossoverSignal | null = null
+  for (const key of keys) {
+    const age = row.signals[key]
+    if (age !== null && (best === null || age < (row.signals[best] as number))) best = key
+  }
+  return best
+}
+
+function newest(row: ScanRow, selected: CrossoverSignal[]) {
+  const key = youngest(row, selected)
+  return key ? (row.signals[key] as number) : Number.POSITIVE_INFINITY
+}
+
+// The day the combination began (its youngest signal) had strong volume: in the 2020-2026
+// test, signals on 1.5x average volume did 3-7 points better.
+function strongVolume(row: ScanRow, selected: CrossoverSignal[], threshold: number) {
+  const key = youngest(row, selected)
+  return key !== null && (row.signal_volume?.[key] ?? 0) >= threshold
 }
 
 function sortValue(row: ScanRow, key: SortKey, selected: CrossoverSignal[]): number | string {
@@ -57,9 +73,11 @@ function sortValue(row: ScanRow, key: SortKey, selected: CrossoverSignal[]): num
 
 export function ScannerPage() {
   const { data, isLoading, isError, refetch } = useCrossoverScan()
+  const threshold = data?.backtest.strong_volume ?? STRONG_VOLUME
   const [selected, setSelected] = useState<CrossoverSignal[]>(["ema_9_21"])
   const [within, setWithin] = useState(3)
   const [hideThin, setHideThin] = useState(true)
+  const [volumeOnly, setVolumeOnly] = useState(true)
   const [sort, setSort] = useState<Sort>({ key: "readiness", dir: "desc" })
   const [charting, setCharting] = useState<string | null>(null)
 
@@ -69,13 +87,14 @@ export function ScannerPage() {
     return data.rows
       .filter((row) => matches(row, selected, within))
       .filter((row) => !hideThin || !(row.guards ?? []).includes("thin_volume"))
+      .filter((row) => !volumeOnly || strongVolume(row, selected, threshold))
       .sort((a, b) => {
         const x = sortValue(a, sort.key, selected)
         const y = sortValue(b, sort.key, selected)
         const order = typeof x === "string" ? x.localeCompare(y as string) : (x as number) - (y as number)
         return order * direction || a.symbol.localeCompare(b.symbol)
       })
-  }, [data, selected, within, hideThin, sort])
+  }, [data, selected, within, hideThin, volumeOnly, threshold, sort])
 
   const symbols = useMemo(() => rows.map((row) => row.symbol), [rows])
   const { getPrice } = useStockPrices(symbols)
@@ -112,7 +131,7 @@ export function ScannerPage() {
       <header>
         <h1 className="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl">Indicator Scanner</h1>
         <p className="mt-1 text-sm text-slate">
-          Stocks matching every signal you tick, on completed sessions up to <b>{data.as_of ?? "—"}</b>. Settings (TradingView defaults): EMA{" "}
+          Stocks matching every signal you tick, on completed sessions up to <b>{data.as_of ?? "—"}</b>. Settings (chosen from a 2020–2026 test on NEPSE): EMA{" "}
           {data.params.ema.join(" / ")}, HMA {data.params.hma}, ALMA {data.params.alma.length} (offset {data.params.alma.offset}, sigma {data.params.alma.sigma}),
           Aroon {data.params.aroon}. Rule checks, not recommendations.
         </p>
@@ -143,7 +162,11 @@ export function ScannerPage() {
               <input type="checkbox" checked={hideThin} onChange={(event) => setHideThin(event.target.checked)} />
               Hide thinly traded stocks
             </label>
-            <TelegramAlertControl selected={selected} />
+            <label className="flex items-center gap-2 text-slate" title="The day the newest ticked signal began traded at least this multiple of its 50-session average volume.">
+              <input type="checkbox" checked={volumeOnly} onChange={(event) => setVolumeOnly(event.target.checked)} />
+              Volume ≥ {threshold}× on the signal day
+            </label>
+            <TelegramAlertControl selected={selected} volume={volumeOnly} />
             <span className="ml-auto font-semibold text-ink" aria-live="polite">{rows.length} of {data.rows.length} stocks</span>
           </div>
         </Card>
@@ -152,7 +175,7 @@ export function ScannerPage() {
       <SignalTrackRecord backtest={data.backtest} selected={selected} />
 
       {rows.length === 0 ? (
-        <Card className="p-8 text-center text-sm text-slate">No stock matches every ticked signal{selected.length > 0 ? " in that window" : ""}. Untick a signal or widen the window.</Card>
+        <Card className="p-8 text-center text-sm text-slate">No stock matches every ticked signal{selected.length > 0 ? " in that window" : ""}{volumeOnly ? ` on ${threshold}× volume` : ""}. Untick a signal{volumeOnly ? ", the volume filter" : ""} or widen the window.</Card>
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
@@ -180,12 +203,17 @@ export function ScannerPage() {
                     <td className={cn("px-4 py-3 text-right font-mono", tone(row.change_pct))}>{pct(row.change_pct)}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
-                        {SIGNALS.filter((signal) => row.signals[signal.key] !== null).map((signal) => (
-                          <span key={signal.key} title={`${signal.label}: ${row.signals[signal.key] === 0 ? "latest session" : `${row.signals[signal.key]} sessions ago`}`}
-                            className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", selected.includes(signal.key) ? "bg-pine/15 text-pine" : "bg-slate/10 text-slate")}>
-                            {signal.short} {row.signals[signal.key] === 0 ? "today" : `${row.signals[signal.key]}d`}
-                          </span>
-                        ))}
+                        {SIGNALS.filter((signal) => row.signals[signal.key] !== null).map((signal) => {
+                          const ratio = row.signal_volume?.[signal.key]
+                          return (
+                            <span key={signal.key}
+                              title={`${signal.label}: ${row.signals[signal.key] === 0 ? "latest session" : `${row.signals[signal.key]} sessions ago`}${ratio != null ? `, on ${ratio}× average volume` : ""}`}
+                              className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", selected.includes(signal.key) ? "bg-pine/15 text-pine" : "bg-slate/10 text-slate")}>
+                              {signal.short} {row.signals[signal.key] === 0 ? "today" : `${row.signals[signal.key]}d`}
+                              {ratio != null && ratio >= threshold && <span className="ml-1 font-mono">· {ratio}× vol</span>}
+                            </span>
+                          )
+                        })}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right font-mono text-xs">{row.values.aroon_up ?? "—"} / {row.values.aroon_down ?? "—"}</td>
@@ -221,31 +249,40 @@ export function ScannerPage() {
   )
 }
 
-// How each signal did on NEPSE history: a one-line summary that expands into the table.
+// How each signal did on NEPSE history since 2020: a one-line summary that expands into the tables.
 function SignalTrackRecord({ backtest, selected }: { backtest: CrossoverScan["backtest"]; selected: CrossoverSignal[] }) {
   const [open, setOpen] = useState(false)
   const [horizon, setHorizon] = useState(20)
-  const base = backtest.signals.all?.[String(horizon)]
+  const h = String(horizon)
+  const base = backtest.signals.all?.[h]
   const cell = (stats: SignalStats | undefined) => (stats && stats.n > 0 ? stats : null)
-  const ticked = selected.map((key) => ({ key, stats: cell(backtest.signals[key]?.["20"]) })).filter((entry) => entry.stats)
+  const ticked = selected.map((key) => ({ key, stats: cell(backtest.signals[key]?.["20"]), strong: cell(backtest.signals_with_volume?.[key]?.["20"]) })).filter((entry) => entry.stats)
   const baseline20 = cell(backtest.signals.all?.["20"])
+  const since = backtest.period.from?.slice(0, 4)
+  const years = Object.keys(backtest.by_year?.all ?? {})
+  const diff = (stats: SignalStats | null, against: SignalStats | null | undefined) =>
+    stats?.avg_return_pct != null && against?.avg_return_pct != null ? Math.round((stats.avg_return_pct - against.avg_return_pct) * 100) / 100 : null
+  const short = (key: CrossoverSignal) => SIGNALS.find((s) => s.key === key)?.short
 
   return (
     <Card>
       <CardBody>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-slate" aria-label="Track record summary">
-            <b className="text-ink">Track record on NEPSE:</b>{" "}
+            <b className="text-ink">Track record on NEPSE{since ? ` since ${since}` : ""}:</b>{" "}
             {ticked.length > 0 && baseline20
-              ? <>20 sessions after the ticked {ticked.length === 1 ? "signal" : "signals"}:{" "}
-                  {ticked.map(({ key, stats }) => (
-                    <span key={key} className={cn("font-mono", tone(stats?.avg_return_pct))}>{SIGNALS.find((s) => s.key === key)?.short} {pct(stats?.avg_return_pct)} </span>
+              ? <>20 sessions after the ticked {ticked.length === 1 ? "signal" : "signals"} began:{" "}
+                  {ticked.map(({ key, stats, strong }) => (
+                    <span key={key} className="font-mono">
+                      <span className={tone(stats?.avg_return_pct)}>{short(key)} {pct(stats?.avg_return_pct)}</span>
+                      {strong && <span className={tone(strong.avg_return_pct)}> ({pct(strong.avg_return_pct)} on {backtest.strong_volume}× volume)</span>}{" "}
+                    </span>
                   ))}
                   vs <span className="font-mono">{pct(baseline20.avg_return_pct)}</span> for the average stock-day.
                   {ticked.some(({ key }) => backtest.trades?.[key]?.profit_factor != null) && (
                     <> Trading the crossover levels: {ticked.map(({ key }) => {
                       const t = backtest.trades?.[key]
-                      return t?.win_rate_pct != null ? <span key={key} className="font-mono">{SIGNALS.find((s) => s.key === key)?.short} {t.win_rate_pct}% won, PF {t.profit_factor ?? "—"} </span> : null
+                      return t?.win_rate_pct != null ? <span key={key} className="font-mono">{short(key)} {t.win_rate_pct}% won, PF {t.profit_factor ?? "—"} </span> : null
                     })}</>
                   )}</>
               : "how each signal did after it began, against the average stock-day."}
@@ -255,38 +292,72 @@ function SignalTrackRecord({ backtest, selected }: { backtest: CrossoverScan["ba
         {open && (
           <div className="mt-3">
             <p className="text-xs text-slate">
-              Every time a signal began, {backtest.period.from ?? "—"} to {backtest.period.to ?? "—"}: the return over the next sessions (close to close, before costs).
+              Every time a signal began, {backtest.period.from ?? "—"} to {backtest.period.to ?? "—"}: the return over the next sessions (close to close, before costs),
+              against every stock-day in the same period (the baseline).
             </p>
             <div className="my-3 inline-flex rounded-xl border border-mist/80 bg-slate/5 p-1" role="tablist">
-              {backtest.horizons.map((h) => (
-                <button key={h} type="button" role="tab" aria-selected={horizon === h} onClick={() => setHorizon(h)}
-                  className={cn("rounded-lg px-3 py-1 text-sm font-semibold", horizon === h ? "bg-white text-ink shadow-sm" : "text-slate")}>
-                  {h} sessions
+              {backtest.horizons.map((value) => (
+                <button key={value} type="button" role="tab" aria-selected={horizon === value} onClick={() => setHorizon(value)}
+                  className={cn("rounded-lg px-3 py-1 text-sm font-semibold", horizon === value ? "bg-white text-ink shadow-sm" : "text-slate")}>
+                  {value} sessions
                 </button>
               ))}
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm" aria-label="Signal track record">
                 <thead className="text-left text-xs text-slate">
-                  <tr><th className="py-1 pr-4">Signal</th><th className="py-1 pr-4 text-right">Samples</th><th className="py-1 pr-4 text-right">Avg return</th><th className="py-1 pr-4 text-right">Went up</th><th className="py-1 text-right">vs NEPSE</th></tr>
+                  <tr>
+                    <th className="py-1 pr-4">Signal</th><th className="py-1 pr-4 text-right">Samples</th><th className="py-1 pr-4 text-right">Avg return</th>
+                    <th className="py-1 pr-4 text-right">Went up</th><th className="py-1 pr-4 text-right">vs baseline</th>
+                    <th className="py-1 pr-4 text-right">On {backtest.strong_volume}× volume</th><th className="py-1 text-right">Went up</th>
+                  </tr>
                 </thead>
                 <tbody className="divide-y divide-mist/60">
                   {[{ key: "all" as const, label: "All stock-days (baseline)" }, ...SIGNALS.map((s) => ({ key: s.key, label: s.label }))].map(({ key, label }) => {
-                    const stats = cell(backtest.signals[key]?.[String(horizon)])
-                    const worse = stats && base?.avg_return_pct != null && stats.avg_return_pct != null && key !== "all" && stats.avg_return_pct < base.avg_return_pct
+                    const stats = cell(backtest.signals[key]?.[h])
+                    const strong = key === "all" ? null : cell(backtest.signals_with_volume?.[key]?.[h])
+                    const edge = key === "all" ? null : diff(stats, base)
                     return (
                       <tr key={key} className={cn(key !== "all" && selected.includes(key as CrossoverSignal) && "font-semibold")}>
                         <td className="py-1.5 pr-4 text-ink">{label}</td>
                         <td className="py-1.5 pr-4 text-right font-mono text-slate">{stats?.n.toLocaleString("en-US") ?? "—"}</td>
-                        <td className={cn("py-1.5 pr-4 text-right font-mono", tone(stats?.avg_return_pct))}>{pct(stats?.avg_return_pct)}{worse ? " ▼" : ""}</td>
+                        <td className={cn("py-1.5 pr-4 text-right font-mono", tone(stats?.avg_return_pct))}>{pct(stats?.avg_return_pct)}</td>
                         <td className="py-1.5 pr-4 text-right font-mono">{stats?.win_rate_pct != null ? `${stats.win_rate_pct}%` : "—"}</td>
-                        <td className={cn("py-1.5 text-right font-mono", tone(stats?.avg_excess_pct))}>{pct(stats?.avg_excess_pct)}</td>
+                        <td className={cn("py-1.5 pr-4 text-right font-mono", tone(edge))}>{key === "all" ? "" : pct(edge)}</td>
+                        <td className={cn("py-1.5 pr-4 text-right font-mono", tone(strong?.avg_return_pct))}>{key === "all" ? "" : pct(strong?.avg_return_pct)}</td>
+                        <td className="py-1.5 text-right font-mono">{strong?.win_rate_pct != null ? `${strong.win_rate_pct}%` : ""}</td>
                       </tr>
                     )
                   })}
                 </tbody>
               </table>
             </div>
+            {years.length > 0 && backtest.by_year && (
+              <div className="mt-4">
+                <h3 className="text-sm font-bold text-ink">By year</h3>
+                <p className="text-xs text-slate">Average return {backtest.year_horizon} sessions after each signal began, by the year it began. ▼ = worse than the baseline that year.</p>
+                <div className="mt-2 overflow-x-auto">
+                  <table className="w-full text-sm" aria-label="Track record by year">
+                    <thead className="text-left text-xs text-slate">
+                      <tr><th className="py-1 pr-4">Signal</th>{years.map((year) => <th key={year} className="py-1 pr-3 text-right">{year}</th>)}</tr>
+                    </thead>
+                    <tbody className="divide-y divide-mist/60">
+                      {[{ key: "all" as const, label: "All stock-days (baseline)" }, ...SIGNALS.map((s) => ({ key: s.key, label: s.label }))].map(({ key, label }) => (
+                        <tr key={key} className={cn(key !== "all" && selected.includes(key as CrossoverSignal) && "font-semibold")}>
+                          <td className="py-1.5 pr-4 text-ink">{label}</td>
+                          {years.map((year) => {
+                            const stats = cell(backtest.by_year?.[key]?.[year])
+                            const yearBase = cell(backtest.by_year?.all?.[year])
+                            const worse = key !== "all" && (diff(stats, yearBase) ?? 0) < 0
+                            return <td key={year} className={cn("whitespace-nowrap py-1.5 pr-3 text-right font-mono", tone(stats?.avg_return_pct))}>{pct(stats?.avg_return_pct)}{worse ? " ▼" : ""}</td>
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
             {backtest.trades && backtest.trade_rules && (
               <div className="mt-4">
                 <h3 className="text-sm font-bold text-ink">Trading the crossover levels</h3>
@@ -320,9 +391,9 @@ function SignalTrackRecord({ backtest, selected }: { backtest: CrossoverScan["ba
               </div>
             )}
             <p className="mt-3 text-xs text-slate">
-              ▼ = did worse than the average stock-day. One year of data in a mostly sideways market, where trend-following crosses tend to come
-              after a short rise that then fades; they usually do better in trending markets. Treat these signals as a shortlist to study, not entries
-              on their own; the Entry zone board's rules were tested separately.
+              The market year mattered more than the signal: in rising years (2020–21, 2024) nearly everything went up; in the 2022–23 fall the better
+              signals still caught rebounds; in sideways markets they did no better than the baseline. Every signal did better when it began on
+              strong volume. Treat these signals as a shortlist to study, not entries on their own; the Entry zone board's rules were tested separately.
             </p>
           </div>
         )}

@@ -14,7 +14,7 @@ RSpec.describe Scans::Crossovers do
   it "reports how many sessions ago a signal began, and nil when it doesn't hold" do
     expect(described_class.latest_age(turn, "alma_cross")).to be_between(0, 5)
     expect(described_class.latest_age(turn, "hma_up")).to be_between(0, 5)
-    expect(described_class.latest_age(turn, "ema_21_50")).to be_nil # the slower averages haven't crossed yet
+    expect(described_class.latest_age(turn, "ema_stack")).to be_nil # the slower averages haven't lined up yet
     expect(described_class.latest_age(series(Array.new(80) { 200.0 - _1 }), "ema_stack")).to be_nil
   end
 
@@ -74,5 +74,12 @@ RSpec.describe Scans::Crossovers do
     expect(chart[:lines][:ema50].compact.size).to eq(41)
     expect(chart[:episodes].keys).to match_array(described_class::SIGNALS)
     expect(described_class.chart(create(:stock), now: Time.current)).to be_nil
+  end
+
+  it "measures volume on a bar against the 50 sessions before it" do
+    v = { volume: Array.new(50, 1000) + [ 1800 ] }
+
+    expect(described_class.volume_ratio(v, 50)).to eq(1.8)
+    expect(described_class.volume_ratio(v, 10)).to be_nil
   end
 end

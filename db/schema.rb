@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_06_082331) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_15_055220) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -459,6 +459,18 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_06_082331) do
     t.index ["traded_on"], name: "index_stock_intraday_volumes_on_traded_on"
   end
 
+  create_table "stock_price_archives", force: :cascade do |t|
+    t.bigint "stock_id", null: false
+    t.date "traded_on", null: false
+    t.decimal "open_price", precision: 12, scale: 2
+    t.decimal "high_price", precision: 12, scale: 2
+    t.decimal "low_price", precision: 12, scale: 2
+    t.decimal "close_price", precision: 12, scale: 2, null: false
+    t.bigint "volume"
+    t.index ["stock_id", "traded_on"], name: "index_stock_price_archives_on_stock_id_and_traded_on", unique: true
+    t.index ["stock_id"], name: "index_stock_price_archives_on_stock_id"
+  end
+
   create_table "stock_setup_snapshots", force: :cascade do |t|
     t.bigint "stock_id", null: false
     t.date "traded_on", null: false
@@ -633,6 +645,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_06_082331) do
     t.decimal "max_open_risk_pct", precision: 5, scale: 2, default: "6.0", null: false
     t.decimal "max_sector_pct", precision: 5, scale: 2, default: "30.0", null: false
     t.jsonb "scanner_alert_signals", default: [], null: false
+    t.boolean "scanner_alert_volume", default: true, null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["jti"], name: "index_users_on_jti", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
@@ -718,6 +731,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_06_082331) do
   add_foreign_key "stock_daily_prices", "stocks"
   add_foreign_key "stock_dividends", "stocks"
   add_foreign_key "stock_intraday_volumes", "stocks", on_delete: :cascade
+  add_foreign_key "stock_price_archives", "stocks", on_delete: :cascade
   add_foreign_key "stock_setup_snapshots", "stocks"
   add_foreign_key "telegram_deliveries", "stocks"
   add_foreign_key "telegram_deliveries", "users"

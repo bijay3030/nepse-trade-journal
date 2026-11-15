@@ -3,14 +3,15 @@ import { Link } from "react-router-dom"
 
 import { Button } from "../../components/ui"
 import { useSaveScannerAlert, useScannerAlert } from "./api"
-import { SIGNAL_BY_KEY } from "./signals"
+import { SIGNAL_BY_KEY, STRONG_VOLUME } from "./signals"
 import type { CrossoverSignal } from "./types"
 
 const same = (a: CrossoverSignal[], b: CrossoverSignal[]) => a.length === b.length && a.every((key) => b.includes(key))
-const names = (signals: CrossoverSignal[]) => signals.map((key) => SIGNAL_BY_KEY[key].short).join(" + ")
+const names = (signals: CrossoverSignal[], volume: boolean) =>
+  signals.map((key) => SIGNAL_BY_KEY[key].short).join(" + ") + (volume ? ` on ${STRONG_VOLUME}× volume` : "")
 
-// Save the ticked signals as the filter Telegram messages are sent for (after each close).
-export function TelegramAlertControl({ selected }: { selected: CrossoverSignal[] }) {
+// Save the ticked signals (and the volume filter) as the filter Telegram messages are sent for (after each close).
+export function TelegramAlertControl({ selected, volume }: { selected: CrossoverSignal[]; volume: boolean }) {
   const { data } = useScannerAlert()
   const save = useSaveScannerAlert()
   if (!data) return null
@@ -24,21 +25,21 @@ export function TelegramAlertControl({ selected }: { selected: CrossoverSignal[]
   }
 
   const saved = data.signals
-  const current = saved.length > 0 && same(saved, selected)
+  const current = saved.length > 0 && same(saved, selected) && data.volume === volume
   return (
     <span className="flex flex-wrap items-center gap-2 text-xs" aria-label="Telegram alerts">
       {current ? (
         <span className="inline-flex items-center gap-1 font-semibold text-pine"><Bell className="h-3.5 w-3.5" /> Telegram alerts on for this filter</span>
       ) : saved.length > 0 ? (
-        <span className="text-slate">Telegram alerts on for: <b className="text-ink">{names(saved)}</b></span>
+        <span className="text-slate">Telegram alerts on for: <b className="text-ink">{names(saved, data.volume)}</b></span>
       ) : null}
       {!current && selected.length > 0 && (
-        <Button size="sm" variant="outline" disabled={save.isPending} onClick={() => save.mutate(selected)} className="inline-flex items-center gap-1.5">
+        <Button size="sm" variant="outline" disabled={save.isPending} onClick={() => save.mutate({ signals: selected, volume })} className="inline-flex items-center gap-1.5">
           <Bell className="h-3.5 w-3.5" /> {saved.length > 0 ? "Alert me for this filter instead" : "Alert me on Telegram"}
         </Button>
       )}
       {saved.length > 0 && (
-        <Button size="sm" variant="ghost" disabled={save.isPending} onClick={() => save.mutate([])} className="inline-flex items-center gap-1.5">
+        <Button size="sm" variant="ghost" disabled={save.isPending} onClick={() => save.mutate({ signals: [], volume: data.volume })} className="inline-flex items-center gap-1.5">
           <BellOff className="h-3.5 w-3.5" /> Stop alerts
         </Button>
       )}
