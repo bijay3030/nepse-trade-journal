@@ -158,8 +158,11 @@ app's sell rules are better exits.
 - *Done (15 Nov 2026):* the scanner uses **HMA 55** and **ALMA 21**, dropped the EMA 21/50
   cross, has a **"volume ≥ 1.5×" filter** (on by default, also for Telegram alerts), and
   shows the **track record since 2020** by year (prices in `stock_price_archives`, ~35 MB).
-- Add a **market-phase note** to the scanner (e.g. "NEPSE sideways: these signals haven't
-  beaten random in sideways markets") using a faster regime measure than the 200-day.
+- *Done (15 Nov 2026):* a **market-phase banner** on the scanner, using NEPSE's 20-day
+  against its 50-day average (faster than the 200-day). Measured since 2020: in uptrends
+  every signal except ALMA beat the average stock-day (HMA 55 +7.3% vs +2.5% over 20
+  sessions); in sideways phases they were close to it (HMA 55 +2.8% vs +1.6%); in
+  downtrends every signal did worse (HMA 55 +0.8% vs +1.8%).
 
 ## Caveats
 

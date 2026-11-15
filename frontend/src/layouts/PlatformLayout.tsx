@@ -72,6 +72,18 @@ export function PlatformLayout() {
   const [showCommand, setShowCommand] = useState(false)
   const [commandQuery, setCommandQuery] = useState("")
   const profileRef = useRef<HTMLDivElement | null>(null)
+  const headerRef = useRef<HTMLElement | null>(null)
+
+  // Pages offset their own sticky bars by the header's height (it grows with the market notice).
+  useEffect(() => {
+    const header = headerRef.current
+    if (!header || typeof ResizeObserver === "undefined") return
+    const update = () => document.documentElement.style.setProperty("--app-header-h", `${header.offsetHeight}px`)
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(header)
+    return () => observer.disconnect()
+  }, [])
   const location = useLocation()
   const navigate = useNavigate()
   const accountLabel = getEmail() ?? "Account"
@@ -261,7 +273,7 @@ export function PlatformLayout() {
         </aside>
 
         <div className="flex min-h-screen min-w-0 flex-col">
-          <header className="sticky top-0 z-30 border-b border-white/70 bg-white/90 px-4 py-3 backdrop-blur-sm sm:px-6">
+          <header ref={headerRef} className="sticky top-0 z-30 border-b border-white/70 bg-white/90 px-4 py-3 backdrop-blur-sm sm:px-6">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 sm:gap-3">
                 <button

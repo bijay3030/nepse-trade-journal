@@ -7,6 +7,8 @@ RSpec.describe "Indicator scans", type: :request do
   it "returns the scan with its parameters and the signals' backtest" do
     stock = create(:stock, symbol: "RISE", security_type: "Equity")
     (1..90).each { |i| create(:stock_daily_price, stock: stock, traded_on: Date.new(2026, 6, 1) + i, close_price: 100 + i) }
+    nepse = create(:market_index, symbol: "NEPSE")
+    (1..90).each { |i| create(:market_index_history, market_index: nepse, traded_on: Date.new(2026, 6, 1) + i, index_value: 2000 + 5 * i) }
 
     get "/api/v1/scans/crossovers", headers: headers
 
@@ -15,6 +17,8 @@ RSpec.describe "Indicator scans", type: :request do
     expect(body["rows"].sole["symbol"]).to eq("RISE")
     expect(body["backtest"]["signals"].keys).to include("all", "ema_9_21", "aroon_strong")
     expect(body["backtest"]["signals"]["all"]["5"]["n"]).to be_positive
+    expect(body["market_phase"]).to include("phase" => "uptrend", "as_of" => "2026-08-30")
+    expect(body["backtest"]["by_phase"]["all"]["uptrend"]["n"]).to be_positive
   end
 
   it "returns one stock's chart, and an error without enough history" do

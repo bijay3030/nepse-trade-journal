@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_15_055220) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_15_062016) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -104,6 +104,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_055220) do
     t.index ["portfolio_id", "stock_id"], name: "index_holdings_on_portfolio_id_and_stock_id", unique: true
     t.index ["portfolio_id"], name: "index_holdings_on_portfolio_id"
     t.index ["stock_id"], name: "index_holdings_on_stock_id"
+  end
+
+  create_table "market_index_archives", force: :cascade do |t|
+    t.bigint "market_index_id", null: false
+    t.date "traded_on", null: false
+    t.decimal "index_value", precision: 12, scale: 2, null: false
+    t.index ["market_index_id", "traded_on"], name: "index_market_index_archives_on_market_index_id_and_traded_on", unique: true
+    t.index ["market_index_id"], name: "index_market_index_archives_on_market_index_id"
   end
 
   create_table "market_index_histories", force: :cascade do |t|
@@ -708,6 +716,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_15_055220) do
   add_foreign_key "daily_journals", "users"
   add_foreign_key "holdings", "portfolios"
   add_foreign_key "holdings", "stocks"
+  add_foreign_key "market_index_archives", "market_indices", on_delete: :cascade
   add_foreign_key "market_index_histories", "market_indices"
   add_foreign_key "portfolios", "users"
   add_foreign_key "position_alerts", "positions", on_delete: :cascade

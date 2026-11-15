@@ -37,6 +37,7 @@ const scan: CrossoverScan = {
   as_of: "2026-11-05",
   params: { ema: [9, 21, 50], hma: 55, alma: { length: 21, offset: 0.85, sigma: 6 }, aroon: 25 },
   strong_aroon: 70,
+  market_phase: { phase: "sideways", as_of: "2026-11-05", sessions: 17, sma20: 2629.08, sma50: 2608.08, band_pct: 1 },
   rows: [
     row("FRESH", { ema_9_21: 1, ema_stack: 40 }, { in_buy_zone: true, readiness: 82, signal_volume: { ema_9_21: 2.1, ema_stack: 0.8 } }),
     row("OLD", { ema_9_21: 12, ema_stack: 9 }, { signal_volume: { ema_9_21: 1.6, ema_stack: 1.7 } }),
@@ -46,6 +47,11 @@ const scan: CrossoverScan = {
   backtest: {
     period: { from: "2020-01-01", to: "2026-11-05" }, horizons: [5, 10, 20], year_horizon: 20, strong_volume: 1.5,
     signals_with_volume: { ema_9_21: stats(1.4), ema_stack: stats(0.3), hma_up: stats(2.2), alma_cross: stats(0.4), aroon_cross: stats(0.6), aroon_strong: stats(0.9) },
+    by_phase: {
+      all: { uptrend: { n: 50, avg_return_pct: 2.5, win_rate_pct: 45 }, sideways: { n: 50, avg_return_pct: 1.6, win_rate_pct: 48 }, downtrend: { n: 50, avg_return_pct: 1.8, win_rate_pct: 49 } },
+      ema_9_21: { uptrend: { n: 10, avg_return_pct: 4, win_rate_pct: 52 }, sideways: { n: 10, avg_return_pct: 3.1, win_rate_pct: 50 }, downtrend: { n: 10, avg_return_pct: 0.4, win_rate_pct: 41 } },
+      ema_stack: {}, hma_up: {}, alma_cross: {}, aroon_cross: {}, aroon_strong: {},
+    },
     by_year: { all: years(0.5), ema_9_21: years(1), ema_stack: years(0), hma_up: years(2), alma_cross: years(0.5), aroon_cross: years(0.2), aroon_strong: years(1.2) },
     signals: { all: stats(0.1), ema_9_21: stats(-2.8), ema_stack: stats(-2.5), hma_up: stats(-1.3), alma_cross: stats(-0.8), aroon_cross: stats(-2.7), aroon_strong: stats(-2.6) },
   },
@@ -66,65 +72,80 @@ describe("ScannerPage", () => {
   it("lists stocks whose 9/21 cross began in the last 3 sessions on strong volume, hiding thin stocks", async () => {
     renderWithClient(<ScannerPage />)
 
-    expect(await screen.findByRole("row", { name: "FRESH scan row" })).toHaveTextContent("9/21 1d· 2.1× vol")
-    expect(screen.queryByRole("row", { name: "OLD scan row" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("row", { name: "THIN scan row" })).not.toBeInTheDocument()
-    expect(screen.queryByRole("row", { name: "QUIET scan row" })).not.toBeInTheDocument() // 0.9x volume
+    expect(await screen.findByRole("article", { name: "FRESH scan row" })).toHaveTextContent("9/21 · 1d · 2.1× vol")
+    expect(screen.queryByRole("article", { name: "OLD scan row" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("article", { name: "THIN scan row" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("article", { name: "QUIET scan row" })).not.toBeInTheDocument() // 0.9x volume
     expect(screen.getByText("1 of 4 stocks")).toBeInTheDocument()
-    expect(within(screen.getByRole("row", { name: "FRESH scan row" })).getByText("Entry zone")).toBeInTheDocument()
+    expect(within(screen.getByRole("article", { name: "FRESH scan row" })).getByText("Entry zone")).toBeInTheDocument()
 
     await userEvent.click(screen.getByLabelText("Volume ≥ 1.5× on the signal day"))
-    expect(screen.getByRole("row", { name: "QUIET scan row" })).toBeInTheDocument()
+    expect(screen.getByRole("article", { name: "QUIET scan row" })).toBeInTheDocument()
     expect(screen.getByText("2 of 4 stocks")).toBeInTheDocument()
   })
 
   it("treats the EMA stack as a state, widens the window, and shows thin stocks on request", async () => {
     renderWithClient(<ScannerPage />)
-    await screen.findByRole("row", { name: "FRESH scan row" })
+    await screen.findByRole("article", { name: "FRESH scan row" })
 
     await userEvent.click(screen.getByRole("checkbox", { name: "EMA 9 crossed above 21" })) // untick
     await userEvent.click(screen.getByRole("checkbox", { name: "EMA 9 > 21 > 50" }))
-    expect(screen.getByRole("row", { name: "OLD scan row" })).toBeInTheDocument() // stack began 9 sessions ago, still holds
-    expect(screen.queryByRole("row", { name: "FRESH scan row" })).not.toBeInTheDocument() // its stack began on 0.8x volume
+    expect(screen.getByRole("article", { name: "OLD scan row" })).toBeInTheDocument() // stack began 9 sessions ago, still holds
+    expect(screen.queryByRole("article", { name: "FRESH scan row" })).not.toBeInTheDocument() // its stack began on 0.8x volume
     await userEvent.click(screen.getByLabelText("Volume ≥ 1.5× on the signal day"))
-    expect(screen.getByRole("row", { name: "FRESH scan row" })).toBeInTheDocument()
+    expect(screen.getByRole("article", { name: "FRESH scan row" })).toBeInTheDocument()
     await userEvent.click(screen.getByLabelText("Volume ≥ 1.5× on the signal day"))
 
     await userEvent.click(screen.getByRole("checkbox", { name: "EMA 9 > 21 > 50" }))
     await userEvent.click(screen.getByRole("checkbox", { name: "EMA 9 crossed above 21" }))
-    await userEvent.selectOptions(screen.getByRole("combobox"), "10")
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Crosses began within" }), "10")
     await userEvent.click(screen.getByLabelText("Hide thinly traded stocks"))
     expect(screen.getByText("2 of 4 stocks")).toBeInTheDocument() // OLD (12 sessions) still out; THIN now in; QUIET out on volume
   })
 
-  it("summarises the ticked signals' track record and expands into the table", async () => {
+  it("shows NEPSE's phase and how the ticked signals did in it", async () => {
     renderWithClient(<ScannerPage />)
 
-    expect(await screen.findByLabelText("Track record summary")).toHaveTextContent(
-      "Track record on NEPSE since 2020: 20 sessions after the ticked signal began: 9/21 -2.80% (+1.40% on 1.5× volume) vs +0.10% for the average stock-day.",
-    )
-    await userEvent.click(screen.getByRole("button", { name: "Show track record" }))
+    const banner = await screen.findByRole("region", { name: "Market phase" })
+    expect(banner).toHaveTextContent("NEPSE: Sideways for 17 sessions")
+    expect(banner).toHaveTextContent("20-day average 2,629 is within 1% of the 50-day 2,608")
+    expect(banner).toHaveTextContent("In sideways phases since 2020, 20 sessions after the ticked signals began (all stock-days: +1.60%)")
+    expect(banner).toHaveTextContent("9/21 +3.10% better than average")
+  })
+
+  it("summarises the ticked signals' track record and expands into the tables", async () => {
+    renderWithClient(<ScannerPage />)
+
+    const summary = await screen.findByLabelText("Track record summary")
+    expect(summary).toHaveTextContent("EMA 9 crossed above 21 · worse than average")
+    expect(summary).toHaveTextContent("Average return-2.80%all stock-days +0.10%")
+    expect(summary).toHaveTextContent("On 1.5× volume+1.40%30% went up")
+
+    await userEvent.click(screen.getByRole("button", { name: "Track record details" }))
     const table = screen.getByRole("table", { name: "Signal track record" })
     const nineTwentyOne = within(table).getByText("EMA 9 crossed above 21").closest("tr") as HTMLElement
     expect(nineTwentyOne).toHaveTextContent("80-2.80%30%-2.90%+1.40%30%") // vs baseline -2.90; on volume +1.40
     await userEvent.click(screen.getByRole("tab", { name: "5 sessions" }))
     expect(nineTwentyOne).toHaveTextContent("-1.40%")
 
+    const byPhase = screen.getByRole("table", { name: "Track record by phase" })
+    expect(within(byPhase).getByText("EMA 9 crossed above 21").closest("tr")).toHaveTextContent("+4.00%+3.10%+0.40% ▼")
+
     const byYear = screen.getByRole("table", { name: "Track record by year" })
     expect(within(byYear).getByText("EMA 9 > 21 > 50").closest("tr")).toHaveTextContent("0.00% ▼+1.00% ▼") // below the baseline both years
     expect(within(byYear).getByText("HMA 55 turned up").closest("tr")).toHaveTextContent("+2.00%+3.00%")
   })
 
-  it("sorts by a column header", async () => {
+  it("sorts with the Sort by menu and reverses the order", async () => {
     renderWithClient(<ScannerPage />)
-    await screen.findByRole("row", { name: "FRESH scan row" })
+    await screen.findByRole("article", { name: "FRESH scan row" })
     await userEvent.click(screen.getByLabelText("Hide thinly traded stocks"))
-    await userEvent.selectOptions(screen.getByRole("combobox"), "10")
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Crosses began within" }), "10")
 
-    await userEvent.click(screen.getByRole("button", { name: "Symbol" }))
-    const order = () => screen.getAllByRole("row").map((r) => r.getAttribute("aria-label")).filter(Boolean)
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Sort by" }), "symbol")
+    const order = () => screen.getAllByRole("article").map((card) => card.getAttribute("aria-label"))
     expect(order()).toEqual(["FRESH scan row", "THIN scan row"])
-    await userEvent.click(screen.getByRole("button", { name: "Symbol" }))
+    await userEvent.click(screen.getByRole("button", { name: /Reverse order/ }))
     expect(order()).toEqual(["THIN scan row", "FRESH scan row"])
   })
 

@@ -80,11 +80,12 @@ namespace :nepse do
       puts JSON.pretty_generate(Nepse::Reference::CoverageReport.call)
     end
 
-    desc "Archive 2020+ daily prices older than stored ones, for the Indicator Scanner's track record (~15 min). Usage: rails \"nepse:data:archive_history[NABIL NICA]\""
+    desc "Archive 2020+ daily prices (and NEPSE index closes) older than stored ones, for the Indicator Scanner's track record (~15 min). Usage: rails \"nepse:data:archive_history[NABIL NICA]\""
     task :archive_history, [ :symbols ] => :environment do |_t, args|
       symbols = args[:symbols].to_s.split(/[\s,]+/).presence
       result = Scans::History.import!(symbols: symbols)
       puts "Archived #{result[:rows]} rows for #{result[:stocks]} stocks; failed #{result[:failed].size}"
+      puts "Archived #{Scans::MarketPhase.import!} NEPSE index closes" unless symbols
       result[:failed].first(10).each { |symbol, error| puts "  #{symbol}: #{error}" }
     end
 
