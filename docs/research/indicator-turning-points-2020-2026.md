@@ -155,9 +155,9 @@ app's sell rules are better exits.
 
 ## Possible changes to the app
 
-- Add **HMA 55** as a scanner signal (alongside HMA 21), and a **"volume ≥ 1.5×" filter**.
-- Show the **seven-year track record** on the scanner (needs the 2020–2026 history stored;
-  about 60 MB more in the database and the hosted copy).
+- *Done (15 Nov 2026):* the scanner uses **HMA 55** and **ALMA 21**, dropped the EMA 21/50
+  cross, has a **"volume ≥ 1.5×" filter** (on by default, also for Telegram alerts), and
+  shows the **track record since 2020** by year (prices in `stock_price_archives`, ~35 MB).
 - Add a **market-phase note** to the scanner (e.g. "NEPSE sideways: these signals haven't
   beaten random in sideways markets") using a faster regime measure than the 200-day.
 

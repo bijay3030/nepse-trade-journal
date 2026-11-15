@@ -325,9 +325,14 @@ A full walk-through of this page from first principles, with analogies and NABIL
 **Why:** many traders scan for moving-average crossovers and Aroon trends. This page finds
 them across every stock and shows how each signal has actually done on NEPSE.
 
-**How it works:** tick signals (EMA 9/21 cross, 21/50 cross, 9 > 21 > 50 stack, HMA turned
-up, close above ALMA, Aroon Up over Down, Aroon Up ≥ 70); a stock appears when it matches
-all of them, with crosses that began within the chosen window. Explanations of each
+**How it works:** tick signals (EMA 9/21 cross, 9 > 21 > 50 stack, HMA 55 turned up, close
+above ALMA 21, Aroon Up over Down, Aroon Up ≥ 70); a stock appears when it matches all of
+them, with crosses that began within the chosen window. **Volume ≥ 1.5× on the signal day**
+(on by default) also needs the day the newest ticked signal began to have traded 1.5× its
+50-session average volume; badges show "· 2.1× vol" when a signal began on strong volume.
+The settings come from a test of every 15% trend change on NEPSE from 2020 to 2026
+([research](research/indicator-turning-points-2020-2026.md)): HMA 55 was the best balance,
+volume added 3–7 points to every signal, and the slow 21/50 cross was dropped. Explanations of each
 indicator: [indicators-guide.md](indicators-guide.md).
 
 **Levels column:** **Entry · Stop · Target** for each row, coloured green / red, with where
@@ -338,7 +343,7 @@ in the backtest (see **Show track record → Trading the crossover levels**). Ru
 not advice.
 
 **Telegram:** with Telegram linked (Settings), **Alert me on Telegram** saves the ticked
-signals. After each close you get one message with the liquid stocks that newly match all of
+signals and the volume filter. After each close you get one message with the liquid stocks that newly match all of
 them (not repeated while they keep matching), with each signal's age, readiness and the
 signals' track record. **Stop alerts** turns it off; ticking other signals offers to switch.
 
@@ -346,8 +351,9 @@ signals' track record. **Stop alerts** turns it off; ticking other signals offer
 9/21/50, HMA, ALMA and Aroon (each can be switched off; 3M / 6M / 1Y), **▲ where each ticked
 signal began and ▼ where it ended**, and a table of what happened after each one. ← / → (or
 the arrow keys) step through the results; Esc closes. Columns sort by clicking their
-headers. Then judge the stock with the board's rules on its page; the track record shows
-these signals underperformed in the past year.
+headers. Then judge the stock with the board's rules on its page. The track record (since
+2020, with a by-year table) shows the market year mattered more than the signal: in
+sideways years these signals did no better than average.
 
 **QA:**
 
@@ -356,9 +362,13 @@ these signals underperformed in the past year.
 2. With "EMA 9 crossed above 21" ticked and "Last 3 sessions", every row's "9/21" badge
    reads today, 1d, 2d or 3d.
 3. Tick "Aroon Up ≥ 70" too: the list narrows; every row has both badges.
-4. Untick "Hide thinly traded stocks": the count grows.
-5. The track-record line summarises the ticked signals; **Show track record** opens the
-   table, where 5/10/20 sessions change the numbers and rows worse than the baseline show ▼.
+4. Untick "Hide thinly traded stocks": the count grows. Untick "Volume ≥ 1.5× on the
+   signal day": the count grows again, and rows without "· N× vol" on their newest signal
+   appear.
+5. The track-record line ("since 2020") summarises the ticked signals, with their result on
+   1.5× volume; **Show track record** opens the table (5/10/20 sessions change the numbers;
+   "vs baseline" is the difference from all stock-days) and the **By year** table, where ▼
+   marks years a signal did worse than the baseline.
 6. **Chart** on a row: the panel shows the candles, indicator lines, Aroon pane, ▲/▼ markers
    at each ticked signal's start/end, and the signal history; → moves to the next stock.
 7. Click **Change**, then click it again: the order reverses.

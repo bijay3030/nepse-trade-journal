@@ -69,5 +69,9 @@ step 2. The first load after the API has slept takes about a minute.
 - **Shell:** free Render services have none. One-off tasks (a password change, copying
   data again) run from your Mac against Supabase, e.g.
   `DATABASE_URL='<supabase url>' bin/rails 'users:set_password[you@example.com]'`.
+- **Scanner track record:** the 2020–2025 price archive (`stock_price_archives`, about
+  35 MB) is copied with everything else. Run `bin/rails nepse:data:archive_history` on your
+  Mac before `bin/render-copy-data`, or the scanner's track record covers only the regular
+  history.
 - **Copying again** (`bin/render-copy-data`) replaces everything in Supabase with your
   local data, including positions and alerts recorded on the live app.
