@@ -29,6 +29,13 @@ shared: &shared
     queue: default
     schedule: every minute
 
+  # Telegram morning watch: saved-filter stocks in or near their entry zone, 9:00 AM Nepal
+  # time (03:15 UTC). The job skips days NEPSE doesn't trade (Nepse::MarketHours).
+  telegram_morning_watch:
+    class: TelegramMorningWatchJob
+    queue: default
+    schedule: "15 3 * * * UTC"
+
   # Trend template, relative strength, zones and buy readiness: 4:45 PM Nepal time, Mon-Fri,
   # after the closing prices and reference data.
   setup_snapshots:

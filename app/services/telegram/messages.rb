@@ -17,6 +17,8 @@ module Telegram
     BOOK_CLOSE_DAYS = 10
     BOARD_LIMIT = 10
     FOOTER = "<i>Rule checks, not a recommendation.</i>".freeze
+    # Telegram's limit is 4,096 characters; leave room for the HTML entities it counts.
+    MAX_LENGTH = 3_900
 
     module_function
 
@@ -125,6 +127,51 @@ module Telegram
       header = "🎯 <b>Entry-ready on your scanner filter</b> (#{at.in_time_zone('Asia/Kathmandu').strftime('%-I:%M %p')}): #{h(filter)}"
       [ header, *blocks, more, FOOTER ].compact.join("\n\n")
     end
+
+    PHASE_LABELS = { "uptrend" => "uptrend", "sideways" => "sideways", "downtrend" => "downtrend" }.freeze
+
+    # 9 AM: the saved filter's stocks in or near their entry zone (Scans::MorningWatch).
+    # Shows up to MorningWatch::LIMIT stocks per group, fewer if the text would pass MAX_LENGTH.
+    def morning_watch(groups, signals, volume:, as_of:, today:, phase: nil, live_alerts: false, limit: Scans::MorningWatch::LIMIT)
+      filter = signals.map { SCANNER_LABELS.fetch(_1) }.join(" + ") + (volume ? " on #{Scans::Crossovers::STRONG_VOLUME}x volume" : "")
+      market = phase&.dig(:phase) ? " · NEPSE #{PHASE_LABELS[phase[:phase]]}#{phase[:sessions] ? " for #{phase[:sessions]} sessions" : ''}" : ""
+      header = "☀️ <b>Morning watch</b> · #{today.strftime('%a %b %-d')} (levels from the #{as_of&.strftime('%b %-d')} close)\n" \
+               "Filter: #{h(filter)}#{market}"
+      describe = lambda do |row, gap = nil|
+        levels = row[:levels]
+        ages = signals.map do |key|
+          ratio = row.dig(:signal_volume, key)
+          "#{SCANNER_LABELS[key]} #{row[:signals][key].zero? ? 'today' : "#{row[:signals][key]}d"}#{ratio ? " (#{ratio}x vol)" : ''}"
+        end
+        where = gap ? "#{gap}% below zone" : "zone"
+        reward = levels[:target] && row[:close] > levels[:stop] ? " · R:R #{((levels[:target] - row[:close]) / (row[:close] - levels[:stop])).round(2)}" : ""
+        "• <b>#{h(row[:symbol])}</b> #{money(row[:close])} · #{where} #{money(levels[:entry_low])}–#{money(levels[:entry_high])} · " \
+          "stop #{money(levels[:stop])}#{levels[:target] ? " · target #{money(levels[:target])}" : ''}#{reward}\n" \
+          "   readiness #{row[:readiness] || '—'}#{row[:in_buy_zone] ? ' · on Entry zone now' : ''} · #{h(ages.join(', '))}" \
+          "#{Array(row[:guards]).map { " · ⚠️ #{GUARD_LABELS.fetch(_1, _1)}" }.join}"
+      end
+      sections = []
+      if groups[:in_zone].any?
+        sections << "<b>In entry zone</b> (#{groups[:in_zone].size})\n" + groups[:in_zone].first(limit).map { describe.(_1) }.join("\n") +
+                    more_line(groups[:in_zone].size - limit)
+      end
+      if groups[:near].any?
+        sections << "<b>Close to the zone</b> (≤#{Scans::MorningWatch::NEAR_PCT.to_i}% below, #{groups[:near].size})\n" +
+                    groups[:near].first(limit).map { |row, gap| describe.(row, gap) }.join("\n") +
+                    more_line(groups[:near].size - limit)
+      end
+      if sections.empty?
+        sections << "No stock on your radar is in or within #{Scans::MorningWatch::NEAR_PCT.to_i}% of its entry zone " \
+                    "(#{groups[:radar]} #{groups[:radar] == 1 ? 'stock matches' : 'stocks match'} the filter)."
+      end
+      closing = live_alerts && sections.any? ? "Market opens at 11:00. You'll get a 🎯 message if one trades inside its zone." : "Market opens at 11:00."
+      text = [ header, *sections, closing, FOOTER ].join("\n\n")
+      return text if text.size <= MAX_LENGTH || limit <= 1
+
+      morning_watch(groups, signals, volume: volume, as_of: as_of, today: today, phase: phase, live_alerts: live_alerts, limit: limit - 1)
+    end
+
+    def more_line(hidden) = hidden.positive? ? "\n…and #{hidden} more on the Indicator Scanner." : ""
 
     # "Track record (20 sessions after each signal began): ... vs ... for all stock-days."
     def scanner_track_record(signals, backtest)

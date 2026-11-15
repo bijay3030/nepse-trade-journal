@@ -14,7 +14,7 @@ RSpec.describe "Telegram settings", type: :request do
 
   it "reports the status and returns a one-time link" do
     get "/api/v1/telegram", headers: headers
-    expect(json).to include("configured" => true, "linked" => false, "pending" => false, "watchlist_alerts" => true, "board_alerts" => true, "scanner_entry_alerts" => true)
+    expect(json).to include("configured" => true, "linked" => false, "pending" => false, "watchlist_alerts" => true, "board_alerts" => true, "scanner_entry_alerts" => true, "morning_watch" => true)
 
     post "/api/v1/telegram/link", headers: headers
     code = user.reload.telegram_link_token
@@ -35,6 +35,8 @@ RSpec.describe "Telegram settings", type: :request do
     expect(json).to include("board_alerts" => false, "watchlist_alerts" => true)
     patch "/api/v1/telegram", params: { scanner_entry_alerts: false }, headers: headers, as: :json
     expect(json).to include("scanner_entry_alerts" => false, "board_alerts" => false)
+    patch "/api/v1/telegram", params: { morning_watch: false }, headers: headers, as: :json
+    expect(json).to include("morning_watch" => false)
 
     post "/api/v1/telegram/test", headers: headers
     expect(json["sent"]).to be(true)
