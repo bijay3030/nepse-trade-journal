@@ -392,6 +392,9 @@ the average stock-day, so treat them as a shortlist, not entries. The scan and i
 are cached per session and warmed after the nightly backtest. Indicator explanations:
 [docs/indicators-guide.md](docs/indicators-guide.md).
 
+How these indicators did at every 15% trend change from 2020 to 2026 (by year, market
+phase and volume): [docs/research/indicator-turning-points-2020-2026.md](docs/research/indicator-turning-points-2020-2026.md).
+
 ## Deployment
 
 Free hosting on Render (API and frontend) with the database on Supabase: see
