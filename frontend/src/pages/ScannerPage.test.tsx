@@ -57,7 +57,7 @@ const scan: CrossoverScan = {
   },
 }
 
-let alert: { signals: string[]; volume: boolean; telegram_linked: boolean; entry_alerts?: boolean } = { signals: [], volume: true, telegram_linked: true }
+let alert: { signals: string[]; volume: boolean; telegram_linked: boolean; entry_alerts?: boolean; morning_watch?: boolean } = { signals: [], volume: true, telegram_linked: true }
 
 describe("ScannerPage", () => {
   beforeEach(() => {
@@ -181,10 +181,10 @@ describe("ScannerPage", () => {
   })
 
   it("saves the volume filter with the alert", async () => {
-    alert = { signals: ["ema_9_21"], volume: true, telegram_linked: true, entry_alerts: true }
+    alert = { signals: ["ema_9_21"], volume: true, telegram_linked: true, entry_alerts: true, morning_watch: true }
     renderWithClient(<ScannerPage />)
 
-    expect(await screen.findByText(/Telegram alerts on for this filter/)).toHaveTextContent("· and live when a match is in its entry zone")
+    expect(await screen.findByText(/Telegram alerts on for this filter/)).toHaveTextContent("· watch list at 9 AM· and live when a match is in its entry zone")
     await userEvent.click(screen.getByLabelText("Volume ≥ 1.5× on the signal day"))
     expect(screen.getByLabelText("Telegram alerts")).toHaveTextContent("Telegram alerts on for: 9/21 on 1.5× volume")
     await userEvent.click(screen.getByRole("button", { name: "Alert me for this filter instead" }))

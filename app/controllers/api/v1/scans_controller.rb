@@ -34,7 +34,7 @@ module Api
 
       def alert_payload
         { signals: current_user.scanner_alert_signals, volume: current_user.scanner_alert_volume,
-          entry_alerts: current_user.telegram_scanner_entry_alerts, telegram_linked: current_user.telegram_chat_id.present? }
+          entry_alerts: current_user.telegram_scanner_entry_alerts, morning_watch: current_user.telegram_morning_watch, telegram_linked: current_user.telegram_chat_id.present? }
       end
     end
   end

@@ -368,6 +368,13 @@ shows the live price, zone, stop, target, R:R and readiness, once per stock per 
 off in **Settings → Telegram → Scanner match at a good entry**. Treat it as a prompt to look
 at the stock, not an order: check the chart and the board's rules first.
 
+**Morning watch (9 AM):** on trading days (Monday–Friday) at 9:00 AM Nepal time you get a
+☀️ list of the stocks on your saved filter that closed **in their entry zone** or **within
+3% below it**, with close, zone, stop, target, R:R, readiness and signal ages, plus NEPSE's
+phase. Use it to plan the session: during market hours the 🎯 message tells you when one
+actually trades inside its zone. If nothing qualifies, the message says so. Turn it off in
+**Settings → Telegram → Morning watch (9 AM)**.
+
 **Use it:** as a shortlist. **Chart** on any row opens a panel with the stock's candles, EMA
 9/21/50, HMA, ALMA and Aroon (each can be switched off; 3M / 6M / 1Y), **▲ where each ticked
 signal began and ▼ where it ended**, and a table of what happened after each one. ← / → (or

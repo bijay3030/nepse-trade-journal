@@ -31,6 +31,7 @@ export function TelegramAlertControl({ selected, volume }: { selected: Crossover
       {current ? (
         <span className="inline-flex flex-wrap items-center gap-1 font-semibold text-pine">
           <Bell className="h-3.5 w-3.5" /> Telegram alerts on for this filter
+          {data.morning_watch && <span className="font-normal text-slate" title="Change in Settings → Telegram">· watch list at 9 AM</span>}
           {data.entry_alerts && <span className="font-normal text-slate" title="Change in Settings → Telegram">· and live when a match is in its entry zone</span>}
         </span>
       ) : saved.length > 0 ? (
