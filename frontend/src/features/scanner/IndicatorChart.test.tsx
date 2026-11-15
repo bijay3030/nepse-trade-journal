@@ -31,9 +31,9 @@ const chart: CrossoverChart = {
       { start_on: "2026-10-01", start_price: 101, end_on: "2026-10-05", end_price: 103, sessions: 2, change_pct: 1.98, open: false },
       { start_on: "2026-10-07", start_price: 105, end_on: null, end_price: null, sessions: 0, change_pct: 0, open: true },
     ],
-    ema_21_50: [], ema_stack: [], hma_up: [], alma_cross: [], aroon_cross: [], aroon_strong: [],
+    ema_stack: [], hma_up: [], alma_cross: [], aroon_cross: [], aroon_strong: [],
   },
-  signals: { ema_9_21: 0, ema_21_50: null, ema_stack: null, hma_up: null, alma_cross: null, aroon_cross: null, aroon_strong: null },
+  signals: { ema_9_21: 0, ema_stack: null, hma_up: null, alma_cross: null, aroon_cross: null, aroon_strong: null },
 }
 
 describe("IndicatorChart", () => {
