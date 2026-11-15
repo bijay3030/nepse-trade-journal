@@ -349,7 +349,7 @@ function SignalTrackRecord({ backtest, selected }: { backtest: CrossoverScan["ba
                             const stats = cell(backtest.by_year?.[key]?.[year])
                             const yearBase = cell(backtest.by_year?.all?.[year])
                             const worse = key !== "all" && (diff(stats, yearBase) ?? 0) < 0
-                            return <td key={year} className={cn("py-1.5 pr-3 text-right font-mono", tone(stats?.avg_return_pct))}>{pct(stats?.avg_return_pct)}{worse ? " ▼" : ""}</td>
+                            return <td key={year} className={cn("whitespace-nowrap py-1.5 pr-3 text-right font-mono", tone(stats?.avg_return_pct))}>{pct(stats?.avg_return_pct)}{worse ? " ▼" : ""}</td>
                           })}
                         </tr>
                       ))}

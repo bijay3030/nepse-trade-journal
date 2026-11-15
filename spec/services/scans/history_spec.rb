@@ -33,4 +33,10 @@ RSpec.describe Scans::History do
     expect(described_class.import!(symbols: [ "OLDX" ], client: client, delay: 0)[:rows]).to eq(2) # idempotent upsert
     expect(StockPriceArchive.count).to eq(2)
   end
+
+  it "records the client's error for a stock without history" do
+    client = instance_double(Nepse::Source::MerolaganiHistoryClient, fetch: { success: false, error: "HTTP 503" })
+
+    expect(described_class.import!(symbols: [ "OLDX" ], client: client, delay: 0)).to include(stocks: 0, failed: { "OLDX" => "HTTP 503" })
+  end
 end
