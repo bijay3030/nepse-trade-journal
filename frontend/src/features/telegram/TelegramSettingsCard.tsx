@@ -113,6 +113,13 @@ export function TelegramSettingsCard() {
                 disabled={update.isPending}
                 onChange={(on) => update.mutate({ board_alerts: on })}
               />
+              <Switch
+                label="Scanner match at a good entry"
+                help="During market hours: a stock matching your saved Indicator Scanner filter trades inside its entry zone, readiness 60+, no circuit, thin-volume or extended warning. Once per stock per day."
+                checked={data.scanner_entry_alerts ?? true}
+                disabled={update.isPending}
+                onChange={(on) => update.mutate({ scanner_entry_alerts: on })}
+              />
             </div>
           </>
         ) : link.data ? (

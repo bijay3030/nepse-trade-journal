@@ -361,6 +361,13 @@ signals and the volume filter. After each close you get one message with the liq
 them (not repeated while they keep matching), with each signal's age, readiness and the
 signals' track record. **Stop alerts** turns it off; ticking other signals offers to switch.
 
+**Live entry messages:** with the same saved filter, during market hours you also get a 🎯
+**Entry-ready** message when a matching stock (crosses within the last 10 sessions) trades
+inside its entry zone with readiness 60+ and no thin-volume, circuit or extended warning. It
+shows the live price, zone, stop, target, R:R and readiness, once per stock per day. Turn it
+off in **Settings → Telegram → Scanner match at a good entry**. Treat it as a prompt to look
+at the stock, not an order: check the chart and the board's rules first.
+
 **Use it:** as a shortlist. **Chart** on any row opens a panel with the stock's candles, EMA
 9/21/50, HMA, ALMA and Aroon (each can be switched off; 3M / 6M / 1Y), **▲ where each ticked
 signal began and ▼ where it ended**, and a table of what happened after each one. ← / → (or

@@ -11,12 +11,20 @@ module Nepse
     end
 
     # Runs after any price update: records the running volumes (for the volume
-    # pace), checks watchlist levels, then pushes quotes.
+    # pace), checks watchlist levels and scanner entries, then pushes quotes.
     def self.publish
       Nepse::VolumeProfile.record!
       Watchlist::AlertEvaluator.call
       Positions::Monitor.call
+      scanner_entries
       broadcast
+    end
+
+    # A failure here must not stop the quotes going out.
+    def self.scanner_entries
+      Scans::EntryAlerts.deliver if Telegram::Client.configured?
+    rescue StandardError => e
+      Rails.logger.warn("Scanner entry alerts failed: #{e.class}: #{e.message}")
     end
 
     def self.broadcast
