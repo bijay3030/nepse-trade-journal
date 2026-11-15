@@ -1,6 +1,6 @@
 # A Telegram message sent about a stock; see Telegram::Notifier.
 class TelegramDelivery < ApplicationRecord
-  KINDS = %w[watchlist_zone watchlist_early entry_zone_board scanner_alert].freeze
+  KINDS = %w[watchlist_zone watchlist_early entry_zone_board scanner_alert scanner_entry].freeze
 
   belongs_to :user
   belongs_to :stock

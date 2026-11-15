@@ -31,6 +31,7 @@ module Api
         attrs = {}
         attrs[:telegram_watchlist_alerts] = ActiveModel::Type::Boolean.new.cast(params[:watchlist_alerts]) if params.key?(:watchlist_alerts)
         attrs[:telegram_board_alerts] = ActiveModel::Type::Boolean.new.cast(params[:board_alerts]) if params.key?(:board_alerts)
+        attrs[:telegram_scanner_entry_alerts] = ActiveModel::Type::Boolean.new.cast(params[:scanner_entry_alerts]) if params.key?(:scanner_entry_alerts)
         current_user.update!(attrs)
         render json: status_payload
       end
@@ -60,7 +61,8 @@ module Api
           username: current_user.telegram_username,
           pending: current_user.telegram_link_expires_at&.future? || false,
           watchlist_alerts: current_user.telegram_watchlist_alerts,
-          board_alerts: current_user.telegram_board_alerts
+          board_alerts: current_user.telegram_board_alerts,
+          scanner_entry_alerts: current_user.telegram_scanner_entry_alerts
         }
       end
 

@@ -100,6 +100,32 @@ module Telegram
       ].compact.join("\n\n")
     end
 
+    # Live: stocks matching the saved scanner filter that trade inside their entry zone
+    # (Scans::EntryAlerts). entries: [[row, live price], ...].
+    def scanner_entry(entries, signals, volume: false, at: Time.current)
+      filter = signals.map { SCANNER_LABELS.fetch(_1) }.join(" + ") + (volume ? " on #{Scans::Crossovers::STRONG_VOLUME}x volume" : "")
+      blocks = entries.first(Scans::Alerts::LIMIT).map do |row, price|
+        levels = row[:levels]
+        source = levels[:source] == "board_setup" ? "#{SETUP_LABELS.fetch(levels[:setup_type].to_s, 'board setup')} levels" : "crossover-rule levels"
+        ages = signals.map do |key|
+          ratio = row.dig(:signal_volume, key)
+          "#{SCANNER_LABELS[key]} #{row[:signals][key].zero? ? 'today' : "#{row[:signals][key]}d ago"}#{ratio ? " (#{ratio}x vol)" : ''}"
+        end
+        reward = levels[:target] && price > levels[:stop] ? " · R:R #{((levels[:target] - price) / (price - levels[:stop])).round(2)}" : ""
+        [
+          "<b>#{h(row[:symbol])}</b> · #{h(row[:name])}",
+          "Live #{money(price)} · in entry zone #{money(levels[:entry_low])}–#{money(levels[:entry_high])} · stop #{money(levels[:stop])}" \
+          "#{levels[:target] ? " · target #{money(levels[:target])}" : ''}#{reward}",
+          "Readiness #{row[:readiness]}/100 · #{source}#{row[:in_buy_zone] ? ' · also on Entry zone now' : ''}",
+          h(ages.join(", ")),
+          *Array(row[:guards]).map { "⚠️ #{GUARD_LABELS.fetch(_1, _1)}" }
+        ].join("\n")
+      end
+      more = entries.size > Scans::Alerts::LIMIT ? "…and #{entries.size - Scans::Alerts::LIMIT} more on the Indicator Scanner." : nil
+      header = "🎯 <b>Entry-ready on your scanner filter</b> (#{at.in_time_zone('Asia/Kathmandu').strftime('%-I:%M %p')}): #{h(filter)}"
+      [ header, *blocks, more, FOOTER ].compact.join("\n\n")
+    end
+
     # "Track record (20 sessions after each signal began): ... vs ... for all stock-days."
     def scanner_track_record(signals, backtest)
       stats = backtest&.dig(:signals) or return
