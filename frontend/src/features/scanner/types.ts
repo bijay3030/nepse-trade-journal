@@ -47,6 +47,8 @@ export type CrossoverScan = {
   params: { ema: number[]; hma: number; alma: { length: number; offset: number; sigma: number }; aroon: number }
   strong_aroon: number
   rows: ScanRow[]
+  /** NEPSE's trend phase on the latest session (Scans::MarketPhase). */
+  market_phase?: MarketPhase
   backtest: {
     period: { from: string | null; to: string | null }
     horizons: number[]
@@ -58,9 +60,23 @@ export type CrossoverScan = {
     /** The same samples, only signals that began on strong_volume x average volume. */
     signals_with_volume?: Record<CrossoverSignal, Record<string, SignalStats>>
     by_year?: Record<"all" | CrossoverSignal, Record<string, SignalStats>>
+    /** 20-session results by NEPSE's phase on the signal day. */
+    by_phase?: Record<"all" | CrossoverSignal, Partial<Record<MarketPhaseName, SignalStats>>>
     trades?: Record<CrossoverSignal, TradeStats>
     trade_rules?: { max_hold: number; cost_pct: number; reward_multiple: number; max_stop_pct: number }
   }
+}
+
+export type MarketPhaseName = "uptrend" | "sideways" | "downtrend"
+
+export type MarketPhase = {
+  phase: MarketPhaseName | null
+  as_of?: string
+  /** Sessions the phase has lasted. */
+  sessions?: number
+  sma20?: number
+  sma50?: number | null
+  band_pct?: number
 }
 
 export type SignalEpisode = {
