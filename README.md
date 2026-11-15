@@ -390,6 +390,16 @@ signal's age, readiness and whether the stock is also on Entry zone now; the mes
 with the chosen signals' track record on NEPSE. At most once per stock per session; needs
 Telegram linked in Settings.
 
+**Live entry messages:** during market hours, after each price update (about every 5
+minutes), `Scans::EntryAlerts` checks the same saved filter against live prices. A stock
+gets a 🎯 "Entry-ready on your scanner filter" message when every saved signal holds (crosses
+began within the last 10 sessions; with the volume option the newest began on 1.5× volume),
+the live price is inside its entry zone (above the stop), readiness is 60 or more, and it has
+no thin-volume, circuit or extended warning. The message has the live price, zone, stop,
+target, R:R, readiness, the levels' source and each signal's age and volume. At most once per
+stock per session; switch it off in Settings → Telegram ("Scanner match at a good entry",
+`users.telegram_scanner_entry_alerts`).
+
 The page also shows each signal's track record on NEPSE since 2020
 (`Scans::CrossoverBacktest`): the 5/10/20-session return after every time a signal began,
 against all stock-days, with the same for signals on 1.5× volume and a by-year table. The

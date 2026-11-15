@@ -29,7 +29,10 @@ export function TelegramAlertControl({ selected, volume }: { selected: Crossover
   return (
     <span className="flex flex-wrap items-center gap-2 text-xs" aria-label="Telegram alerts">
       {current ? (
-        <span className="inline-flex items-center gap-1 font-semibold text-pine"><Bell className="h-3.5 w-3.5" /> Telegram alerts on for this filter</span>
+        <span className="inline-flex flex-wrap items-center gap-1 font-semibold text-pine">
+          <Bell className="h-3.5 w-3.5" /> Telegram alerts on for this filter
+          {data.entry_alerts && <span className="font-normal text-slate" title="Change in Settings → Telegram">· and live when a match is in its entry zone</span>}
+        </span>
       ) : saved.length > 0 ? (
         <span className="text-slate">Telegram alerts on for: <b className="text-ink">{names(saved, data.volume)}</b></span>
       ) : null}
