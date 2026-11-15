@@ -79,15 +79,9 @@ class MarketIndex::Overview
     values.size < minimum ? nil : (values.sum.to_f / values.size).round(2)
   end
 
+  # Shared with the Indicator Scanner's market phase.
   def trend_for(values)
-    return "sideways" if values.size < 20
-
-    short = average(values.last(20))
-    long = average(values.last(50), minimum: 50)
-    reference = long || average(values.first(values.size - 20))
-    return "sideways" unless reference
-
-    short > reference * 1.01 ? "uptrend" : short < reference * 0.99 ? "downtrend" : "sideways"
+    Scans::MarketPhase.trend(values)
   end
 
   def rating(value, positive: 55, negative: 45)

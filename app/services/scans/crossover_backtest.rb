@@ -2,8 +2,9 @@ module Scans
   # How each Scans::Crossovers signal played out on NEPSE history since 2020 (archived
   # prices plus the regular ones, Scans::History): every session where a signal began is
   # a sample, and its return over the next 5, 10 and 20 sessions (close to close, before
-  # costs) is compared with all stock-days (the baseline), overall, by year, and for
-  # signals that began on STRONG_VOLUME x average volume. Indicators only use bars up to
+  # costs) is compared with all stock-days (the baseline), overall, by year, by NEPSE's
+  # phase on the signal day (Scans::MarketPhase), and for signals that began on
+  # STRONG_VOLUME x average volume. Indicators only use bars up to
   # the signal day, so there's no look-ahead. Stocks are processed one at a time.
   module CrossoverBacktest
     HORIZONS = [ 5, 10, 20 ].freeze
@@ -36,6 +37,8 @@ module Scans
       tallies = keys.to_h { |key| [ key, HORIZONS.to_h { [ _1, Tally.new ] } ] }
       with_volume = Crossovers::SIGNALS.to_h { |key| [ key, HORIZONS.to_h { [ _1, Tally.new ] } ] }
       years = Hash.new { |h, key| h[key] = Hash.new { |y, year| y[year] = Tally.new } }
+      phase_on = MarketPhase.timeline
+      phases = keys.to_h { |key| [ key, MarketPhase::PHASES.to_h { [ _1, Tally.new ] } ] }
       trades = Hash.new { |h, k| h[k] = [] }
       first = last = nil
 
@@ -53,7 +56,11 @@ module Scans
             value = (closes[i + h] / closes[i] - 1) * 100
             tallies[key][h].add(value)
             with_volume[key][h].add(value) if volume_ok
-            years[key][series[:dates][i].year].add(value) if h == YEAR_HORIZON
+            next unless h == YEAR_HORIZON
+
+            years[key][series[:dates][i].year].add(value)
+            phase = phase_on[series[:dates][i]]
+            phases[key][phase].add(value) if phase
           end
         end
         (0...closes.size).each { |i| add.("all", i, false) }
@@ -77,6 +84,7 @@ module Scans
         signals: tallies.transform_values { |by_h| by_h.transform_values(&:to_h) },
         signals_with_volume: with_volume.transform_values { |by_h| by_h.transform_values(&:to_h) },
         by_year: keys.to_h { |key| [ key, years[key].sort.to_h.transform_values(&:to_h) ] },
+        by_phase: phases.transform_values { |by_phase| by_phase.transform_values(&:to_h) },
         trades: Crossovers::SIGNALS.to_h { |key| [ key, trade_stats(trades[key]) ] },
         trade_rules: { max_hold: MAX_HOLD, cost_pct: COST_PCT, reward_multiple: Levels::REWARD_MULTIPLE, max_stop_pct: Levels::MAX_STOP_PCT }
       }
