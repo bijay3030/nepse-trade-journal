@@ -400,6 +400,16 @@ target, R:R, readiness, the levels' source and each signal's age and volume. At 
 stock per session; switch it off in Settings → Telegram ("Scanner match at a good entry",
 `users.telegram_scanner_entry_alerts`).
 
+**Morning watch:** at 9:00 AM Nepal time on trading days (`TelegramMorningWatchJob`,
+`config/recurring.yml`, skipping days `Nepse::MarketHours` says NEPSE doesn't trade),
+`Scans::MorningWatch` sends each user one ☀️ message with the stocks on their saved
+filter's radar whose last close is **in their entry zone** or **within 3% below it**,
+highest readiness first (10 per group, fewer if the message would be too long for
+Telegram), with close, zone, stop, target, R:R, readiness and signal ages, and NEPSE's
+phase. Thin stocks, stocks above the zone and stocks at their stop are left out; when none
+qualify it says so. Once a day (`users.telegram_morning_watch_sent_on`); switch it off in
+Settings → Telegram → "Morning watch (9 AM)" (`users.telegram_morning_watch`).
+
 The page also shows each signal's track record on NEPSE since 2020
 (`Scans::CrossoverBacktest`): the 5/10/20-session return after every time a signal began,
 against all stock-days, with the same for signals on 1.5× volume and a by-year table. The
