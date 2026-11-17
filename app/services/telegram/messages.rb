@@ -171,6 +171,31 @@ module Telegram
       morning_watch(groups, signals, volume: volume, as_of: as_of, today: today, phase: phase, live_alerts: live_alerts, limit: limit - 1)
     end
 
+    # After the close: the session in numbers (MarketIndex::DailySummary).
+    def market_summary(s)
+      points = s[:change_points] ? " (#{format('%+.2f', s[:change_points])})" : ""
+      turnover = "Turnover NPR #{billions(s[:turnover])} bn"
+      turnover += " (#{billions(s[:previous_turnover])} bn the session before)" if s[:previous_turnover].to_f.positive?
+      ratio = s[:declining].positive? ? (s[:advancing].to_f / s[:declining]).round(2) : nil
+      phase = s.dig(:phase, :phase) ? "NEPSE #{PHASE_LABELS[s[:phase][:phase]]}#{s[:phase][:sessions] ? " for #{s[:phase][:sessions]} sessions" : ''} (20-day vs 50-day average)" : nil
+      direction = s[:direction] ? "Market Direction: #{s[:direction][:label]} · #{s[:direction][:distribution_days]} distribution #{s[:direction][:distribution_days] == 1 ? 'day' : 'days'}" : nil
+      move = ->(list) { list.map { "#{h(_1[:symbol])} #{format('%+.2f', _1[:change_pct])}%" }.join(", ").presence || "—" }
+      sectors = s[:sectors].map { "#{format('%+.2f', _1[:sector_performance_pct])}% #{h(_1[:sector])} (#{_1[:constituents_count]})" }
+      [
+        "📊 <b>NEPSE #{s[:traded_on].strftime('%a %b %-d')}</b>: #{format('%.2f', s[:index])} #{arrow(s[:change_pct])} #{format('%+.2f', s[:change_pct])}%#{points}\n#{turnover}",
+        "<b>Breadth</b>: #{s[:advancing]} up · #{s[:declining]} down · #{s[:unchanged]} unchanged#{ratio ? " (A/D #{ratio})" : ''}\n" \
+          "Above 50-day average #{s[:above50].round}% · above 200-day #{s[:above200].round}%",
+        [ phase, direction, "Entry zone now: #{s[:board][:total]} #{s[:board][:total] == 1 ? 'stock' : 'stocks'} (#{s[:board][:joined]} new)" ].compact.join("\n"),
+        "<b>Top gainers</b> (liquid): #{move.(s[:gainers])}\n<b>Top losers</b> (liquid): #{move.(s[:losers])}\n" \
+          "<b>Most traded</b>: #{s[:most_traded].map { "#{h(_1[:symbol])} #{(_1[:turnover] / 1e6).round}M" }.join(', ').presence || '—'}",
+        "<b>Sectors</b>\n#{sectors.join("\n")}",
+        "<i>Stored data after the nightly analysis. Not advice.</i>"
+      ].join("\n\n")
+    end
+
+    def arrow(change) = change.to_f.positive? ? "▲" : change.to_f.negative? ? "▼" : "■"
+    def billions(value) = format("%.2f", value.to_f / 1e9)
+
     def more_line(hidden) = hidden.positive? ? "\n…and #{hidden} more on the Indicator Scanner." : ""
 
     # "Track record (20 sessions after each signal began): ... vs ... for all stock-days."
