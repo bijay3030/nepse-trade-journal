@@ -51,5 +51,14 @@ RSpec.describe MarketIndex::DailySummary do
       expect(client).to have_received(:send_message).with("42", include("📊")).once
       expect(described_class.deliver(traded_on: day - 1, now: evening, client: client)).to eq({}) # a catch-up of an old session
     end
+
+    it "tries again on a later run when Telegram didn't take the message" do
+      failing = instance_double(Telegram::Client)
+      allow(failing).to receive(:send_message).and_raise(Telegram::Error.new("Not Found", code: 404))
+
+      expect(described_class.deliver(traded_on: day, now: evening, client: failing)).to eq(user.id => :failed)
+      expect(user.reload.telegram_market_summary_sent_on).to be_nil
+      expect(described_class.deliver(traded_on: day, now: evening + 1.hour, client: client)).to eq(user.id => :sent)
+    end
   end
 end

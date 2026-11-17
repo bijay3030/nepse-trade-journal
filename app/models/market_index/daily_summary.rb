@@ -51,8 +51,11 @@ module MarketIndex::DailySummary
       claimed = User.where(id: user.id).where("telegram_market_summary_sent_on IS NULL OR telegram_market_summary_sent_on < ?", traded_on)
                     .update_all(telegram_market_summary_sent_on: traded_on) == 1
       next [ user.id, :duplicate ] unless claimed
+      next [ user.id, :sent ] if Telegram::Notifier.deliver(user, text, client)
 
-      [ user.id, Telegram::Notifier.deliver(user, text, client) ? :sent : :failed ]
+      # Not sent: free the session so a later run can try again.
+      User.where(id: user.id).update_all(telegram_market_summary_sent_on: user.telegram_market_summary_sent_on)
+      [ user.id, :failed ]
     end
   end
 end

@@ -51,6 +51,14 @@ RSpec.describe Scans::MorningWatch do
       expect(described_class.deliver(now: monday + 1.hour, scan: scan, client: client)).to eq(user.id => :duplicate)
     end
 
+    it "tries again on a later run when Telegram didn't take the message" do
+      failing = instance_double(Telegram::Client)
+      allow(failing).to receive(:send_message).and_raise(Telegram::Error.new("Not Found", code: 404))
+
+      expect(described_class.deliver(now: monday, scan: scan, client: failing)).to eq(user.id => :failed)
+      expect(described_class.deliver(now: monday + 10.minutes, scan: scan, client: client)).to eq(user.id => :sent)
+    end
+
     it "says so when nothing is in or near a zone, and skips non-trading days and users who turned it off" do
       quiet = scan.merge(rows: [ row("FAR", 470.5) ])
       described_class.deliver(now: monday, scan: quiet, client: client)
