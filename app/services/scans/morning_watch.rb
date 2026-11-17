@@ -48,7 +48,11 @@ module Scans
         groups = watch(scan, signals, volume: user.scanner_alert_volume)
         text = Telegram::Messages.morning_watch(groups, signals, volume: user.scanner_alert_volume, as_of: scan[:as_of], today: today,
                                                 phase: phase, live_alerts: user.telegram_scanner_entry_alerts)
-        [ user.id, Telegram::Notifier.deliver(user, text, client) ? :sent : :failed ]
+        next [ user.id, :sent ] if Telegram::Notifier.deliver(user, text, client)
+
+        # Not sent: free the day so a later run can try again.
+        User.where(id: user.id).update_all(telegram_morning_watch_sent_on: user.telegram_morning_watch_sent_on)
+        [ user.id, :failed ]
       end
     end
 
