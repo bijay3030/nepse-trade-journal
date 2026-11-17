@@ -48,6 +48,38 @@ RSpec.describe Maintenance::CatchUp do
     expect(run("2026-10-12 17:30")[:snapshot_sessions]).to eq([ Date.new(2026, 10, 12) ])
   end
 
+  it "re-syncs today's index when it was stored during the session, and sends the missed evening messages" do
+    today = Date.new(2026, 10, 12)
+    (sessions + [ today ]).each do |day|
+      stock_rows(day, 10)
+      StockBrokerFlow.create!(stock: stocks.first, traded_on: day, broker_no: 1)
+    end
+    sessions.each { StockSetupSnapshot.create!(stock: stocks.first, traded_on: _1, close_price: 1, zone_state: "no_setup") }
+    nepse.histories.create!(traded_on: today, index_value: 2641.29, turnover: 4e8, updated_at: zone.parse("2026-10-12 11:26"))
+    allow(TelegramBoardJob).to receive(:perform_later)
+    allow(TelegramMarketSummaryJob).to receive(:perform_later)
+
+    run("2026-10-12 18:05")
+
+    expect(Nepse::Reference::IndexHistorySync).to have_received(:call).once
+    expect(Setups::SnapshotBuilder).to have_received(:call).with(as_of: today)
+    expect(TelegramBoardJob).to have_received(:perform_later)
+    expect(TelegramMarketSummaryJob).to have_received(:perform_later)
+
+    nepse.histories.find_by(traded_on: today).update!(updated_at: zone.parse("2026-10-12 16:30")) # refreshed after the close
+    run("2026-10-12 19:05")
+    expect(Nepse::Reference::IndexHistorySync).to have_received(:call).once
+  end
+
+  it "doesn't send the evening messages when it only fills older sessions" do
+    sessions.each { |day| stock_rows(day, 10); StockBrokerFlow.create!(stock: stocks.first, traded_on: day, broker_no: 1) }
+    StockSetupSnapshot.create!(stock: stocks.first, traded_on: Date.new(2026, 10, 5), close_price: 1, zone_state: "no_setup")
+    allow(TelegramMarketSummaryJob).to receive(:perform_later)
+
+    run("2026-10-12 10:00")
+    expect(TelegramMarketSummaryJob).not_to have_received(:perform_later)
+  end
+
   it "builds snapshots for gaps before the latest one" do
     sessions.each { |day| stock_rows(day, 10); StockBrokerFlow.create!(stock: stocks.first, traded_on: day, broker_no: 1) }
     [ 5, 9 ].each { StockSetupSnapshot.create!(stock: stocks.first, traded_on: Date.new(2026, 10, _1), close_price: 1, zone_state: "no_setup") }

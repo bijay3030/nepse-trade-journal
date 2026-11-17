@@ -4,6 +4,8 @@ module Nepse
     # Merolagani fills only sessions Chukul does not have. Merolagani has no turnover,
     # so a session it fills keeps the turnover already stored (0 only for a new one):
     # market direction's distribution days compare each day's turnover with the last.
+    # Today's bar is skipped until the session is over: during it the sources return an
+    # intraday value, which would otherwise be stored as the close.
     class IndexHistorySync
       NEPSE = { symbol: "NEPSE", name: "NEPSE Index", sector: nil, merolagani: "NEPSE" }.freeze
 
@@ -17,11 +19,20 @@ module Nepse
         new(**options).call
       end
 
-      def initialize(days: 365, chukul: Source::ChukulClient.new, merolagani: Source::MerolaganiHistoryClient.new, to: Date.current)
+      def initialize(days: 365, chukul: Source::ChukulClient.new, merolagani: Source::MerolaganiHistoryClient.new, to: Date.current, now: Time.current)
         @days = days.to_i
         @chukul = chukul
         @merolagani = merolagani
         @to = to
+        @now = now
+      end
+
+      # Whether a bar for this day is a finished session (not today's, while it's trading).
+      def self.session_over?(day, now = Time.current)
+        return true unless day == MarketHours.today(now) && MarketHours.trading_wdays.include?(day.wday)
+
+        local = now.in_time_zone(MarketHours::TIME_ZONE)
+        local.hour * 60 + local.min >= MarketHours::CLOSE_MINUTE + MarketHours::CLOSING_GRACE_MINUTES
       end
 
       def call
@@ -39,6 +50,7 @@ module Nepse
             end
           end
 
+          bars.select! { |day, _| self.class.session_over?(day, @now) }
           if bars.empty?
             summary[:failed][definition[:symbol]] = chukul[:error] || "no history"
             next

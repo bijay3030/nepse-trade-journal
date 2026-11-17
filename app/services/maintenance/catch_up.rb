@@ -49,15 +49,29 @@ module Maintenance
         result[:snapshot_sessions].each { |day| Setups::SnapshotBuilder.call(as_of: day) }
         BacktestJob.perform_later
         BuildDailyDigestsJob.perform_later
+        # The 4:45 PM build was missed today: send its Telegram messages now (both only
+        # send for today's session, once).
+        if result[:snapshot_sessions].include?(Nepse::MarketHours.today(@now))
+          TelegramBoardJob.perform_later
+          TelegramMarketSummaryJob.perform_later
+        end
       end
       result
     end
 
     # Behind when the latest stored index session is before the latest weekday that
-    # should have traded (a holiday just costs one quick sync).
+    # should have traded (a holiday just costs one quick sync), or when today's was
+    # stored before the session ended (an intraday value, not the close).
     def index_behind?
       latest = nepse_dates.max
-      latest.nil? || latest < expected_session(PRICES_FINAL_MINUTE)
+      latest.nil? || latest < expected_session(PRICES_FINAL_MINUTE) || provisional?(latest)
+    end
+
+    def provisional?(day)
+      return false unless day == Nepse::MarketHours.today(@now) && final?(day, PRICES_FINAL_MINUTE)
+
+      stored = MarketIndexHistory.joins(:market_index).where(market_indices: { symbol: "NEPSE" }, traded_on: day).pick(:updated_at)
+      stored.present? && !Nepse::Reference::IndexHistorySync.session_over?(day, stored)
     end
 
     def recent_sessions

@@ -48,4 +48,15 @@ RSpec.describe Nepse::Reference::IndexHistorySync do
     turnover = MarketIndex.find_by!(symbol: "NEPSE").histories.chronological.pluck(:traded_on, :turnover).to_h { [ _1.day, _2.to_f ] }
     expect(turnover).to include(28 => 5.1e9, 29 => 0.0)
   end
+
+  it "skips today's bar until the session is over, then stores the close" do
+    today = Date.new(2026, 9, 28) # a Monday
+    zone = ActiveSupport::TimeZone["Asia/Kathmandu"]
+
+    described_class.call(days: 30, chukul: chukul, merolagani: merolagani, to: today, now: zone.parse("2026-09-28 11:26"))
+    expect(MarketIndex.find_by!(symbol: "NEPSE").histories.pluck(:traded_on)).not_to include(today)
+
+    described_class.call(days: 30, chukul: chukul, merolagani: merolagani, to: today, now: zone.parse("2026-09-28 16:30"))
+    expect(MarketIndex.find_by!(symbol: "NEPSE").histories.find_by(traded_on: today).index_value.to_f).to eq(2607.92)
+  end
 end
