@@ -15,6 +15,8 @@ export type TelegramStatus = {
   scanner_entry_alerts?: boolean
   /** 9 AM on trading days: saved-filter stocks in or near their entry zone. */
   morning_watch?: boolean
+  /** After the nightly analysis: the session's market summary. */
+  market_summary?: boolean
 }
 
 const KEY = ["telegram"]
@@ -41,4 +43,4 @@ export const useTelegramCheck = () => useTelegramMutation(() => api.post<Telegra
 export const useTelegramUnlink = () => useTelegramMutation(() => api.delete<TelegramStatus>("/telegram"))
 export const useTelegramTest = () => useTelegramMutation(() => api.post<TelegramStatus & { sent: boolean }>("/telegram/test"))
 export const useUpdateTelegram = () =>
-  useTelegramMutation((changes: { watchlist_alerts?: boolean; board_alerts?: boolean; scanner_entry_alerts?: boolean; morning_watch?: boolean }) => api.patch<TelegramStatus>("/telegram", changes))
+  useTelegramMutation((changes: { watchlist_alerts?: boolean; board_alerts?: boolean; scanner_entry_alerts?: boolean; morning_watch?: boolean; market_summary?: boolean }) => api.patch<TelegramStatus>("/telegram", changes))
