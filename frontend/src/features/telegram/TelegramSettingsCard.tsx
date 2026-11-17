@@ -127,6 +127,13 @@ export function TelegramSettingsCard() {
                 disabled={update.isPending}
                 onChange={(on) => update.mutate({ morning_watch: on })}
               />
+              <Switch
+                label="Market summary after the close"
+                help="Trading days after the nightly analysis (about 5 PM): NEPSE's close, turnover, breadth, top movers, sectors, phase and Market Direction."
+                checked={data.market_summary ?? true}
+                disabled={update.isPending}
+                onChange={(on) => update.mutate({ market_summary: on })}
+              />
             </div>
           </>
         ) : link.data ? (

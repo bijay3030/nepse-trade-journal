@@ -375,6 +375,12 @@ phase. Use it to plan the session: during market hours the 🎯 message tells yo
 actually trades inside its zone. If nothing qualifies, the message says so. Turn it off in
 **Settings → Telegram → Morning watch (9 AM)**.
 
+**Market summary (about 5 PM):** after each session's nightly analysis, a 📊 message with
+NEPSE's close, turnover, breadth (up / down, % above the 50- and 200-day averages), the
+phase and Market Direction, the Entry zone board, the top liquid gainers and losers, the
+most traded stocks and every sector's move. Turn it off in **Settings → Telegram → Market
+summary after the close**.
+
 **Use it:** as a shortlist. **Chart** on any row opens a panel with the stock's candles, EMA
 9/21/50, HMA, ALMA and Aroon (each can be switched off; 3M / 6M / 1Y), **▲ where each ticked
 signal began and ▼ where it ended**, and a table of what happened after each one. ← / → (or

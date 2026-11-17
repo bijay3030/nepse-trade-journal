@@ -410,6 +410,16 @@ phase. Thin stocks, stocks above the zone and stocks at their stop are left out;
 qualify it says so. Once a day (`users.telegram_morning_watch_sent_on`); switch it off in
 Settings → Telegram → "Morning watch (9 AM)" (`users.telegram_morning_watch`).
 
+**Market summary:** after the nightly snapshot (about 5 PM on trading days),
+`TelegramMarketSummaryJob` sends a 📊 message built by `MarketIndex::DailySummary` from
+stored data: NEPSE's close and change, turnover against the previous session, advancers /
+decliners, % of stocks above their 50- and 200-day averages, NEPSE's phase, Market
+Direction and distribution days, the Entry zone board's size (and how many joined), the
+top 5 gainers and losers among liquid stocks, the most traded stocks and every sector's
+average move. Only for the current session (a catch-up of an old one sends nothing), once
+per session (`users.telegram_market_summary_sent_on`); switch: Settings → Telegram →
+"Market summary after the close" (`users.telegram_market_summary`).
+
 The page also shows each signal's track record on NEPSE since 2020
 (`Scans::CrossoverBacktest`): the 5/10/20-session return after every time a signal began,
 against all stock-days, with the same for signals on 1.5× volume and a by-year table. The
