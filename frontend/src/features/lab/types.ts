@@ -61,3 +61,67 @@ export type LabReport = {
     trades: LabPaperTrade[]
   }
 }
+
+/** GET /lab/stocks/:symbol (Lab::StockReport) */
+export type StockBacktestStats = {
+  trades: number
+  open?: number
+  win_rate_pct?: number
+  profit_factor?: number | null
+  avg_return_pct?: number
+  total_return_pct?: number
+  max_drawdown_pct?: number
+  best_pct?: number
+  worst_pct?: number
+  avg_hold?: number
+  by_year?: Record<string, { trades: number; total_return_pct: number }>
+}
+
+export type StockBacktestStrategy = {
+  key: string
+  label: string
+  family: "Indicator Scanner" | "Classic" | "Strategy Lab"
+  signals: number
+  latest_signal: string | null
+  sessions_since_signal: number | null
+  forward20: { count: number; avg_pct: number; up_pct: number } | null
+  stats: StockBacktestStats
+}
+
+/** One trade: the signal session, the buy (next open), the sell and how long it was held. */
+export type StockBacktestTrade = {
+  key: string
+  signal_on: string
+  entry_on: string
+  exit_on: string | null
+  entry: number
+  exit: number
+  return_pct: number
+  reason: "stop" | "target" | "time" | "rsi_exit" | "open" | string
+  open: boolean
+  /** Trading sessions from the buy to the sell, both counted. */
+  held_sessions: number
+  held_days: number
+}
+
+export type StockBacktest = {
+  symbol: string
+  name: string
+  sector: string
+  sessions: number
+  from: string
+  to: string
+  close: number
+  rules: { hold: number; max_stop_pct: number; reward_multiple: number; cost_pct: number; max_gap_pct: number }
+  buy_hold: { return_pct: number; max_drawdown_pct: number; by_year: Record<string, number> }
+  baseline: { "20": { count: number; avg_pct: number; up_pct: number } | null }
+  strategies: StockBacktestStrategy[]
+  trades: StockBacktestTrade[]
+  prices: Array<{ date: string; close: number }>
+  now: {
+    rsi: number | null; sma50: number | null; sma200: number | null; macd: number | null; macd_signal: number | null; bb_lower: number | null
+    high_52w: number; low_52w: number
+    levels: { entry_low: number; entry_high: number; stop: number; target: number | null; source: "board_setup" | "crossover"; setup_type: string | null } | null
+    readiness: number | null; trend_rules_passed: number | null; rs_rating: number | null; in_buy_zone: boolean | null
+  }
+}

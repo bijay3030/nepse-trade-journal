@@ -353,6 +353,36 @@ candidates as ideas to check on the stock's page, and size any real trade from i
    (pending / open / closed / skipped), entry, stop / target, exit and return; the All /
    Active / Closed tabs filter it.
 
+### 4.6d Stock Backtest
+
+**Why:** to see which indicator has actually worked on one stock, and exactly what each
+would have done: when it bought, when it sold, how long it held and what it made.
+
+**How it works:** open **Stock Backtest** (or **Backtest strategies** on a stock's page) and
+enter a symbol. Every strategy is traded the same way on the stock's whole history: buy at
+the open after the signal, sell at the stop, the 2× target or after 20 sessions, with costs.
+The ranking shows each strategy's trades, win rate, profit factor (money won ÷ money lost),
+average, compounded result, average holding time and worst run. **Click a strategy** to see
+its trade log: for every trade, the session the signal fired, the buy session and price,
+the sell session and price, why it sold (target, stop or time limit), how many sessions and
+days it was held, and the result. The chart marks each buy ▲ and sell ▼ (green made money).
+Below: the ten best trades, results by year against holding the stock, and today's signals
+and levels.
+
+**Read it honestly:** strategies with fewer than 10–20 trades can look good by luck, and the
+past doesn't promise the future.
+
+**QA:**
+
+1. `/stock-backtest/BEDC`: the summary names the best strategy with 20+ trades, buy and hold
+   and its worst fall; the figures match.
+2. Click **MACD crosses its signal** in the ranking: the trade log heading, the "How it
+   trades" sentence, the chart markers and the table change to its trades.
+3. Each trade row: signal session the day before the buy; held sessions and days; why sold;
+   green or red result.
+4. Enter an unknown symbol: "Unknown stock …"; a stock with under 60 sessions: "Not enough
+   price history".
+
 ### 4.6b Indicator Scanner
 
 **Why:** many traders scan for moving-average crossovers and Aroon trends. This page finds
