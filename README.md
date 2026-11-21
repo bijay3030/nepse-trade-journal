@@ -474,6 +474,22 @@ As of Nov 2026 both strategies **lost money across the market** (profit factor 0
 0.86), doing better only when NEPSE was sideways; 9 stocks qualified for the range bounce
 and none for RSI. With ~300 stocks tested, some good per-stock records are luck.
 
+## Stock Backtest
+
+`/stock-backtest/:symbol` (sidebar **Stock Backtest**, or **Backtest strategies** on a
+stock's page) runs every entry signal in the app on one stock's full history
+(`Lab::StockReport`, `GET /api/v1/lab/stocks/:symbol`, cached per symbol until the next
+session): the Indicator Scanner's six signals (each also on 1.5x volume), MACD (12, 26, 9),
+a lower Bollinger band (20, 2) bounce, a 20-session breakout (also on volume), a golden
+cross and the Strategy Lab's two strategies. Each signal buys at the next open (skipped
+on a gap of more than 3%), with a stop under the 10-session low (max 8%), a 2x target and
+a 20-session limit, 0.8% costs and no overlapping trades. The page ranks the strategies by
+profit factor and shows, for the one picked, a **trade log**: the signal session, the buy
+(date and price), the sell (date, price and why), how long it was held in sessions and
+calendar days, and the result, with ▲ buys and ▼ sells on the price chart. It also lists
+the ten best trades, results by year against buy and hold, and the stock's signals and
+levels today.
+
 ## Deployment
 
 Free hosting on Render (API and frontend) with the database on Supabase: see

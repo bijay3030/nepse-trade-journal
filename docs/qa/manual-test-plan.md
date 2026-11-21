@@ -433,6 +433,16 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H25.5 | After a night with a candidate | Paper trades: the candidate recorded as pending; the next night open (filled at the next open) or skipped (gap above the range / to the stop); later closed with exit price, reason and return; summary boxes update |
 | H25.6 | Terminal: `bin/rails runner 'p Lab::Backtest.call.slice(:candidates, :qualifying)'` | The same candidates and watched stocks as the page |
 
+## H26. Stock Backtest
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H26.1 | Sidebar → **Stock Backtest**, enter BEDC (or a stock page → **Backtest strategies**) | `/stock-backtest/BEDC`: summary naming the best strategy (20+ trades) with profit factor, trades, win rate, compounded return and average holding; buy and hold and its worst fall |
+| H26.2 | Ranking table | Every strategy with trades, won %, profit factor bar (green ≥ 1.3, red < 1, a tick at 1), average, compounded, average held, worst run, last signal; "few trades" under 10 |
+| H26.3 | Click a strategy | Trade log for it: "How it trades" sentence; summary (won / lost, average and range of holding, best, worst, compounded); chart with ▲ buys below and ▼ sells above the line, green / red; table with signal session, bought, buy price, sold, sell price, held (sessions and days), why sold, result |
+| H26.4 | Lower sections | Ten best trades with holding; by-year table with buy and hold and strategies with 10+ trades; signals in the last two sessions with their profit factor; levels and indicators |
+| H26.5 | Unknown symbol / a new listing | "Unknown stock …" / "Not enough price history (N sessions)" |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

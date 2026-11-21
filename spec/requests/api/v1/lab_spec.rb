@@ -18,4 +18,21 @@ RSpec.describe "Strategy Lab", type: :request do
     expect(body).to include("candidates", "qualifying", "paper_trades", "market_phase")
     expect(body["paper_trades"]["summary"]).to include("total" => 0)
   end
+
+  it "returns one stock's backtest, 404 for an unknown symbol and 422 without enough history" do
+    stock = create(:stock, symbol: "LABY", security_type: "Equity")
+    (1..80).each { |i| create(:stock_daily_price, stock: stock, traded_on: Date.new(2026, 6, 1) + i, close_price: 100 + 5 * Math.sin(i / 5.0)) }
+
+    get "/api/v1/lab/stocks/laby", headers: headers
+    expect(response).to have_http_status(:ok)
+    expect(response.parsed_body).to include("symbol" => "LABY", "sessions" => 80)
+    expect(response.parsed_body["strategies"].first).to include("key", "label", "stats")
+
+    get "/api/v1/lab/stocks/NOPE", headers: headers
+    expect(response).to have_http_status(:not_found)
+
+    create(:stock_daily_price, stock: create(:stock, symbol: "TINY", security_type: "Equity"), traded_on: Date.new(2026, 11, 1))
+    get "/api/v1/lab/stocks/TINY", headers: headers
+    expect(response).to have_http_status(:unprocessable_entity)
+  end
 end

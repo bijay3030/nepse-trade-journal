@@ -2,7 +2,7 @@ import { format, parseISO } from "date-fns"
 import { EpsGrowthBadge } from "../features/readiness/EpsGrowthBadge"
 import { ArrowLeft } from "lucide-react"
 import { useMemo } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import { Badge, Button, Card, CardBody, CardHeader, LoadingSpinner } from "../components/ui"
 import { useStockAnalysis } from "../features/screener/api"
 import type { PriceLevel, RsLine, StockAnalysis, VolumePace } from "../features/screener/types"
@@ -367,6 +367,9 @@ function StockAnalysisBody({ symbol, onBack }: { symbol: string; onBack: () => v
           <Badge tone="neutral">{SETUP_STATE_LABELS[data.setup_state]}</Badge>
           <Badge tone="neutral">{data.sector}</Badge>
           <AddToWatchlistButton symbol={data.symbol} size="sm" />
+          <Link to={`/stock-backtest/${encodeURIComponent(data.symbol)}`} className="rounded-lg border border-slate/20 px-2.5 py-1 text-xs font-semibold text-ink hover:bg-slate/5">
+            Backtest strategies
+          </Link>
         </div>
         <div className="ml-auto flex items-baseline gap-2">
           <span className="font-display text-xl font-bold text-ink">Rs. {data.current_price.toLocaleString()}</span>

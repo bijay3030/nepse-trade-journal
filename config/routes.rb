@@ -67,6 +67,7 @@ Rails.application.routes.draw do
         post :trade_plan, on: :member
       end
       get "lab", to: "lab#show"
+      get "lab/stocks/:symbol", to: "lab#stock"
       get "scans/crossovers", to: "scans#crossovers"
       get "scans/crossovers/:symbol", to: "scans#crossover_chart"
       get "scans/alert", to: "scans#alert"
