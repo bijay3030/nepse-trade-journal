@@ -9,6 +9,7 @@ class BacktestJob < ApplicationJob
     # users about new matches for their saved scanner filter.
     Scans::Cache.crossovers
     TelegramScannerJob.perform_later
+    LabJob.perform_later
     GC.start
     result
   end

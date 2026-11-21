@@ -422,6 +422,17 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H24.18 | **Track record details** | "Trading the crossover levels" table: trades, won %, average per trade, average R, profit factor (red under 1) per signal; the card's "Crossover-level trades" box shows the ticked signals' won % and profit factor |
 | H24.19 | Terminal: `bin/rails runner 'p StockPriceArchive.count, StockPriceArchive.minimum(:traded_on)'` | Hundreds of thousands of rows from 2020-01; the board, base counts and NEPSE direction are unchanged by it |
 
+## H25. Strategy Lab
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H25.1 | Sidebar → **Strategy Lab** (`/lab`) | Heading, intro naming opentrader, the period (2020 to the last session) and 0.8% costs |
+| H25.2 | Summary card | Each strategy's trades and profit factor across all stocks ("lost money overall" under 1) and in NEPSE's current phase |
+| H25.3 | Today's candidates | Cards with strategy, close/change, entry range, stop (% below), target (% above), R:R and the stock's record (trades, won %, PF, average, worst run, since 2025); or "No stock qualifies today" with each strategy's watched stocks and their PF |
+| H25.4 | Strategy leaderboard | Rows for both strategies; profit factors green ≥ 1.3, red < 1; by-phase and by-year tables; hover shows trades and win rate |
+| H25.5 | After a night with a candidate | Paper trades: the candidate recorded as pending; the next night open (filled at the next open) or skipped (gap above the range / to the stop); later closed with exit price, reason and return; summary boxes update |
+| H25.6 | Terminal: `bin/rails runner 'p Lab::Backtest.call.slice(:candidates, :qualifying)'` | The same candidates and watched stocks as the page |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

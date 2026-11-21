@@ -448,6 +448,32 @@ The scan and its backtest are cached per session and warmed after the nightly ba
 How these indicators did at every 15% trend change from 2020 to 2026 (by year, market
 phase and volume): [docs/research/indicator-turning-points-2020-2026.md](docs/research/indicator-turning-points-2020-2026.md).
 
+## Strategy Lab
+
+`/lab` tests two strategies adapted from [opentrader](https://github.com/Open-Trader/opentrader)
+(a crypto bot) for NEPSE's daily, buy-only market (`Lab::Strategies`):
+
+- **RSI mean reversion:** above the 200-day average, RSI(14) was under 30 in the last 3
+  sessions and turned up on a higher close. Stop under the 5-session low (max 8%), target
+  2x the risk, or the close once RSI reaches 65, or 20 sessions.
+- **Range (grid) bounce:** the last 60 sessions in an 8–30% range with a flat 50-day
+  average; today closes in the bottom 20% of the range, up on the day. Stop 3% under the
+  range low (max 8%), target near the top of the range, or 30 sessions.
+
+`Lab::Backtest` runs both on every stock since 2020 (archive plus regular prices; next-open
+fills, 0.8% costs, no overlapping trades). A stock is a **candidate** when a strategy
+triggers on the latest session and its record on that stock has 10+ trades, a profit
+factor above 1.3 and a positive average since 2025 (out of sample); thin stocks are left
+out. The page also shows a market-wide leaderboard (by year and NEPSE phase) and the
+stocks that qualify but haven't triggered. **Paper trades** (`lab_paper_trades`,
+`Lab::PaperTrades`): each candidate is recorded on its signal day and re-simulated nightly
+with the same rules (pending → open → closed, or skipped); `LabJob` runs after the nightly
+backtest and caches the report (`Lab::Cache`). Nothing is bought or sold.
+
+As of Nov 2026 both strategies **lost money across the market** (profit factor 0.76 and
+0.86), doing better only when NEPSE was sideways; 9 stocks qualified for the range bounce
+and none for RSI. With ~300 stocks tested, some good per-stock records are luck.
+
 ## Deployment
 
 Free hosting on Render (API and frontend) with the database on Supabase: see

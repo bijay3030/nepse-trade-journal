@@ -320,6 +320,39 @@ A full walk-through of this page from first principles, with analogies and NABIL
    average"; before 11:15 it says it's too early to project.
 4. Broker flow card lists top buyers and sellers with broker names.
 
+### 4.6c Strategy Lab
+
+**Why:** to test trading ideas from [opentrader](https://github.com/Open-Trader/opentrader)
+(RSI and grid strategies) on NEPSE's own history before trusting them, and to list the
+stocks where one has a good record and triggers today.
+
+**How it works:** two strategies, *RSI mean reversion* (an oversold pullback in an
+uptrend) and *Range (grid) bounce* (a bounce off the bottom of a sideways range), are
+backtested on every stock since 2020 with costs. **Today's candidates** are stocks where a
+strategy triggered on the last close *and* has 10+ trades on that stock, a profit factor
+above 1.3 and a positive record since 2025. Each card shows the entry range, stop, target,
+reward:risk and that record. When nothing triggers, the page lists the stocks it's
+watching. The **leaderboard** shows how each strategy did across all stocks, by year and by
+NEPSE phase. **Paper trades** record every candidate and follow it each night with the
+same rules, so you can see whether it works live before risking money.
+
+**Read it honestly:** across the whole market both strategies lost money after costs
+(they did better only when NEPSE was sideways). A stock's good record can be luck. Treat
+candidates as ideas to check on the stock's page, and size any real trade from its stop.
+
+**QA:**
+
+1. Sidebar **Strategy Lab** (`/lab`): the intro with the date of the last session.
+2. The summary card states each strategy's trades and profit factor across all stocks, and
+   the same for NEPSE's current phase.
+3. **Today's candidates**: cards with entry range, stop (% below), target (% above), R:R
+   and the record on that stock; or "No stock qualifies today" with the watched stocks.
+4. **Strategy leaderboard**: trades, won %, average, average R, profit factor, since-2025
+   and by-phase columns; a by-year table; hover a profit factor for its trades and win rate.
+5. **Paper trades**: the summary boxes and, once candidates appear, a table with status
+   (pending / open / closed / skipped), entry, stop / target, exit and return; the All /
+   Active / Closed tabs filter it.
+
 ### 4.6b Indicator Scanner
 
 **Why:** many traders scan for moving-average crossovers and Aroon trends. This page finds
