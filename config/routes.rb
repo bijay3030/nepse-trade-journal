@@ -66,6 +66,7 @@ Rails.application.routes.draw do
         get :suggestion, on: :collection
         post :trade_plan, on: :member
       end
+      get "lab", to: "lab#show"
       get "scans/crossovers", to: "scans#crossovers"
       get "scans/crossovers/:symbol", to: "scans#crossover_chart"
       get "scans/alert", to: "scans#alert"
