@@ -40,6 +40,7 @@ const navItems = [
   { to: "/digest", label: "Daily Digest", icon: Newspaper },
   { to: "/screener", label: "VCP Screener", icon: ScanSearch },
   { to: "/scanner", label: "Indicator Scanner", icon: SlidersHorizontal },
+  { to: "/lab", label: "Strategy Lab", icon: FlaskConical },
   { to: "/watchlist", label: "Watchlist", icon: Bookmark },
   { to: "/positions", label: "Positions", icon: Wallet },
   { to: "/trade/new", label: "New Trade", icon: PlusCircle },
