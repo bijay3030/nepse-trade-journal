@@ -21,7 +21,13 @@ const report: StockBacktest = {
   buy_hold: { return_pct: 37.2, max_drawdown_pct: -73, by_year: { "2024": 138.6, "2025": -24.4 } },
   baseline: { "20": { count: 765, avg_pct: 1.31, up_pct: 47 } },
   strategies: [strategy("scan_alma_cross", "Close above ALMA 21", 1.45, 39), strategy("macd_cross", "MACD crosses its signal", 1.43, 22)],
+  crossover_rules: { safety_stop_pct: 8, cost_pct: 0.8 },
+  crossovers: [
+    { ...strategy("xo_ema_21_50", "EMA 21 / 50 crossover", 2.18, 4), family: "Crossover system" as const },
+    { ...strategy("xo_ema_9_21", "EMA 9 / 21 crossover", 1.77, 16), family: "Crossover system" as const },
+  ],
   trades: [
+    { key: "xo_ema_9_21", signal_on: "2023-11-27", entry_on: "2023-11-28", exit_on: "2024-03-03", entry: 211, exit: 329.3, return_pct: 55.27, reason: "cross_back", open: false, held_sessions: 64, held_days: 96 },
     { key: "scan_alma_cross", signal_on: "2023-09-04", entry_on: "2023-09-05", exit_on: "2023-09-11", entry: 178.4, exit: 198.6, return_pct: 10.52, reason: "target", open: false, held_sessions: 4, held_days: 6 },
     { key: "macd_cross", signal_on: "2024-02-07", entry_on: "2024-02-08", exit_on: "2024-02-09", entry: 350, exit: 330, return_pct: -6.5, reason: "stop", open: false, held_sessions: 1, held_days: 1 },
   ],
@@ -57,7 +63,20 @@ describe("StockBacktestPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "MACD crosses its signal" }))
     const log = screen.getByRole("table", { name: "Trade log" })
     expect(within(log).getAllByRole("row")[1]).toHaveTextContent("1 session1 dayStop hit-6.50%")
-    expect(screen.getByTestId("trades-chart")).toHaveTextContent("1 trades charted")
+    expect(screen.getAllByTestId("trades-chart")[0]).toHaveTextContent("1 trades charted") // the strategy log; the crossover log has its own chart
+  })
+
+  it("shows crossover trades: buy on the cross up, sell on the cross back down", async () => {
+    renderAt("/stock-backtest/BEDC")
+    await screen.findByLabelText("Summary")
+
+    const ranking = screen.getByRole("table", { name: "Crossover ranking" })
+    expect(within(ranking).getAllByRole("row")).toHaveLength(3)
+    // Opens on the first crossover with 10+ trades, not the 4-trade one ranked above it.
+    expect(screen.getByRole("heading", { name: "Trade log: EMA 9 / 21 crossover" })).toBeInTheDocument()
+    expect(screen.getByText(/It holds until the 9-day EMA closes back below the 21-day EMA and sells at the next open/)).toBeInTheDocument()
+    expect(within(screen.getByRole("table", { name: "Crossover trade log" })).getAllByRole("row")[1]).toHaveTextContent("Mon 27 Nov 2023Tue 28 Nov 2023211.00Sun 3 Mar 2024329.3064 sessions96 daysCrossed back down (sold next open)+55.27%")
+    expect(screen.getByLabelText("Crossover trade log summary")).toHaveTextContent("It crossed up on the latest session: the next buy is at the next open.")
   })
 
   it("asks for a symbol when none is given", async () => {

@@ -32,12 +32,22 @@ const SIGNAL_RULES: Record<string, string> = {
   lab_rsi_reversion: "the stock is above its 200-day average, RSI (14) was under 30 in the last 3 sessions and turns up on a higher close",
   lab_range_grid: "after 60 sessions in a flat 8–30% range, the stock closes up in the bottom 20% of that range",
 }
+// Crossover systems: the two lines, in words.
+const CROSS_LINES: Record<string, [string, string]> = {
+  xo_ema_9_21: ["the 9-day EMA", "the 21-day EMA"],
+  xo_ema_21_50: ["the 21-day EMA", "the 50-day EMA"],
+  xo_ema_50_200: ["the 50-day EMA", "the 200-day EMA"],
+  xo_price_hma: ["the close", "the 55-day HMA"],
+  xo_price_alma: ["the close", "the 21-day ALMA"],
+  xo_alma_hma: ["the 21-day ALMA", "the 55-day HMA"],
+}
 const rule = (key: string) => {
   const base = SIGNAL_RULES[key.replace(/_vol$/, "")] ?? "the signal fires"
   return key.endsWith("_vol") ? `${base}, on a day with at least 1.5× its 50-session average volume` : base
 }
 const EXIT_LABELS: Record<string, string> = {
   target: "Target hit", stop: "Stop hit", time: "Time limit (sold at close)", rsi_exit: "RSI reached 65", open: "Still open",
+  cross_back: "Crossed back down (sold next open)", cross_back_pending: "Crossed back down (sells at next open)",
 }
 
 export function StockBacktestPage() {
@@ -156,6 +166,8 @@ function Report({ data }: { data: StockBacktest }) {
 
       {current && <TradeLog data={data} strategy={current} />}
 
+      {data.crossovers && data.crossovers.length > 0 && <Crossovers data={data} />}
+
       <TopTrades data={data} />
       <ByYear data={data} />
       <Now data={data} />
@@ -219,15 +231,21 @@ function TradeLog({ data, strategy }: { data: StockBacktest; strategy: StockBack
   const closed = trades.filter((t) => !t.open)
   const st = strategy.stats
   const isLab = strategy.key.startsWith("lab_")
+  const cross = CROSS_LINES[strategy.key]
+  const pending = cross && strategy.sessions_since_signal === 0 && !trades.some((t) => t.open)
   return (
-    <Section id="trade-log" title={`Trade log: ${strategy.label}`}
-      note={<>
+    <Section id={cross ? "crossover-log" : "trade-log"} title={`Trade log: ${strategy.label}`}
+      note={cross ? <>
+        <b>How it trades:</b> on the session when {cross[0]} crosses above {cross[1]}, it buys at the next session's open. It holds until {cross[0]} closes back
+        below {cross[1]} and sells at the next open, or sells earlier if the price falls {data.crossover_rules?.safety_stop_pct ?? 8}% below the buy (safety stop).
+        {" "}{data.crossover_rules?.cost_pct ?? 0.8}% costs per round trip.
+      </> : <>
         <b>How it trades:</b> on the session when {rule(strategy.key)}, it buys at the next session's open.{" "}
         {isLab ? "It sells at its own stop or target, on its strategy exit, or at the time limit." : <>It sells at the stop (just under the 10-session low), at the target ({data.rules.reward_multiple}× the risk), or at the close of the {data.rules.hold}th session.</>}
       </>}>
       <Card>
         <CardBody className="space-y-3">
-          <p className="text-sm text-ink" aria-label="Trade log summary">
+          <p className="text-sm text-ink" aria-label={cross ? "Crossover trade log summary" : "Trade log summary"}>
             {closed.length === 0 ? <>No completed trades on {data.symbol}.</> : <>
               <b>{st.trades}</b> trades: <b className="text-pine">{closed.filter((t) => t.return_pct > 0).length} won</b>,{" "}
               <b className="text-ember">{closed.filter((t) => t.return_pct <= 0).length} lost</b>; held <b>{st.avg_hold}</b> sessions on average
@@ -235,13 +253,14 @@ function TradeLog({ data, strategy }: { data: StockBacktest; strategy: StockBack
               worst <span className="font-mono text-ember">{pct(st.worst_pct, 2)}</span>; all trades compounded <b className={tone(st.total_return_pct)}>{pct(st.total_return_pct)}</b>.
             </>}
             {trades.some((t) => t.open) && <> One trade is still open.</>}
+            {pending && <> <b className="text-pine">It crossed up on the latest session: the next buy is at the next open.</b></>}
           </p>
           <div className="flex flex-wrap gap-4 text-xs text-slate">
             <span><span className="font-bold">▲</span> bought (below the line) · <span className="font-bold">▼</span> sold (above it) · <span className="font-semibold text-pine">green</span> = the trade made money, <span className="font-semibold text-ember">red</span> = it lost</span>
           </div>
           <TradesChart prices={data.prices} trades={trades} />
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" aria-label="Trade log">
+            <table className="w-full text-sm" aria-label={cross ? "Crossover trade log" : "Trade log"}>
               <thead className="border-b border-mist/80 text-left text-[11px] font-bold uppercase tracking-wider text-slate">
                 <tr>
                   <th className="px-2 py-2">#</th><th className="px-2 py-2">Signal session</th><th className="px-2 py-2">Bought</th><th className="px-2 py-2 text-right">Buy price</th>
@@ -378,4 +397,37 @@ function Now({ data }: { data: StockBacktest }) {
 
 function Line({ label, value, valueTone = "text-ink" }: { label: string; value: string; valueTone?: string }) {
   return <div className="flex justify-between gap-3"><dt className="text-slate">{label}</dt><dd className={cn("font-mono", valueTone)}>{value}</dd></div>
+}
+
+// Classic crossover systems: in on the cross up, out on the cross back down.
+function Crossovers({ data }: { data: StockBacktest }) {
+  const list = data.crossovers ?? []
+  const [selected, setSelected] = useState<string | null>(null)
+  // Opens on the best-ranked crossover with enough trades to judge.
+  const current = list.find((s) => s.key === selected) ?? list.find((s) => s.stats.trades >= 10) ?? list.find((s) => s.stats.trades > 0) ?? list[0]
+  return (
+    <>
+      <Section id="crossovers" title="Crossover trades"
+        note={<>Each crossover traded on its own: buy at the next open after the faster line crosses above the slower one, hold until it crosses back below, then
+          sell at the next open (or at a {data.crossover_rules?.safety_stop_pct ?? 8}% safety stop). Holding time follows the trend. <b>Click a row to see every buy and sell.</b></>}>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" aria-label="Crossover ranking">
+              <thead className="border-b border-mist/80 bg-slate/5 text-left text-[11px] font-bold uppercase tracking-wider text-slate">
+                <tr>
+                  <th className="px-3 py-2">Crossover</th><th className="px-3 py-2 text-right">Trades</th><th className="px-3 py-2 text-right">Won</th>
+                  <th className="px-3 py-2">Profit factor</th><th className="px-3 py-2 text-right">Avg / trade</th><th className="px-3 py-2 text-right">Compounded</th>
+                  <th className="px-3 py-2 text-right">Avg held</th><th className="px-3 py-2 text-right">Worst run</th><th className="px-3 py-2 text-right">Last cross up</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-mist/60">
+                {list.map((s) => <StrategyRow key={s.key} s={s} active={s.key === current?.key} onSelect={() => setSelected(s.key)} />)}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </Section>
+      {current && <TradeLog data={data} strategy={current} />}
+    </>
+  )
 }
