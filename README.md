@@ -476,7 +476,9 @@ and none for RSI. With ~300 stocks tested, some good per-stock records are luck.
 
 ## Market Events
 
-`/events` (sidebar **Market Events**) tracks company announcements and corporate actions.
+`/events` (sidebar **Market Events**) tracks company announcements and corporate actions
+(`GET /api/v1/market_events`: filter by announcement dates `from` / `to`, stock `q`, rating,
+type and my stocks; 25 a page with `page`).
 `MarketEventsJob` runs every hour (`Events::Sync`): ShareSansar's announcement list (newest
 pages until nothing is new; the company is matched from the title by
 `Events::CompanyMatcher`) and Chukul's bonus / cash dividend and rights lists (with

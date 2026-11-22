@@ -15,7 +15,8 @@ const event = (overrides: Partial<MarketEvent>): MarketEvent => ({
   published_on: "2026-11-22", event_on: "2026-11-27", data: { right: 50 }, ...overrides,
 })
 const response: MarketEventsResponse = {
-  as_of: "2026-11-22", days: 14,
+  as_of: "2026-11-22", from: "2026-11-08", to: "2026-11-22",
+  pagination: { page: 1, per: 25, total: 60, pages: 3 },
   events: [
     event({}),
     event({ id: 2, symbol: "SHLB", kind: "results", impact: "negative", mine: true, important: false, reason: "Net loss of Rs 5M in Q1.", title: "Shrijanshil Laghubitta has posted a net loss", url: "https://www.sharesansar.com/announcementdetail/x", source: "sharesansar", event_on: null, published_on: "2026-11-21" }),
@@ -50,8 +51,24 @@ describe("MarketEventsPage", () => {
     await screen.findByRole("region", { name: "Book closes ahead" })
 
     await userEvent.click(screen.getByRole("tab", { name: "My stocks" }))
-    await waitFor(() => expect(mockGet).toHaveBeenLastCalledWith("/market_events", { params: { scope: "mine", days: 14 } }))
+    await waitFor(() => expect(mockGet).toHaveBeenLastCalledWith("/market_events", { params: { scope: "mine" } }))
     await userEvent.click(screen.getByRole("button", { name: "Bad" }))
-    await waitFor(() => expect(mockGet).toHaveBeenLastCalledWith("/market_events", { params: { scope: "mine", impact: "negative", days: 14 } }))
+    await waitFor(() => expect(mockGet).toHaveBeenLastCalledWith("/market_events", { params: { scope: "mine", impact: "negative" } }))
+  })
+
+  it("filters by announcement date and stock, and pages through the results", async () => {
+    renderWithClient(<MarketEventsPage />)
+    await screen.findByRole("region", { name: "Book closes ahead" })
+
+    expect(screen.getByRole("navigation", { name: "Pages" })).toHaveTextContent("Showing 1–25 of 60")
+    await userEvent.click(screen.getByRole("button", { name: "Next page" }))
+    await waitFor(() => expect(mockGet).toHaveBeenLastCalledWith("/market_events", { params: { page: 2 } }))
+
+    await userEvent.type(screen.getByRole("searchbox", { name: "Stock" }), "nica")
+    await waitFor(() => expect(mockGet).toHaveBeenLastCalledWith("/market_events", { params: { q: "nica" } })) // back to page 1
+
+    await userEvent.click(screen.getByRole("button", { name: "30 days" }))
+    await waitFor(() => expect(mockGet).toHaveBeenLastCalledWith("/market_events", { params: { q: "nica", from: "2026-10-23", to: "2026-11-22" } }))
+    expect(screen.getByLabelText("From")).toHaveValue("2026-10-23")
   })
 })

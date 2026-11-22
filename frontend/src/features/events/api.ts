@@ -7,7 +7,7 @@ export function useMarketEvents(filters: MarketEventFilters) {
   return useQuery({
     queryKey: ["market-events", filters],
     queryFn: async () => {
-      const params = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== "" && value !== "all"))
+      const params = Object.fromEntries(Object.entries(filters).filter(([key, value]) => value !== "" && value !== "all" && !(key === "page" && value === 1)))
       return (await api.get<MarketEventsResponse>("/market_events", { params })).data
     },
     placeholderData: keepPreviousData,

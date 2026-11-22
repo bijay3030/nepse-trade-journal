@@ -1,6 +1,6 @@
-import { format, parseISO } from "date-fns"
-import { Megaphone } from "lucide-react"
-import { useMemo, useState } from "react"
+import { format, parseISO, subDays } from "date-fns"
+import { ChevronLeft, ChevronRight, Megaphone, Search } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 
 import { Badge, Button, Card, CardBody, LoadingSpinner } from "../components/ui"
@@ -13,12 +13,22 @@ const pct = (v: number | null | undefined) => (v == null ? "—" : `${v > 0 ? "+
 const tone = (v: number | null | undefined) => (v == null ? "text-slate" : v > 0 ? "text-pine" : v < 0 ? "text-ember" : "text-slate")
 const day = (iso: string) => format(parseISO(iso), "EEE d MMM")
 const IMPACTS: Array<EventImpact | ""> = ["", "positive", "negative", "mixed", "neutral"]
-const DAYS = [3, 7, 14, 30, 90]
+const PRESETS = [{ label: "Today", days: 0 }, { label: "7 days", days: 7 }, { label: "14 days", days: 14 }, { label: "30 days", days: 30 }, { label: "90 days", days: 90 }]
+const iso = (d: Date) => format(d, "yyyy-MM-dd")
 
 export function MarketEventsPage() {
-  const [filters, setFilters] = useState<MarketEventFilters>({ scope: "all", impact: "", kind: "", days: 14 })
+  const [filters, setFilters] = useState<MarketEventFilters>({ scope: "all", impact: "", kind: "", from: "", to: "", q: "", page: 1 })
+  const [search, setSearch] = useState("")
   const { data, isLoading, isError, refetch, isFetching } = useMarketEvents(filters)
-  const set = (patch: Partial<MarketEventFilters>) => setFilters((current) => ({ ...current, ...patch }))
+  // Any filter change starts again at page 1.
+  const set = (patch: Partial<MarketEventFilters>) => setFilters((current) => ({ ...current, page: 1, ...patch }))
+  // Search as the user types, once they pause.
+  useEffect(() => {
+    const timer = setTimeout(() => setFilters((current) => (current.q === search.trim() ? current : { ...current, q: search.trim(), page: 1 })), 300)
+    return () => clearTimeout(timer)
+  }, [search])
+  const today = data ? parseISO(data.as_of) : new Date()
+  const preset = (days: number) => set({ from: iso(subDays(today, days)), to: iso(today) })
 
   return (
     <div className="space-y-5">
@@ -66,16 +76,41 @@ export function MarketEventsPage() {
                   {(Object.keys(KIND_LABELS) as EventKind[]).map((kind) => <option key={kind} value={kind}>{KIND_LABELS[kind]}</option>)}
                 </select>
               </label>
-              <label className="flex items-center gap-2 text-slate">Last
-                <select aria-label="Days" className="rounded-lg border border-slate/20 bg-white px-2 py-1 text-ink" value={filters.days} onChange={(e) => set({ days: Number(e.target.value) })}>
-                  {DAYS.map((d) => <option key={d} value={d}>{d} days</option>)}
-                </select>
+              <label className="relative flex items-center">
+                <Search className="pointer-events-none absolute left-2 h-4 w-4 text-slate" aria-hidden />
+                <input type="search" aria-label="Stock" placeholder="Stock symbol or name" value={search} onChange={(e) => setSearch(e.target.value)}
+                  className="w-52 rounded-lg border border-slate/20 bg-white py-1 pl-8 pr-2 text-ink" />
               </label>
-              <span className={cn("ml-auto text-xs text-slate", isFetching && "animate-pulse")} aria-live="polite"><b className="text-ink">{data.events.length}</b> events</span>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-mist/60 pt-3 text-sm" role="group" aria-label="Announcement dates">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate">Announced</span>
+              <label className="flex items-center gap-1.5 text-slate">From
+                <input type="date" aria-label="From" className="rounded-lg border border-slate/20 bg-white px-2 py-1 text-ink" value={filters.from || data.from}
+                  max={filters.to || data.to} onChange={(e) => set({ from: e.target.value })} />
+              </label>
+              <label className="flex items-center gap-1.5 text-slate">To
+                <input type="date" aria-label="To" className="rounded-lg border border-slate/20 bg-white px-2 py-1 text-ink" value={filters.to || data.to}
+                  min={filters.from || data.from} max={data.as_of} onChange={(e) => set({ to: e.target.value })} />
+              </label>
+              <div className="flex flex-wrap gap-1">
+                {PRESETS.map((p) => {
+                  const active = data.from === iso(subDays(today, p.days)) && data.to === data.as_of
+                  return (
+                    <button key={p.label} type="button" onClick={() => preset(p.days)} aria-pressed={active}
+                      className={cn("rounded-full border px-2.5 py-0.5 text-xs font-semibold", active ? "border-ink bg-ink text-white" : "border-slate/20 text-ink hover:bg-slate/5")}>
+                      {p.label}
+                    </button>
+                  )
+                })}
+              </div>
+              <span className={cn("ml-auto text-xs text-slate", isFetching && "animate-pulse")} aria-live="polite">
+                <b className="text-ink">{data.pagination.total}</b> {data.pagination.total === 1 ? "event" : "events"}
+              </span>
             </div>
           </Card>
 
           <EventList events={data.events} />
+          <Pager pagination={data.pagination} onPage={(page) => { setFilters((current) => ({ ...current, page })); window.scrollTo({ top: 0, behavior: "smooth" }) }} />
           <Study study={data.study} />
         </>
       )}
@@ -197,5 +232,32 @@ function Study({ study }: { study: MarketEventsResponse["study"] }) {
         <p><b className="text-ink">Cash dividends</b> also lower the price by the amount paid. Tax is withheld at source.</p>
       </CardBody></Card>
     </section>
+  )
+}
+
+function Pager({ pagination, onPage }: { pagination: MarketEventsResponse["pagination"]; onPage: (page: number) => void }) {
+  const { page, pages, per, total } = pagination
+  if (total === 0) return null
+  const first = (page - 1) * per + 1
+  const last = Math.min(page * per, total)
+  // The first, last and nearby pages, with gaps.
+  const numbers = [...new Set([1, page - 1, page, page + 1, pages])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b)
+  return (
+    <nav className="flex flex-wrap items-center justify-between gap-3 text-sm" aria-label="Pages">
+      <p className="text-slate">Showing <b className="text-ink">{first}–{last}</b> of <b className="text-ink">{total}</b></p>
+      {pages > 1 && (
+        <div className="flex items-center gap-1">
+          <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page"><ChevronLeft className="h-4 w-4" /></Button>
+          {numbers.map((n, i) => (
+            <span key={n} className="flex items-center gap-1">
+              {i > 0 && n - numbers[i - 1] > 1 && <span className="px-1 text-slate">…</span>}
+              <button type="button" onClick={() => onPage(n)} aria-current={n === page ? "page" : undefined} aria-label={`Page ${n}`}
+                className={cn("min-w-8 rounded-lg px-2 py-1 font-semibold", n === page ? "bg-ink text-white" : "text-ink hover:bg-slate/10")}>{n}</button>
+            </span>
+          ))}
+          <Button size="sm" variant="outline" disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Next page"><ChevronRight className="h-4 w-4" /></Button>
+        </div>
+      )}
+    </nav>
   )
 }

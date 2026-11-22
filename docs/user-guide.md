@@ -363,7 +363,10 @@ for the share price, and why.
 that day by the bonus, rights or cash. Then the events, newest first, each with a **Good /
 Bad / Mixed / Neutral** rating and its reason, the type, "Your stock" for stocks on your
 watchlist, in a position, on your scanner radar or the Strategy Lab list, and a link to the
-original announcement. Filter by **All companies / My stocks**, rating, type and period. At
+original announcement. Filter by **All companies / My stocks**, rating and type, search by
+**stock** (symbol or part of the company's name; unlisted companies are found by their
+announcement), and pick the **announced** dates with From / To or a preset (Today, 7, 14, 30,
+90 days). The list shows 25 events a page, with page numbers and Previous / Next. At
 the bottom, **How prices moved around book closes**: the average move in the 20 sessions
 before and after past bonus, cash and rights book closes, against NEPSE, with a short
 explanation of how bonus and rights shares work.
@@ -379,9 +382,12 @@ the book close.
 
 1. `/events`: book-close cards with symbol, days left and what is paid.
 2. Events grouped by day; each with a rating chip, type, reason and a link to ShareSansar.
-3. **My stocks**: only your stocks; **Bad**: only negative ratings.
-4. The study table: cases, before / after averages, % up and against NEPSE, by group.
-5. Telegram (switch on): within an hour of a new event for a watchlist stock, one 📰 message.
+3. **My stocks**: only your stocks; **Bad**: only negative ratings; type "nica" in the stock
+   box: only NIC Asia's events; **30 days** or From / To: the list and count follow the dates.
+4. With more than 25 events: "Showing 1–25 of N", page numbers and Next; any filter change
+   goes back to page 1.
+5. The study table: cases, before / after averages, % up and against NEPSE, by group.
+6. Telegram (switch on): within an hour of a new event for a watchlist stock, one 📰 message.
 
 ### 4.6d Stock Backtest
 
