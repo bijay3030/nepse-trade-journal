@@ -457,6 +457,16 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H27.6 | Telegram linked, "Market events" on, a new event for a watchlist stock | One 📰 "Market events" message: Your stocks, Market-wide, Book closes in the next 5 days; nothing repeated on the next run |
 | H27.7 | A rights book close passes | Within 10 days the stock's history is re-fetched adjusted (no false drop on its chart or backtest) |
 
+## H28. Live price freshness
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H28.1 | During market hours, any page | Header: "● Live prices from ShareSansar Live Trading, as of HH:MM" (green) |
+| H28.2 | Terminal: `bin/rails runner 'p Nepse::LiveFeed.pick(now: Time.current, sources: Nepse::LiveFeed.default_sources(Time.current)).except(:response)'` | `fresh: true` with the source during the session; outside it, the reasons (e.g. "prices are for <date>, not today") |
+| H28.3 | During the session with prices not moving for 15+ minutes (or the source stuck) | Amber "Live prices are delayed since HH:MM… alerts wait until fresh prices arrive" with the reasons; stock prices aren't changed |
+| H28.4 | **Refresh** in the header during a delay | "Prices aren't fresh: <reasons>. Nothing was changed." |
+| H28.5 | A weekday holiday, 4 PM | No new daily prices stored; no closing alerts |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

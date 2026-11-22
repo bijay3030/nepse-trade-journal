@@ -161,10 +161,20 @@ Prices are stored in the database (`stocks` for the latest snapshot,
 `stock_daily_prices` for daily history) and the app reads from there.
 
 **While `bin/dev` is running, prices update automatically.** Every 5 minutes during
-market hours (Mon–Fri, 11:00–15:15 Nepal time) `SyncMarketPricesJob` pulls the
-Sharesansar market table for all listed stocks and pushes the new prices to open
-browsers over the WebSocket. At 4:00 PM Nepal time it records the closing prices.
-If Sharesansar is down at that point, it falls back to the per-symbol price API.
+market hours (Mon–Fri, 11:00–15:15 Nepal time) `SyncMarketPricesJob` takes the freshest
+source (`Nepse::LiveFeed`): during the session ShareSansar's **Live Trading** page first
+(last traded prices with its own "As of" time), then the daily price table; for the 4:00
+PM closing run the price table first (it has the day's turnover and trades). A source is
+used only when its prices are for today and, during the session, its "As of" time is
+under 15 minutes old and the prices have changed in the last 15 minutes. If no source is
+fresh, nothing is stored, the watchlist, position and scanner alerts wait, and the app
+header says "Live prices are delayed" with the reason (`GET /api/v1/market/live_status`).
+On a weekday holiday nothing is stored at all. If ShareSansar is down at 4:00 PM, the
+closing run falls back to the per-symbol price API.
+
+NEPSE's own website API (nepalstock.com) is not used: its access tokens are deliberately
+obfuscated to keep automated clients out, so it isn't a source this app works around.
+For NEPSE's own data, ask NEPSE for its data API, or use a licensed feed.
 
 You can also sync by hand:
 
