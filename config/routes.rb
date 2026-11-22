@@ -66,6 +66,7 @@ Rails.application.routes.draw do
         get :suggestion, on: :collection
         post :trade_plan, on: :member
       end
+      get "market_events", to: "market_events#index"
       get "lab", to: "lab#show"
       get "lab/stocks/:symbol", to: "lab#stock"
       get "scans/crossovers", to: "scans#crossovers"

@@ -13,6 +13,10 @@ module Nepse
       def companies = get("/stock/")
       def sectors = get("/sector/")
       def dividends(symbol) = get("/bonus/", { symbol: symbol.to_s.upcase })
+      # Every company's bonus / cash dividend announcements and rights issues, with
+      # announcement and book-close dates (Events::Sync).
+      def bonus_feed = get("/bonus/", {}, timeout: 60)
+      def rights_feed = get("/right/", {}, timeout: 60)
       def brokers = get("/broker/")
 
       # Every trade of one session: symbol, buyer and seller broker numbers,

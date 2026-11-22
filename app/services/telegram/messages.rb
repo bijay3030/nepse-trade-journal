@@ -196,6 +196,34 @@ module Telegram
     def arrow(change) = change.to_f.positive? ? "▲" : change.to_f.negative? ? "▼" : "■"
     def billions(value) = format("%.2f", value.to_f / 1e9)
 
+    IMPACT_MARKS = { "positive" => "🟢", "negative" => "🔴", "mixed" => "🟡", "neutral" => "⚪" }.freeze
+
+    # Market events (Events::Alerts): the user's stocks, market-wide news, book closes ahead.
+    def market_events(own:, market:, book_closes:, today:)
+      line = lambda do |event|
+        who = event.stock ? "<b>#{h(event.stock.symbol)}</b>" : "<b>#{h(event.title.split(/\s(has|have|is|are)\s/).first.to_s.truncate(40))}</b>"
+        "#{IMPACT_MARKS[event.impact]} #{who}: #{h(event.reason)}#{event.source == 'sharesansar' ? "\n   <i>#{h(event.title.truncate(140))}</i>" : ''}"
+      end
+      sections = []
+      if own.any?
+        sections << "<b>Your stocks</b>\n" + own.first(Events::Alerts::LIMIT).map(&line).join("\n") + more_line(own.size - Events::Alerts::LIMIT).sub("Indicator Scanner", "Market Events page")
+      end
+      if market.any?
+        sections << "<b>Market-wide</b>\n" + market.first(Events::Alerts::LIMIT).map(&line).join("\n") + more_line(market.size - Events::Alerts::LIMIT).sub("Indicator Scanner", "Market Events page")
+      end
+      if book_closes.any?
+        sections << "<b>Book closes in the next #{Events::Alerts::REMINDER_DAYS} days</b>\n" + book_closes.sort_by(&:event_on).first(Events::Alerts::LIMIT).map do |event|
+          days = (event.event_on - today).to_i
+          when_text = days.zero? ? "today" : days == 1 ? "tomorrow" : "#{event.event_on.strftime('%a %-d %b')}"
+          "📅 <b>#{h(event.stock&.symbol || '—')}</b> #{when_text}: #{h(event.kind == 'rights' ? "#{format('%g', event.data['right'].to_f)}% rights" : [ event.data['bonus'].to_f.positive? ? "#{format('%g', event.data['bonus'].to_f)}% bonus" : nil, event.data['cash'].to_f.positive? ? "#{format('%g', event.data['cash'].to_f)}% cash" : nil ].compact.join(' + '))}. The price adjusts down that day."
+        end.join("\n")
+      end
+      count = own.size + market.size
+      header = "📰 <b>Market events</b>#{count.positive? ? " · #{count} new" : ''}"
+      text = [ header, *sections, "<i>🟢 good · 🔴 bad · 🟡 mixed · ⚪ neutral for the share price, by fixed rules. Rule checks, not advice.</i>" ].join("\n\n")
+      text.size <= MAX_LENGTH ? text : text.truncate(MAX_LENGTH, omission: "…\n\nMore on the Market Events page.")
+    end
+
     def more_line(hidden) = hidden.positive? ? "\n…and #{hidden} more on the Indicator Scanner." : ""
 
     # "Track record (20 sessions after each signal began): ... vs ... for all stock-days."
