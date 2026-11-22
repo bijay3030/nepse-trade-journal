@@ -11,7 +11,11 @@ module Lab
   # Every other signal is traded the same way: buy at the next open (skipped when it
   # opens more than MAX_GAP_PCT above the signal close), stop just under the 10-session
   # low (at most MAX_STOP_PCT away), target REWARD_MULTIPLE x the risk, out after HOLD
-  # sessions; COST_PCT round trip; trades never overlap. Rule checks, not advice.
+  # sessions; COST_PCT round trip; trades never overlap.
+  #
+  # Crossover systems (CROSSOVERS) are traded the classic way instead: buy at the next
+  # open after the fast line crosses above the slow one, sell at the next open after it
+  # crosses back below, or earlier at a SAFETY_STOP_PCT stop. Rule checks, not advice.
   module StockReport
     HOLD = 20
     MAX_GAP_PCT = 3.0
@@ -19,6 +23,15 @@ module Lab
     REWARD_MULTIPLE = 2.0
     COST_PCT = Strategies::COST_PCT
     MIN_BARS = 60
+    SAFETY_STOP_PCT = 8.0
+    CROSSOVERS = {
+      "xo_ema_9_21" => { label: "EMA 9 / 21 crossover", fast: :ema9, slow: :ema21 },
+      "xo_ema_21_50" => { label: "EMA 21 / 50 crossover", fast: :ema21, slow: :ema50 },
+      "xo_ema_50_200" => { label: "EMA 50 / 200 crossover (golden cross)", fast: :ema50, slow: :ema200 },
+      "xo_price_hma" => { label: "Price crosses HMA 55", fast: :close, slow: :hma },
+      "xo_price_alma" => { label: "Price crosses ALMA 21", fast: :close, slow: :alma },
+      "xo_alma_hma" => { label: "ALMA 21 crosses HMA 55", fast: :alma, slow: :hma }
+    }.freeze
 
     LABELS = {
       "scan_ema_9_21" => "EMA 9/21 cross", "scan_ema_stack" => "EMA 9 > 21 > 50 stack", "scan_hma_up" => "HMA 55 turns up",
@@ -32,7 +45,7 @@ module Lab
 
     def cached(symbol)
       stock = Stock.find_by(symbol: symbol.to_s.upcase) or return
-      Rails.cache.fetch([ "lab/stock_report", 1, stock.id, StockDailyPrice.where(stock: stock).maximum(:traded_on) ], expires_in: 12.hours) { call(stock) }
+      Rails.cache.fetch([ "lab/stock_report", 2, stock.id, StockDailyPrice.where(stock: stock).maximum(:traded_on) ], expires_in: 12.hours) { call(stock) }
     end
 
     def call(stock)
@@ -50,6 +63,12 @@ module Lab
         trades["lab_#{key}"] = list
         signals["lab_#{key}"] = starts
       end
+      lines = x.merge(ema200: Indicators::Trend.ema(closes, 200))
+      crossovers = CROSSOVERS.to_h do |key, spec|
+        list, starts = crossover_trades(x, lines[spec[:fast]], lines[spec[:slow]])
+        trades[key] = list
+        [ key, starts ]
+      end
 
       {
         symbol: stock.symbol, name: stock.name, sector: stock.sector, sessions: closes.size, from: dates.first, to: dates.last, close: closes.last.round(2),
@@ -58,6 +77,9 @@ module Lab
         baseline: { 20 => forward(closes, (0...closes.size).to_a, 20) },
         strategies: signals.keys.map { |key| strategy_row(key, signals[key], trades[key], closes, dates) }
                             .sort_by { |s| [ s[:stats][:trades].zero? ? 1 : 0, -(s[:stats][:profit_factor] || -1) ] },
+        crossover_rules: { safety_stop_pct: SAFETY_STOP_PCT, cost_pct: COST_PCT },
+        crossovers: crossovers.map { |key, starts| strategy_row(key, starts, trades[key], closes, dates) }
+                              .sort_by { |s| [ s[:stats][:trades].zero? ? 1 : 0, -(s[:stats][:profit_factor] || -1) ] },
         trades: trades.flat_map { |key, list| list.map { trade_row(key, _1, dates) } },
         prices: dates.each_index.map { |i| { date: dates[i], close: closes[i].round(2) } },
         now: now(stock, lab, indicators)
@@ -148,6 +170,56 @@ module Lab
       { entry_index: j, exit_index: last, entry: entry, exit: x[:close][last], reason: "open", return_pct: (x[:close][last] / entry - 1) * 100, open: true }
     end
 
+    # Buy at the open after `fast` crosses above `slow`; sell at the open after it closes
+    # back below (or at the safety stop, or at the gap open below it). One trade at a time.
+    # Returns [trades, signal bars].
+    def crossover_trades(x, fast, slow)
+      n = x[:close].size
+      trades = []
+      starts = []
+      i = 1
+      while i < n - 1
+        unless [ fast[i], slow[i], fast[i - 1], slow[i - 1] ].none?(&:nil?) && fast[i] > slow[i] && fast[i - 1] <= slow[i - 1]
+          i += 1
+          next
+        end
+
+        starts << i
+        j = i + 1
+        entry = x[:open][j]
+        stop = entry * (1 - SAFETY_STOP_PCT / 100)
+        trade = nil
+        (j...n).each do |k|
+          if x[:low][k] <= stop
+            price = k > j && x[:open][k] < stop ? x[:open][k] : stop
+            trade = { entry_index: j, exit_index: k, entry: entry, exit: price, reason: "stop" }
+            break
+          end
+          next unless fast[k] && slow[k] && fast[k] < slow[k]
+
+          if k + 1 < n
+            trade = { entry_index: j, exit_index: k + 1, entry: entry, exit: x[:open][k + 1], reason: "cross_back" }
+          else
+            trade = { entry_index: j, exit_index: k, entry: entry, exit: x[:close][k], reason: "cross_back_pending", open: true }
+          end
+          break
+        end
+        trade ||= { entry_index: j, exit_index: n - 1, entry: entry, exit: x[:close][n - 1], reason: "open", open: true }
+        trade[:return_pct] = (trade[:exit] / entry - 1) * 100 - (trade[:open] ? 0 : COST_PCT)
+        trades << trade
+        break if trade[:open]
+
+        i = trade[:exit_index]
+      end
+      # A cross on the latest session: the buy is still to come at the next open.
+      last = n - 1
+      if !trades.last&.dig(:open) && last.positive? && [ fast[last], slow[last], fast[last - 1], slow[last - 1] ].none?(&:nil?) &&
+         fast[last] > slow[last] && fast[last - 1] <= slow[last - 1]
+        starts << last
+      end
+      [ trades, starts ]
+    end
+
     def lab_trades(lab, key)
       trades = []
       starts = []
@@ -170,13 +242,16 @@ module Lab
 
     def strategy_row(key, indices, trades, closes, dates)
       {
-        key: key, label: label(key), family: key.start_with?("scan_") ? "Indicator Scanner" : key.start_with?("lab_") ? "Strategy Lab" : "Classic",
+        key: key, label: label(key),
+        family: key.start_with?("xo_") ? "Crossover system" : key.start_with?("scan_") ? "Indicator Scanner" : key.start_with?("lab_") ? "Strategy Lab" : "Classic",
         signals: indices.size, latest_signal: indices.max && dates[indices.max], sessions_since_signal: indices.max && closes.size - 1 - indices.max,
         forward20: forward(closes, indices, 20), stats: stats(trades, dates)
       }
     end
 
     def label(key)
+      return CROSSOVERS[key][:label] if CROSSOVERS.key?(key)
+
       LABELS[key] || (key.end_with?("_vol") ? "#{LABELS[key.delete_suffix('_vol')]} on 1.5× volume" : key)
     end
 

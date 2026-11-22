@@ -47,6 +47,29 @@ RSpec.describe Lab::StockReport do
     expect(described_class.simulate(x.merge(open: [ 100, 104, 104, 106 ]), 0)).to be_nil # opened more than 3% above the close
   end
 
+  it "trades crossover systems from the cross up to the cross back down, with a safety stop" do
+    x = { dates: (0..7).map { Date.new(2025, 1, 1) + _1 }, open: [ 10, 10, 11, 12, 13, 12, 11, 11 ].map(&:to_f),
+          low: [ 9.8, 9.8, 10.8, 11.8, 12.8, 11.8, 10.8, 10.8 ], close: [ 10, 11, 12, 13, 12, 11, 11, 11 ].map(&:to_f) }
+    fast = [ 1, 3, 3, 3, 3, 1, 1, 1 ].map(&:to_f)
+    slow = [ 2, 2, 2, 2, 2, 2, 2, 2 ].map(&:to_f)
+    trades, starts = described_class.crossover_trades(x, fast, slow)
+
+    expect(starts).to eq([ 1 ])
+    expect(trades.sole).to include(entry_index: 2, entry: 11.0, exit_index: 6, exit: 11.0, reason: "cross_back") # crossed back on bar 5, sold at bar 6's open
+    expect(trades.sole[:return_pct]).to be_within(0.001).of(-0.8)
+
+    stopped, = described_class.crossover_trades(x.merge(low: [ 9.8, 9.8, 10.8, 10.0, 12.8, 11.8, 10.8, 10.8 ]), fast, slow)
+    expect(stopped.first).to include(exit_index: 3, reason: "stop", exit: 11.0 * 0.92)
+  end
+
+  it "lists crossover systems with their own trades, and a cross on the latest session as a pending signal" do
+    report = described_class.call(stock)
+    expect(report[:crossovers].map { _1[:key] }).to match_array(described_class::CROSSOVERS.keys)
+    expect(report[:crossovers].first).to include(family: "Crossover system")
+    xo = report[:crossovers].find { _1[:key] == "xo_ema_9_21" }
+    expect(report[:trades].count { _1[:key] == "xo_ema_9_21" }).to eq(xo[:stats][:trades] + xo[:stats][:open].to_i)
+  end
+
   it "says when there isn't enough history" do
     short = create(:stock, symbol: "NEWL", security_type: "Equity")
     create(:stock_daily_price, stock: short, traded_on: Date.new(2026, 11, 1))
