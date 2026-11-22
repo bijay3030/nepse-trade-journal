@@ -17,13 +17,28 @@ module Telegram
   # The credentials are shared with development, and two apps polling one bot
   # steal each other's messages (and both send alerts), so development ignores the
   # credential unless TELEGRAM_IN_DEVELOPMENT=true. TELEGRAM_BOT_TOKEN always works,
-  # e.g. with a separate test bot.
+  # e.g. with a separate test bot, as long as it has a bot token's shape
+  # ("<bot id>:<secret>"): a malformed one (a placeholder or a pasted fragment) is
+  # ignored with a warning, since Telegram would answer every call with "Not Found".
   class Client
     BASE_URL = "https://api.telegram.org"
     TIMEOUT = 10
+    TOKEN_FORMAT = /\A\d{6,}:[A-Za-z0-9_-]{30,}\z/
 
     def self.token
-      ENV["TELEGRAM_BOT_TOKEN"].presence || (credential_token if !Rails.env.development? || ENV["TELEGRAM_IN_DEVELOPMENT"] == "true")
+      env_token || (credential_token if !Rails.env.development? || ENV["TELEGRAM_IN_DEVELOPMENT"] == "true")
+    end
+
+    def self.env_token
+      value = ENV["TELEGRAM_BOT_TOKEN"].to_s.strip
+      return if value.empty?
+      return value if value.match?(TOKEN_FORMAT)
+
+      unless @warned_malformed
+        Rails.logger.warn("TELEGRAM_BOT_TOKEN is set but isn't a bot token (expected <bot id>:<secret>); ignoring it.")
+        @warned_malformed = true
+      end
+      nil
     end
 
     def self.credential_token = Rails.application.credentials.dig(:telegram, :bot_token)
