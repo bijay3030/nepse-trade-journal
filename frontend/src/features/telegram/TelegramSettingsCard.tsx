@@ -134,6 +134,13 @@ export function TelegramSettingsCard() {
                 disabled={update.isPending}
                 onChange={(on) => update.mutate({ market_summary: on })}
               />
+              <Switch
+                label="Market events"
+                help="Checked hourly: announcements and corporate actions for your stocks (watchlist, positions, scanner radar, Strategy Lab), big market-wide news (bonus, rights, halts, mergers) and book closes in the next 5 days."
+                checked={data.event_alerts ?? true}
+                disabled={update.isPending}
+                onChange={(on) => update.mutate({ event_alerts: on })}
+              />
             </div>
           </>
         ) : link.data ? (

@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion"
 import {
+  Megaphone,
   History,
   BarChart3,
   BookOpenText,
@@ -38,6 +39,7 @@ import { cn } from "../lib/cn"
 const navItems = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/market", label: "Market Overview", icon: Activity },
+  { to: "/events", label: "Market Events", icon: Megaphone },
   { to: "/digest", label: "Daily Digest", icon: Newspaper },
   { to: "/screener", label: "VCP Screener", icon: ScanSearch },
   { to: "/scanner", label: "Indicator Scanner", icon: SlidersHorizontal },

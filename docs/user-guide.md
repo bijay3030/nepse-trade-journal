@@ -353,6 +353,36 @@ candidates as ideas to check on the stock's page, and size any real trade from i
    (pending / open / closed / skipped), entry, stop / target, exit and return; the All /
    Active / Closed tabs filter it.
 
+### 4.6e Market Events
+
+**Why:** bonus, rights, dividends, results, AGMs, promoter share sales and regulatory news
+move prices. This page collects them every hour and says whether each is likely good or bad
+for the share price, and why.
+
+**How it works:** **Book closes in the next two weeks** at the top: the price adjusts down on
+that day by the bonus, rights or cash. Then the events, newest first, each with a **Good /
+Bad / Mixed / Neutral** rating and its reason, the type, "Your stock" for stocks on your
+watchlist, in a position, on your scanner radar or the Strategy Lab list, and a link to the
+original announcement. Filter by **All companies / My stocks**, rating, type and period. At
+the bottom, **How prices moved around book closes**: the average move in the 20 sessions
+before and after past bonus, cash and rights book closes, against NEPSE, with a short
+explanation of how bonus and rights shares work.
+
+**Telegram:** Settings → Telegram → **Market events**: every new event for your stocks,
+important news for any company, and a reminder of book closes in the next 5 days.
+
+**Read it honestly:** the ratings are rules, not judgments of each company. A good-looking
+bonus doesn't mean the stock will rise; the study shows big-bonus stocks lagged NEPSE after
+the book close.
+
+**QA:**
+
+1. `/events`: book-close cards with symbol, days left and what is paid.
+2. Events grouped by day; each with a rating chip, type, reason and a link to ShareSansar.
+3. **My stocks**: only your stocks; **Bad**: only negative ratings.
+4. The study table: cases, before / after averages, % up and against NEPSE, by group.
+5. Telegram (switch on): within an hour of a new event for a watchlist stock, one 📰 message.
+
 ### 4.6d Stock Backtest
 
 **Why:** to see which indicator has actually worked on one stock, and exactly what each

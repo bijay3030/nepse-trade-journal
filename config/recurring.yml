@@ -29,6 +29,12 @@ shared: &shared
     queue: default
     schedule: every minute
 
+  # Company announcements and corporate actions, rated and sent on Telegram: every hour.
+  market_events:
+    class: MarketEventsJob
+    queue: default
+    schedule: every hour
+
   # Telegram morning watch: saved-filter stocks in or near their entry zone, 9:00 AM Nepal
   # time (03:15 UTC). The job skips days NEPSE doesn't trade (Nepse::MarketHours).
   telegram_morning_watch:

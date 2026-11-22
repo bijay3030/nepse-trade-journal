@@ -34,6 +34,7 @@ module Api
         attrs[:telegram_scanner_entry_alerts] = ActiveModel::Type::Boolean.new.cast(params[:scanner_entry_alerts]) if params.key?(:scanner_entry_alerts)
         attrs[:telegram_morning_watch] = ActiveModel::Type::Boolean.new.cast(params[:morning_watch]) if params.key?(:morning_watch)
         attrs[:telegram_market_summary] = ActiveModel::Type::Boolean.new.cast(params[:market_summary]) if params.key?(:market_summary)
+        attrs[:telegram_event_alerts] = ActiveModel::Type::Boolean.new.cast(params[:event_alerts]) if params.key?(:event_alerts)
         current_user.update!(attrs)
         render json: status_payload
       end
@@ -66,7 +67,8 @@ module Api
           board_alerts: current_user.telegram_board_alerts,
           scanner_entry_alerts: current_user.telegram_scanner_entry_alerts,
           morning_watch: current_user.telegram_morning_watch,
-          market_summary: current_user.telegram_market_summary
+          market_summary: current_user.telegram_market_summary,
+          event_alerts: current_user.telegram_event_alerts
         }
       end
 

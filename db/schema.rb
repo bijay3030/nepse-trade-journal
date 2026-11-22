@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_21_054215) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_22_044616) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -125,6 +125,37 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_21_054215) do
     t.index ["status"], name: "index_lab_paper_trades_on_status"
     t.index ["stock_id", "strategy", "signal_on"], name: "index_lab_paper_trades_on_stock_id_and_strategy_and_signal_on", unique: true
     t.index ["stock_id"], name: "index_lab_paper_trades_on_stock_id"
+  end
+
+  create_table "market_event_deliveries", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "market_event_id", null: false
+    t.string "reason", default: "new", null: false
+    t.datetime "created_at", null: false
+    t.index ["market_event_id"], name: "index_market_event_deliveries_on_market_event_id"
+    t.index ["user_id", "market_event_id", "reason"], name: "index_market_event_deliveries_once", unique: true
+    t.index ["user_id"], name: "index_market_event_deliveries_on_user_id"
+  end
+
+  create_table "market_events", force: :cascade do |t|
+    t.bigint "stock_id"
+    t.string "source", null: false
+    t.string "external_id", null: false
+    t.string "kind", null: false
+    t.string "title", null: false
+    t.string "url"
+    t.date "published_on", null: false
+    t.date "event_on"
+    t.jsonb "data", default: {}, null: false
+    t.string "impact", default: "neutral", null: false
+    t.string "reason"
+    t.boolean "important", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["event_on"], name: "index_market_events_on_event_on"
+    t.index ["published_on"], name: "index_market_events_on_published_on"
+    t.index ["source", "external_id"], name: "index_market_events_on_source_and_external_id", unique: true
+    t.index ["stock_id"], name: "index_market_events_on_stock_id"
   end
 
   create_table "market_index_archives", force: :cascade do |t|
@@ -680,6 +711,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_21_054215) do
     t.date "telegram_morning_watch_sent_on"
     t.boolean "telegram_market_summary", default: true, null: false
     t.date "telegram_market_summary_sent_on"
+    t.boolean "telegram_event_alerts", default: true, null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["jti"], name: "index_users_on_jti", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
@@ -743,6 +775,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_21_054215) do
   add_foreign_key "holdings", "portfolios"
   add_foreign_key "holdings", "stocks"
   add_foreign_key "lab_paper_trades", "stocks", on_delete: :cascade
+  add_foreign_key "market_event_deliveries", "market_events", on_delete: :cascade
+  add_foreign_key "market_event_deliveries", "users", on_delete: :cascade
+  add_foreign_key "market_events", "stocks", on_delete: :cascade
   add_foreign_key "market_index_archives", "market_indices", on_delete: :cascade
   add_foreign_key "market_index_histories", "market_indices"
   add_foreign_key "portfolios", "users"
