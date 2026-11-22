@@ -28,4 +28,27 @@ RSpec.describe "Market events", type: :request do
     get "/api/v1/market_events", params: { impact: "positive" }, headers: headers
     expect(response.parsed_body["events"].map { _1["symbol"] }).to eq(%w[OTHR])
   end
+
+  it "filters by announcement date and stock, and pages the results" do
+    30.times do |i|
+      MarketEvent.create!(stock: other, source: "sharesansar", external_id: "p#{i}", kind: "other", impact: "neutral", title: "Other Limited notice #{i}",
+                          reason: "Notice", published_on: today - 40 - (i % 3))
+    end
+    MarketEvent.create!(stock: nil, source: "sharesansar", external_id: "u", kind: "agm", impact: "neutral", title: "Orbit Energy Limited has announced its 3rd AGM",
+                        reason: "AGM", published_on: today - 41)
+
+    get "/api/v1/market_events", params: { from: (today - 45).iso8601, to: (today - 39).iso8601, per: 10, page: 2 }, headers: headers
+    body = response.parsed_body
+    expect(body["pagination"]).to eq("page" => 2, "per" => 10, "total" => 31, "pages" => 4)
+    expect(body["events"].size).to eq(10)
+    expect(body["from"]).to eq((today - 45).iso8601)
+
+    get "/api/v1/market_events", params: { from: (today - 45).iso8601, to: (today - 39).iso8601, q: "orbit" }, headers: headers
+    expect(response.parsed_body["events"].map { _1["title"] }).to eq([ "Orbit Energy Limited has announced its 3rd AGM" ]) # unlisted: found by its announcement
+    get "/api/v1/market_events", params: { q: "MIN" }, headers: headers
+    expect(response.parsed_body["events"].map { _1["symbol"] }).to eq(%w[MINE])
+
+    get "/api/v1/market_events", params: { page: 99 }, headers: headers
+    expect(response.parsed_body["pagination"]).to include("page" => 1, "pages" => 1) # clamped
+  end
 end
