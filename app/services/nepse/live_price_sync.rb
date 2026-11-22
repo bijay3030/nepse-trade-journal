@@ -4,10 +4,36 @@ module Nepse
   class LivePriceSync
     CHANNEL = "stock_prices".freeze
 
-    def self.call(market_sync: -> { Nepse::StockBasicsSyncService.sync_market })
+    # Stores and pushes prices from the freshest source (Nepse::LiveFeed). When no source
+    # is fresh nothing is stored or pushed, so watchlist, position and scanner alerts don't
+    # act on old prices; the status says the prices are delayed. market_sync replaces the
+    # whole step (tests and callers with their own source).
+    def self.call(now: Time.current, sources: nil, market_sync: nil)
+      return legacy(market_sync) if market_sync
+
+      pick = LiveFeed.pick(now: now, sources: sources || LiveFeed.default_sources(now))
+      unless pick[:fresh]
+        LiveFeed.record(state: "delayed", now: now, reasons: pick[:reasons])
+        return { success: false, stale: true, error: "No fresh prices", reasons: pick[:reasons] }
+      end
+
+      response = pick[:response]
+      result = StockBasicsSyncService.new(traded_on: response[:rows].first[:traded_on], market_client: Fixed.new(response),
+                                          company_client: nil, fundamentals_failure_threshold: 0, request_delay_seconds: 0).sync_market
+      LiveFeed.record(state: "live", now: now, source: pick[:source], as_of: response[:as_of], reasons: pick[:reasons]) if result[:success]
+      publish if result[:success]
+      result.merge(source: pick[:source], as_of: response[:as_of])
+    end
+
+    def self.legacy(market_sync)
       result = market_sync.call
       publish if result[:success]
       result
+    end
+
+    # Hands StockBasicsSyncService an answer already fetched.
+    Fixed = Struct.new(:response) do
+      def fetch = response
     end
 
     # Runs after any price update: records the running volumes (for the volume

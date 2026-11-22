@@ -8,6 +8,11 @@ module Api
       def heatmap
         render json: MarketIndex::Heatmap.new.call
       end
+
+      # How fresh the live prices are (Nepse::LiveFeed): live, delayed, closed or unknown.
+      def live_status
+        render json: Nepse::LiveFeed.status
+      end
     end
   end
 end

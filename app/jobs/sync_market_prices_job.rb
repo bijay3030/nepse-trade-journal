@@ -12,6 +12,10 @@ class SyncMarketPricesJob < ApplicationJob
     Rails.logger.info("SyncMarketPricesJob finished: #{result.except(:created_symbols, :rejected_symbols).inspect}")
     return result unless force
 
+    # Every source showing an earlier session (e.g. a holiday) isn't a failure: there is
+    # nothing new to store, so the per-symbol fallback doesn't run either.
+    return result if result[:stale]
+
     unless result[:success]
       Rails.logger.warn("SyncMarketPricesJob: market sync failed, falling back to per-symbol prices")
       result = Nepse::DailyPriceImporterService.call

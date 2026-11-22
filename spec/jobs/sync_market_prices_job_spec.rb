@@ -31,6 +31,14 @@ RSpec.describe SyncMarketPricesJob do
     described_class.perform_now
   end
 
+  it "stores nothing on a forced run when no source has today's prices (a holiday)" do
+    allow(Nepse::LivePriceSync).to receive(:call).and_return({ success: false, stale: true, reasons: { sharesansar_summary: "prices are for 2026-11-20, not today" } })
+    expect(Nepse::DailyPriceImporterService).not_to receive(:call)
+    expect(Watchlist::CloseEvaluator).not_to receive(:call)
+
+    expect(described_class.perform_now(true)).to include(stale: true)
+  end
+
   it "falls back to per-symbol prices when a forced sync fails" do
     allow(Nepse::LivePriceSync).to receive(:call).and_return({ success: false, error: "timeout" })
     expect(Nepse::DailyPriceImporterService).to receive(:call).and_return({ success: true, processed: 2 })
