@@ -399,6 +399,12 @@ days it was held, and the result. The chart marks each buy ▲ and sell ▼ (gre
 Below: the ten best trades, results by year against holding the stock, and today's signals
 and levels.
 
+**Crossover trades:** below the strategies, each crossover (EMA 9/21, 21/50, 50/200, price
+vs HMA 55, price vs ALMA 21, ALMA 21 vs HMA 55) is traded on its own: buy at the next open
+after the cross up, sell at the next open after it crosses back down (or at an 8% safety
+stop). Click one to see every buy and sell, how long each was held and the profit or loss.
+These trades can last months in a trend, so a few big winners often carry many small losses.
+
 **Read it honestly:** strategies with fewer than 10–20 trades can look good by luck, and the
 past doesn't promise the future.
 

@@ -80,7 +80,7 @@ export type StockBacktestStats = {
 export type StockBacktestStrategy = {
   key: string
   label: string
-  family: "Indicator Scanner" | "Classic" | "Strategy Lab"
+  family: "Indicator Scanner" | "Classic" | "Strategy Lab" | "Crossover system"
   signals: number
   latest_signal: string | null
   sessions_since_signal: number | null
@@ -97,7 +97,7 @@ export type StockBacktestTrade = {
   entry: number
   exit: number
   return_pct: number
-  reason: "stop" | "target" | "time" | "rsi_exit" | "open" | string
+  reason: "stop" | "target" | "time" | "rsi_exit" | "cross_back" | "cross_back_pending" | "open" | string
   open: boolean
   /** Trading sessions from the buy to the sell, both counted. */
   held_sessions: number
@@ -116,6 +116,9 @@ export type StockBacktest = {
   buy_hold: { return_pct: number; max_drawdown_pct: number; by_year: Record<string, number> }
   baseline: { "20": { count: number; avg_pct: number; up_pct: number } | null }
   strategies: StockBacktestStrategy[]
+  /** Crossover systems: buy on the cross up, sell on the cross back down (or the safety stop). */
+  crossovers?: StockBacktestStrategy[]
+  crossover_rules?: { safety_stop_pct: number; cost_pct: number }
   trades: StockBacktestTrade[]
   prices: Array<{ date: string; close: number }>
   now: {

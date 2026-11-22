@@ -519,6 +519,13 @@ calendar days, and the result, with ▲ buys and ▼ sells on the price chart. I
 the ten best trades, results by year against buy and hold, and the stock's signals and
 levels today.
 
+**Crossover trades** (`Lab::StockReport::CROSSOVERS`): EMA 9/21, EMA 21/50, EMA 50/200,
+price vs HMA 55, price vs ALMA 21 and ALMA 21 vs HMA 55, each traded the classic way: buy at
+the open after the faster line crosses above the slower one, sell at the open after it
+closes back below (or at an 8% safety stop), 0.8% costs. Their own ranking and trade log
+show every buy and sell with how long it was held; a cross on the latest session shows as
+the next buy at the next open.
+
 ## Deployment
 
 Free hosting on Render (API and frontend) with the database on Supabase: see

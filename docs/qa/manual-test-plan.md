@@ -442,6 +442,7 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H26.3 | Click a strategy | Trade log for it: "How it trades" sentence; summary (won / lost, average and range of holding, best, worst, compounded); chart with ▲ buys below and ▼ sells above the line, green / red; table with signal session, bought, buy price, sold, sell price, held (sessions and days), why sold, result |
 | H26.4 | Lower sections | Ten best trades with holding; by-year table with buy and hold and strategies with 10+ trades; signals in the last two sessions with their profit factor; levels and indicators |
 | H26.5 | Unknown symbol / a new listing | "Unknown stock …" / "Not enough price history (N sessions)" |
+| H26.6 | **Crossover trades** section | Ranking of the six crossovers (EMA 9/21, 21/50, 50/200, price vs HMA 55 / ALMA 21, ALMA vs HMA); opens on the best with 10+ trades; its log says it holds until the cross back down; rows show "Crossed back down (sold next open)" or "Stop hit"; a cross on the latest session says the next buy is at the next open |
 
 ## H27. Market Events
 
