@@ -135,7 +135,7 @@ API, so the app collects from public sources on a schedule.
 
 | When (Nepal time) | What |
 | ----------------- | ---- |
-| Every 5 min, Mon–Fri 11:00–15:15 | Live prices for all stocks; watchlist and position alerts checked after each sync |
+| Every 5 min, Mon–Fri 11:00–15:15 | Live prices for all stocks (ShareSansar Live Trading, backed by its price table), used only when fresh; watchlist, position and scanner alerts checked after each sync. When prices are stale the header says "Live prices are delayed" and the alerts wait |
 | Every minute | Telegram messages to the bot (linking, `/stop`) |
 | 4:00 PM Mon–Fri | Closing prices; end-of-day verdicts for watchlist setups; close-based sell rules |
 | 4:30 PM Mon–Fri | Securities list, dividends and book closes, index history, bonus adjustments, floorsheet |

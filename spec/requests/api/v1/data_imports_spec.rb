@@ -10,12 +10,10 @@ RSpec.describe "Api::V1::DataImports", type: :request do
 
   describe "POST /api/v1/data_imports/sync_market" do
     it "syncs the market table and reports the result" do
-      allow(Nepse::StockBasicsSyncService).to receive(:sync_market)
+      allow(Nepse::LivePriceSync).to receive(:call)
         .and_return({ success: true, processed: 356, created_symbols: [ "NEWCO" ], rejected_symbols: [] })
 
-      expect {
-        post "/api/v1/data_imports/sync_market", headers: auth_headers
-      }.to have_broadcasted_to("stock_prices")
+      post "/api/v1/data_imports/sync_market", headers: auth_headers
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
@@ -24,13 +22,23 @@ RSpec.describe "Api::V1::DataImports", type: :request do
     end
 
     it "returns a readable error when the source is unavailable" do
-      allow(Nepse::StockBasicsSyncService).to receive(:sync_market)
+      allow(Nepse::LivePriceSync).to receive(:call)
         .and_return({ success: false, error: { code: :http_error, message: "HTTP 503" } })
 
       post "/api/v1/data_imports/sync_market", headers: auth_headers
 
       expect(response).to have_http_status(:bad_gateway)
       expect(JSON.parse(response.body)["error"]).to eq("Could not fetch market prices: HTTP 503")
+    end
+
+    it "says so when the prices aren't fresh, without changing anything" do
+      allow(Nepse::LivePriceSync).to receive(:call)
+        .and_return({ success: false, stale: true, reasons: { sharesansar_live: "last updated 11:40", sharesansar_summary: "prices are for 2026-11-20, not today" } })
+
+      post "/api/v1/data_imports/sync_market", headers: auth_headers
+
+      expect(response).to have_http_status(:service_unavailable)
+      expect(JSON.parse(response.body)["error"]).to eq("Prices aren't fresh: last updated 11:40; prices are for 2026-11-20, not today. Nothing was changed.")
     end
   end
 end

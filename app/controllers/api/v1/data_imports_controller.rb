@@ -32,6 +32,8 @@ module Api
             added: result[:created_symbols],
             last_updated: Stock.active.maximum(:last_updated)
           }
+        elsif result[:stale]
+          render json: { error: "Prices aren't fresh: #{result[:reasons].values.uniq.join('; ')}. Nothing was changed.", stale: true }, status: :service_unavailable
         else
           error = result[:error]
           message = error.is_a?(Hash) ? error[:message] : error

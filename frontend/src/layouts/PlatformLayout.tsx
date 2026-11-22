@@ -28,6 +28,7 @@ import {
   FlaskConical,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { LiveStatusNotice } from "../components/LiveStatusNotice"
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { usePositionAlerts } from "../features/positions/api"
 import { useWatchlistAlerts } from "../features/watchlist/api"
@@ -394,6 +395,8 @@ export function PlatformLayout() {
               </div>
             ) : null}
 
+            {market.isOpen ? <LiveStatusNotice /> : null}
+
             {lastUpdatedAt ? <p className="mt-2 text-xs text-slate/70">Last update: {new Date(lastUpdatedAt).toLocaleTimeString()}</p> : null}
           </header>
 
@@ -639,3 +642,4 @@ export function PlatformLayout() {
     </div>
   )
 }
+

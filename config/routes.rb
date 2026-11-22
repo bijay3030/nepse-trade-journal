@@ -20,6 +20,7 @@ Rails.application.routes.draw do
     namespace :v1 do
       get "market/overview", to: "market#overview"
       get "market/heatmap", to: "market#heatmap"
+      get "market/live_status", to: "market#live_status"
       get "digest_preferences", to: "digests#preferences"
       patch "digest_preferences", to: "digests#update_preferences"
       get "telegram", to: "telegram#show"
