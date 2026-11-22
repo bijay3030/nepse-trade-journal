@@ -443,6 +443,18 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H26.4 | Lower sections | Ten best trades with holding; by-year table with buy and hold and strategies with 10+ trades; signals in the last two sessions with their profit factor; levels and indicators |
 | H26.5 | Unknown symbol / a new listing | "Unknown stock …" / "Not enough price history (N sessions)" |
 
+## H27. Market Events
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H27.1 | Sidebar → **Market Events** (`/events`) | Intro; "Book closes in the next two weeks" cards (symbol, in N days, bonus/cash/rights, date, "your stock") |
+| H27.2 | Event list | Grouped by day, newest first; chip Good / Bad / Mixed / Neutral; type badge; "Your stock" on watchlist/position/radar stocks; reason; the original title linking to ShareSansar (or "· Chukul") |
+| H27.3 | Filters: My stocks, Bad, Type = Quarterly results, Last 30 days | The list and count follow each filter |
+| H27.4 | Study table | Bonus 20%+ / 10–20% / under 10% / cash only / rights: cases, 20 sessions before and after, % up, vs NEPSE; explanation of bonus and rights below |
+| H27.5 | Terminal: `bin/rails runner 'p MarketEventsJob.perform_now'` | Counts of new announcements and Chukul events; alerts per user |
+| H27.6 | Telegram linked, "Market events" on, a new event for a watchlist stock | One 📰 "Market events" message: Your stocks, Market-wide, Book closes in the next 5 days; nothing repeated on the next run |
+| H27.7 | A rights book close passes | Within 10 days the stock's history is re-fetched adjusted (no false drop on its chart or backtest) |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

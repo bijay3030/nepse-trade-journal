@@ -474,6 +474,35 @@ As of Nov 2026 both strategies **lost money across the market** (profit factor 0
 0.86), doing better only when NEPSE was sideways; 9 stocks qualified for the range bounce
 and none for RSI. With ~300 stocks tested, some good per-stock records are luck.
 
+## Market Events
+
+`/events` (sidebar **Market Events**) tracks company announcements and corporate actions.
+`MarketEventsJob` runs every hour (`Events::Sync`): ShareSansar's announcement list (newest
+pages until nothing is new; the company is matched from the title by
+`Events::CompanyMatcher`) and Chukul's bonus / cash dividend and rights lists (with
+book-close dates). `Events::Classifier` rates each one for the share price by fixed rules
+with a plain reason: bonus or cash dividend proposed = good; net loss or profit down on the
+same quarter last year = bad; promoter shares for sale or lock-in ending = bad; a cancelled
+promoter sale = good; trading halt or regulatory action = bad; rights issue = mixed;
+mergers = mixed; AGMs, issues and other notices = neutral. Quarterly reports are cumulative,
+so a result is only compared with the same quarter of an earlier year once one is stored.
+
+`Events::Alerts` (Telegram, switch "Market events" in Settings) sends one message per run:
+every new event for the user's stocks (watchlist, open positions, saved scanner filter's
+radar, Strategy Lab list), important ones for any company (bonus, rights, halts, mergers,
+promoter lock-ins), and a one-time reminder of bonus, cash and rights book closes in the
+next 5 days. `market_event_deliveries` keeps each one to once per user.
+
+`Events::BookCloseStudy` measures how prices moved over the 20 sessions before and after
+every bonus, cash and rights book close since 2020 (729 cases, bonus-adjusted prices,
+against NEPSE). As of Nov 2026: big bonuses (20%+) ran up +7.0% before the book close and
+lagged NEPSE by 2.7% after; cash-only dividends lagged NEPSE by 2.9% after; rights issues
+rose +6.6% after (+4.9% against NEPSE), which is why rights are rated mixed, not bad.
+
+`CorporateActions::HistoryRefresh` now also re-fetches adjusted prices after a **rights**
+book close (it already did for bonuses) and refreshes the 2020–2025 archive, so charts,
+indicators and backtests don't see the adjustment as a crash.
+
 ## Stock Backtest
 
 `/stock-backtest/:symbol` (sidebar **Stock Backtest**, or **Backtest strategies** on a
