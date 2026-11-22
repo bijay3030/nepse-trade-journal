@@ -38,10 +38,14 @@ export type BookCloseGroup = {
 /** GET /market_events */
 export type MarketEventsResponse = {
   as_of: string
-  days: number
+  /** The announcement dates the list covers. */
+  from: string
+  to: string
+  pagination: { page: number; per: number; total: number; pages: number }
   events: MarketEvent[]
   upcoming: MarketEvent[]
   study: { window: number; from?: string; events: number; groups: BookCloseGroup[]; all: Omit<BookCloseGroup, "key" | "label"> }
 }
 
-export type MarketEventFilters = { scope: "all" | "mine"; impact: EventImpact | ""; kind: EventKind | ""; days: number }
+/** from / to: announcement dates (yyyy-mm-dd, "" = default); q: symbol or company name. */
+export type MarketEventFilters = { scope: "all" | "mine"; impact: EventImpact | ""; kind: EventKind | ""; from: string; to: string; q: string; page: number }
