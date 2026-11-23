@@ -43,7 +43,15 @@ module Nepse
       Watchlist::AlertEvaluator.call
       Positions::Monitor.call
       scanner_entries
+      paper_trading
       broadcast
+    end
+
+    # Paper trading follows the same fresh prices; a failure here must not stop the quotes.
+    def self.paper_trading
+      PaperTrading::Engine.on_live
+    rescue StandardError => e
+      Rails.logger.warn("Paper trading (live) failed: #{e.class}: #{e.message}")
     end
 
     # A failure here must not stop the quotes going out.

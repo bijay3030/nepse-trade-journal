@@ -24,6 +24,10 @@ module Positions
 
     def self.call(close: false, positions: Position.open) = new(close: close, positions: positions).call
 
+    # The close-time rules for anything shaped like a position (stock, opened_on,
+    # r_multiple): [[kind, key, message], ...]. Used by paper trading.
+    def self.close_rules(position) = new(close: true, positions: nil).send(:close_alerts, position).compact
+
     def initialize(close:, positions:)
       @close = close
       @positions = positions

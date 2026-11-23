@@ -14,6 +14,7 @@ class BuildSetupSnapshotsJob < ApplicationJob
       BuildDailyDigestsJob.perform_later
       TelegramBoardJob.perform_later
       TelegramMarketSummaryJob.perform_later
+      PaperTradingBoardJob.perform_later
     end
     Rails.logger.info("BuildSetupSnapshotsJob: indicators=#{indicators[:processed_indicators]} #{result.except(:failed).inspect} failed=#{result[:failed]&.size}")
     result
