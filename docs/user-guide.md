@@ -473,12 +473,13 @@ shows the live price, zone, stop, target, R:R and readiness, once per stock per 
 off in **Settings → Telegram → Scanner match at a good entry**. Treat it as a prompt to look
 at the stock, not an order: check the chart and the board's rules first.
 
-**Morning watch (9 AM):** on trading days (Monday–Friday) at 9:00 AM Nepal time you get a
-☀️ list of the stocks on your saved filter that closed **in their entry zone** or **within
-3% below it**, with close, zone, stop, target, R:R, readiness and signal ages, plus NEPSE's
-phase. Use it to plan the session: during market hours the 🎯 message tells you when one
-actually trades inside its zone. If nothing qualifies, the message says so. Turn it off in
-**Settings → Telegram → Morning watch (9 AM)**.
+**Morning brief (8 AM):** on trading days (Monday–Friday) at 8:00 AM Nepal time you get a
+☀️ message from the last session: the stocks on **Entry zone now** (new ones marked 🆕) with
+zone, stop, target and R:R; **Needs a human look**, such as a board or watchlist stock with
+bad news (e.g. a promoter share sale) or a dividend, bonus or rights book close this week,
+a watchlist stock close to its stop, or one above its zone (chasing); stocks **close to
+their zone**; and your saved scanner filter's stocks. Use it to plan the session before the
+11:00 open. Turn it off in **Settings → Telegram → Morning brief (8 AM)**.
 
 **Market summary (about 5 PM):** after each session's nightly analysis, a 📊 message with
 NEPSE's close, turnover, breadth (up / down, % above the 50- and 200-day averages), the

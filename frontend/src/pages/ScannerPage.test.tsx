@@ -184,7 +184,7 @@ describe("ScannerPage", () => {
     alert = { signals: ["ema_9_21"], volume: true, telegram_linked: true, entry_alerts: true, morning_watch: true }
     renderWithClient(<ScannerPage />)
 
-    expect(await screen.findByText(/Telegram alerts on for this filter/)).toHaveTextContent("· watch list at 9 AM· and live when a match is in its entry zone")
+    expect(await screen.findByText(/Telegram alerts on for this filter/)).toHaveTextContent("· morning brief at 8 AM· and live when a match is in its entry zone")
     await userEvent.click(screen.getByLabelText("Volume ≥ 1.5× on the signal day"))
     expect(screen.getByLabelText("Telegram alerts")).toHaveTextContent("Telegram alerts on for: 9/21 on 1.5× volume")
     await userEvent.click(screen.getByRole("button", { name: "Alert me for this filter instead" }))

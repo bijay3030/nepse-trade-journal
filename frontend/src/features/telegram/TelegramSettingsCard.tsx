@@ -121,8 +121,8 @@ export function TelegramSettingsCard() {
                 onChange={(on) => update.mutate({ scanner_entry_alerts: on })}
               />
               <Switch
-                label="Morning watch (9 AM)"
-                help="Trading days at 9:00 AM Nepal time: the stocks on your saved Indicator Scanner filter that closed inside their entry zone or within 3% below it, with their levels."
+                label="Morning brief (8 AM)"
+                help="Trading days at 8:00 AM Nepal time: stocks on Entry zone now, what needs a human look (bad news or a book close for your or board stocks, a watchlist stock near its stop or above its zone), stocks close to their zone, and your scanner filter's."
                 checked={data.morning_watch ?? true}
                 disabled={update.isPending}
                 onChange={(on) => update.mutate({ morning_watch: on })}
