@@ -353,6 +353,37 @@ candidates as ideas to check on the stock's page, and size any real trade from i
    (pending / open / closed / skipped), entry, stop / target, exit and return; the All /
    Active / Closed tabs filter it.
 
+### 4.6f Paper Trading
+
+**Why:** to see how the app's signals would really have worked, trade by trade, before
+risking money, with no effort from you.
+
+**How it works:** fully automatic and simulated (no real order). When a watchlist stock
+**enters its zone** or **breaks out on volume**, it "buys" 10 shares at the live price
+(+0.5% slippage). When a stock is **new on Entry zone now**, it buys 10 at the next
+session's first live price. It "sells" all 10 by the app's sell rules once the shares
+settle (T+2): the stop or the target during the session, or at the close on a 50-day break
+on volume, a climax run or the time stop (15 sessions with little progress). NEPSE costs
+and capital gains tax are included, so the results are what real trades would have made.
+
+**The page:** the account (open positions, invested, open and realised P&L after costs,
+win rate, profit factor), **open positions** (why bought, price, now, P&L, stop / target,
+the day they can be sold), **closed trades** (bought and sold when and at what, held days,
+why sold, net P&L and return) and the **log** of every signal, buy, skip, hold and sell
+with its reason. Each buy, hold and sell also comes on Telegram as "Paper BUY / SELL /
+HOLD". Turn it off with the switch at the top.
+
+**QA:**
+
+1. Sidebar **Paper Trading** (`/paper-trading`): the switch is on; the account boxes.
+2. After a watchlist zone alert in market hours: a Telegram "🟢 Paper BUY · SYMBOL 10 @ price"
+   with stop / target and the reason; the stock under Open positions; Buy in the log.
+3. A second alert for the same stock: Skipped in the log ("already holding it").
+4. The price under the stop before T+2: "⏸ Paper HOLD"; after settlement: "🔴 Paper SELL"
+   with net P&L; the trade under Closed trades with "Stop hit".
+5. A stock new on Entry zone now: "Waiting to buy" after the close; bought at the next
+   session's first live price.
+
 ### 4.6e Market Events
 
 **Why:** bonus, rights, dividends, results, AGMs, promoter share sales and regulatory news

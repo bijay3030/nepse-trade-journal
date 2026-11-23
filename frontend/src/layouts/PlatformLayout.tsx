@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion"
 import {
+  NotebookPen,
   Megaphone,
   History,
   BarChart3,
@@ -48,6 +49,7 @@ const navItems = [
   { to: "/stock-backtest", label: "Stock Backtest", icon: History },
   { to: "/watchlist", label: "Watchlist", icon: Bookmark },
   { to: "/positions", label: "Positions", icon: Wallet },
+  { to: "/paper-trading", label: "Paper Trading", icon: NotebookPen },
   { to: "/trade/new", label: "New Trade", icon: PlusCircle },
   { to: "/portfolio", label: "Portfolio", icon: Briefcase },
   { to: "/trades", label: "Trades", icon: Clock3 },
