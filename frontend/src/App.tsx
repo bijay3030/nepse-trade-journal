@@ -21,6 +21,7 @@ const PositionsPage = lazy(async () => import("./pages/PositionsPage").then((m) 
 const DigestPage = lazy(async () => import("./pages/DigestPage").then((m) => ({ default: m.DigestPage })))
 const BacktestPage = lazy(async () => import("./pages/BacktestPage").then((m) => ({ default: m.BacktestPage })))
 const WatchlistPage = lazy(async () => import("./pages/WatchlistPage").then((m) => ({ default: m.WatchlistPage })))
+const PaperTradingPage = lazy(async () => import("./pages/PaperTradingPage").then((m) => ({ default: m.PaperTradingPage })))
 const MarketEventsPage = lazy(async () => import("./pages/MarketEventsPage").then((m) => ({ default: m.MarketEventsPage })))
 const StockBacktestPage = lazy(async () => import("./pages/StockBacktestPage").then((m) => ({ default: m.StockBacktestPage })))
 const LabPage = lazy(async () => import("./pages/LabPage").then((m) => ({ default: m.LabPage })))
@@ -48,6 +49,7 @@ function App() {
           <Route path="scanner" element={<ScannerPage />} />
           <Route path="lab" element={<LabPage />} />
           <Route path="events" element={<MarketEventsPage />} />
+          <Route path="paper-trading" element={<PaperTradingPage />} />
           <Route path="stock-backtest" element={<StockBacktestPage />} />
           <Route path="stock-backtest/:symbol" element={<StockBacktestPage />} />
           <Route path="watchlist" element={<WatchlistPage />} />

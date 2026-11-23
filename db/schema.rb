@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_22_044616) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_23_031156) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -190,6 +190,52 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_22_044616) do
     t.string "sector"
     t.string "source"
     t.index ["symbol"], name: "index_market_indices_on_symbol", unique: true
+  end
+
+  create_table "paper_trade_events", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "paper_trade_id"
+    t.bigint "stock_id", null: false
+    t.string "action", null: false
+    t.decimal "price", precision: 12, scale: 2
+    t.text "reason", null: false
+    t.datetime "at", null: false
+    t.jsonb "data", default: {}, null: false
+    t.index ["paper_trade_id"], name: "index_paper_trade_events_on_paper_trade_id"
+    t.index ["stock_id"], name: "index_paper_trade_events_on_stock_id"
+    t.index ["user_id", "at"], name: "index_paper_trade_events_on_user_id_and_at"
+    t.index ["user_id"], name: "index_paper_trade_events_on_user_id"
+  end
+
+  create_table "paper_trades", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "stock_id", null: false
+    t.string "status", default: "pending", null: false
+    t.string "trigger", null: false
+    t.string "trigger_key", null: false
+    t.date "signal_on", null: false
+    t.text "buy_reason", null: false
+    t.integer "quantity", null: false
+    t.decimal "stop_price", precision: 12, scale: 2, null: false
+    t.decimal "initial_stop_price", precision: 12, scale: 2, null: false
+    t.decimal "target_price", precision: 12, scale: 2
+    t.decimal "entry_price", precision: 12, scale: 2
+    t.datetime "entry_at"
+    t.decimal "buy_costs", precision: 12, scale: 2
+    t.decimal "exit_price", precision: 12, scale: 2
+    t.datetime "exit_at"
+    t.string "exit_rule"
+    t.text "sell_reason"
+    t.decimal "sell_costs", precision: 12, scale: 2
+    t.decimal "cgt", precision: 12, scale: 2
+    t.decimal "net_pnl", precision: 14, scale: 2
+    t.decimal "return_pct", precision: 8, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["stock_id"], name: "index_paper_trades_on_stock_id"
+    t.index ["user_id", "status"], name: "index_paper_trades_on_user_id_and_status"
+    t.index ["user_id", "trigger_key"], name: "index_paper_trades_on_user_id_and_trigger_key", unique: true
+    t.index ["user_id"], name: "index_paper_trades_on_user_id"
   end
 
   create_table "portfolios", force: :cascade do |t|
@@ -712,6 +758,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_22_044616) do
     t.boolean "telegram_market_summary", default: true, null: false
     t.date "telegram_market_summary_sent_on"
     t.boolean "telegram_event_alerts", default: true, null: false
+    t.boolean "paper_trading", default: true, null: false
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["jti"], name: "index_users_on_jti", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
@@ -780,6 +827,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_22_044616) do
   add_foreign_key "market_events", "stocks", on_delete: :cascade
   add_foreign_key "market_index_archives", "market_indices", on_delete: :cascade
   add_foreign_key "market_index_histories", "market_indices"
+  add_foreign_key "paper_trade_events", "paper_trades", on_delete: :cascade
+  add_foreign_key "paper_trade_events", "stocks", on_delete: :cascade
+  add_foreign_key "paper_trade_events", "users", on_delete: :cascade
+  add_foreign_key "paper_trades", "stocks", on_delete: :cascade
+  add_foreign_key "paper_trades", "users", on_delete: :cascade
   add_foreign_key "portfolios", "users"
   add_foreign_key "position_alerts", "positions", on_delete: :cascade
   add_foreign_key "position_alerts", "users", on_delete: :cascade

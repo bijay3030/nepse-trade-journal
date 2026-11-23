@@ -486,6 +486,28 @@ As of Nov 2026 both strategies **lost money across the market** (profit factor 0
 0.86), doing better only when NEPSE was sideways; 9 stocks qualified for the range bounce
 and none for RSI. With ~300 stocks tested, some good per-stock records are luck.
 
+## Paper Trading
+
+`/paper-trading` (sidebar **Paper Trading**) is a fully automated, simulated account
+(`PaperTrading::Engine`); no real order is ever placed.
+
+- **Buys, 10 shares, one trade per stock at a time:** when a watchlist stock **enters its
+  zone** or **breaks out on volume** (the WatchlistAlert), at the live price at that moment;
+  and when a stock is **new on Entry zone now** after the nightly analysis
+  (`PaperTradingBoardJob`), at the next session's first live price. 0.5% slippage. Levels are
+  the watchlist item's stop and target, or the board setup's.
+- **Sells, all 10, once the shares settle (T+2):** at the stop or the target during the
+  session (live price less 0.5%), or at the close by `Positions::Monitor`'s close rules (a
+  50-day break on volume, a climax run, the time stop). A stop hit before settlement is
+  logged as a hold and sold once the shares settle if still under the stop.
+- **Costs:** NEPSE commission, SEBON fee and DP charge (`Nepse::Costs`), and capital gains
+  tax on a gain (10%, 7.5% after a year).
+- **Log:** every signal, buy, skip (already holding), hold and sell with its reason
+  (`paper_trade_events`); buys, holds and sells are also sent on Telegram.
+
+Runs on fresh live prices only (`LivePriceSync.publish`), on the closing sync and after the
+nightly analysis. On / off on the page (`users.paper_trading`, `PATCH /api/v1/paper_trading`).
+
 ## Market Events
 
 `/events` (sidebar **Market Events**) tracks company announcements and corporate actions

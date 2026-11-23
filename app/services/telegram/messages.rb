@@ -178,6 +178,20 @@ module Telegram
       morning_brief(brief, today: today, limit: limit - 2)
     end
 
+    PAPER_ACTIONS = { "buy" => "🟢 Paper BUY", "sell" => "🔴 Paper SELL", "hold" => "⏸ Paper HOLD" }.freeze
+
+    # One automated paper trade step (PaperTrading::Engine). No real order is placed.
+    def paper_trade(event)
+      trade = event.paper_trade
+      head = "#{PAPER_ACTIONS.fetch(event.action, 'Paper')} · <b>#{h(event.stock.symbol)}</b> #{trade&.quantity} @ #{money(event.price)}"
+      extra = if event.action == "sell" && trade&.net_pnl
+        "\nResult: #{trade.net_pnl.negative? ? '-' : '+'}Rs #{money(trade.net_pnl.abs)} (#{format('%+.2f', trade.return_pct)}%)"
+      elsif event.action == "buy" && trade
+        "\nStop #{money(trade.stop_price)}#{trade.target_price ? " · target #{money(trade.target_price)}" : ''}"
+      end
+      "#{head}#{extra}\n#{h(event.reason)}\n<i>Paper trading: no real order was placed.</i>"
+    end
+
     PHASE_LABELS = { "uptrend" => "uptrend", "sideways" => "sideways", "downtrend" => "downtrend" }.freeze
 
     # 9 AM: the saved filter's stocks in or near their entry zone (Scans::MorningWatch).

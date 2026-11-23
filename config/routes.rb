@@ -68,6 +68,8 @@ Rails.application.routes.draw do
         post :trade_plan, on: :member
       end
       get "market_events", to: "market_events#index"
+      get "paper_trading", to: "paper_trading#show"
+      patch "paper_trading", to: "paper_trading#update"
       get "lab", to: "lab#show"
       get "lab/stocks/:symbol", to: "lab#stock"
       get "scans/crossovers", to: "scans#crossovers"

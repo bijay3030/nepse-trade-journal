@@ -467,6 +467,18 @@ Needs a bot token (README → Telegram messages) and `bin/dev` restarted with it
 | H28.4 | **Refresh** in the header during a delay | "Prices aren't fresh: <reasons>. Nothing was changed." |
 | H28.5 | A weekday holiday, 4 PM | No new daily prices stored; no closing alerts |
 
+## H29. Paper Trading
+
+| # | Steps | Expected |
+| - | ----- | -------- |
+| H29.1 | Sidebar → **Paper Trading** | Switch on; boxes: open positions, invested, open P&L, realised P&L, won, profit factor |
+| H29.2 | Market hours: a watchlist stock enters its zone (or breaks out on volume) | Within ~5 minutes: Telegram "🟢 Paper BUY · SYMBOL 10 @ <live +0.5%>" with stop / target and the reason; Open positions row with why bought and "Can sell from" (T+2); log: Signal, Buy |
+| H29.3 | Another alert for the same stock | Log: Skipped ("already holding it"); no second trade |
+| H29.4 | Price under the stop before T+2, then after | "⏸ Paper HOLD" (settles on <date>); after settlement "🔴 Paper SELL" with net P&L after costs; Closed trades: Stop hit, held days |
+| H29.5 | Price at the target (after T+2) | "🔴 Paper SELL" with tax shown; Closed trades: Target reached |
+| H29.6 | A stock new on Entry zone now | "Waiting to buy" after the nightly analysis; bought at the next session's first live price |
+| H29.7 | Switch off | No new paper trades; existing ones stay listed |
+
 ## I. Plan from setup
 
 | # | Steps | Expected |

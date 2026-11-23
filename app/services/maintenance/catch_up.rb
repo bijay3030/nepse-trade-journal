@@ -54,6 +54,7 @@ module Maintenance
         if result[:snapshot_sessions].include?(Nepse::MarketHours.today(@now))
           TelegramBoardJob.perform_later
           TelegramMarketSummaryJob.perform_later
+          PaperTradingBoardJob.perform_later
         end
       end
       result
