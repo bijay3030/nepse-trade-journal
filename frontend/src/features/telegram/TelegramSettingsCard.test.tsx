@@ -55,7 +55,7 @@ describe("TelegramSettingsCard", () => {
     await waitFor(() => expect(screen.getByRole("checkbox", { name: /New on Entry zone now/ })).not.toBeChecked())
     fireEvent.click(screen.getByRole("checkbox", { name: /Scanner match at a good entry/ }))
     await waitFor(() => expect(mockPatch).toHaveBeenCalledWith("/telegram", { scanner_entry_alerts: false }))
-    fireEvent.click(screen.getByRole("checkbox", { name: /Morning watch \(9 AM\)/ }))
+    fireEvent.click(screen.getByRole("checkbox", { name: /Morning brief \(8 AM\)/ }))
     await waitFor(() => expect(mockPatch).toHaveBeenCalledWith("/telegram", { morning_watch: false }))
     fireEvent.click(screen.getByRole("checkbox", { name: /Market summary after the close/ }))
     await waitFor(() => expect(mockPatch).toHaveBeenCalledWith("/telegram", { market_summary: false }))

@@ -128,6 +128,56 @@ module Telegram
       [ header, *blocks, more, FOOTER ].compact.join("\n\n")
     end
 
+    # 8 AM (Scans::MorningBrief): entry zone, things to check, close to the zone, the
+    # saved scanner filter. Shows fewer stocks per list if the text would be too long.
+    def morning_brief(brief, today:, limit: Scans::MorningBrief::ZONE_LIMIT)
+      near_limit = [ limit, Scans::MorningBrief::NEAR_LIMIT ].min
+      phase = brief.dig(:phase, :phase) ? "NEPSE #{PHASE_LABELS[brief[:phase][:phase]]}#{brief[:phase][:sessions] ? " for #{brief[:phase][:sessions]} sessions" : ''}" : nil
+      direction = brief[:direction] ? "Market Direction: #{brief[:direction][:label]}" : nil
+      header = "☀️ <b>Morning brief</b> · #{today.strftime('%a %-d %b')} (from the #{brief[:session].strftime('%a %-d %b')} close)" \
+               "#{[ phase, direction ].compact.any? ? "\n#{[ phase, direction ].compact.join(' · ')}" : ''}"
+      sections = []
+
+      board = brief[:board]
+      if board.any?
+        new_count = board.count { brief[:new_ids].include?(_1.stock_id) }
+        lines = board.first(limit).map do |s|
+          rr = s.target_price && s.close_price > s.invalidation_price ? " · R:R #{((s.target_price - s.close_price) / (s.close_price - s.invalidation_price)).round(1)}" : ""
+          "• <b>#{h(s.stock.symbol)}</b>#{brief[:new_ids].include?(s.stock_id) ? ' 🆕' : ''} #{money(s.close_price)} · zone #{money(s.entry_zone_low)}–#{money(s.entry_zone_high)} · " \
+            "stop #{money(s.invalidation_price)}#{s.target_price ? " · target #{money(s.target_price)}" : ''}#{rr} · ready #{s.readiness_score}"
+        end
+        sections << "<b>Entry zone now</b> (#{board.size}#{new_count.positive? ? ", #{new_count} new" : ''})\n#{lines.join("\n")}#{more_line(board.size - limit).sub('Indicator Scanner', 'Entry zone board')}"
+      else
+        sections << "<b>Entry zone now</b>: no stock passes every board rule."
+      end
+
+      if brief[:looks].any?
+        lines = brief[:looks].first(limit + 4).map { "⚠️ <b>#{h(_1[:symbol])}</b> (#{h(_1[:role])}): #{h(_1[:text])}" }
+        sections << "<b>Needs a human look</b>\n#{lines.join("\n")}#{more_line(brief[:looks].size - (limit + 4)).sub('Indicator Scanner', 'app')}"
+      end
+
+      if brief[:near].any?
+        lines = brief[:near].first(near_limit).map do |s|
+          "• <b>#{h(s.stock.symbol)}</b> #{money(s.close_price)} · #{format('%.1f', Scans::MorningBrief.gap(s.close_price.to_f, s.entry_zone_low.to_f))}% below zone #{money(s.entry_zone_low)} · ready #{s.readiness_score}"
+        end
+        sections << "<b>Close to the zone</b> (≤#{Scans::MorningBrief::NEAR_PCT.to_i}% below, readiness #{Scans::MorningBrief::MIN_READINESS}+)\n#{lines.join("\n")}#{more_line(brief[:near].size - near_limit).sub('Indicator Scanner', 'Entry zone board')}"
+      end
+
+      if (filter = brief[:filter])
+        groups = filter[:groups]
+        name = filter[:signals].map { SCANNER_LABELS.fetch(_1) }.join(" + ") + (filter[:volume] ? " on #{Scans::Crossovers::STRONG_VOLUME}x volume" : "")
+        in_zone = groups[:in_zone].first(near_limit).map { "• <b>#{h(_1[:symbol])}</b> #{money(_1[:close])} in zone #{money(_1[:levels][:entry_low])}–#{money(_1[:levels][:entry_high])}" }
+        near = groups[:near].first(near_limit).map { |row, gap| "• <b>#{h(row[:symbol])}</b> #{money(row[:close])} · #{gap}% below zone" }
+        body = (in_zone + near).join("\n").presence || "None of its #{groups[:radar]} matches is in or near its zone."
+        sections << "<b>Your scanner filter</b> (#{h(name)})\n#{body}"
+      end
+
+      text = [ header, *sections, "Market opens at 11:00. <i>Rule checks, not a recommendation.</i>" ].join("\n\n")
+      return text if text.size <= MAX_LENGTH || limit <= 2
+
+      morning_brief(brief, today: today, limit: limit - 2)
+    end
+
     PHASE_LABELS = { "uptrend" => "uptrend", "sideways" => "sideways", "downtrend" => "downtrend" }.freeze
 
     # 9 AM: the saved filter's stocks in or near their entry zone (Scans::MorningWatch).

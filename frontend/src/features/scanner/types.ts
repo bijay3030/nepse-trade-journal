@@ -107,4 +107,4 @@ export type CrossoverChart = {
 
 /** GET/PUT /scans/alert: the filter Telegram messages are sent for (empty = off). */
 /** volume: only send matches whose newest signal began on 1.5x average volume. */
-export type ScannerAlert = { signals: CrossoverSignal[]; volume: boolean; telegram_linked: boolean; /** Live messages when a match trades in its entry zone (Settings). */ entry_alerts?: boolean; /** The 9 AM watch list (Settings). */ morning_watch?: boolean }
+export type ScannerAlert = { signals: CrossoverSignal[]; volume: boolean; telegram_linked: boolean; /** Live messages when a match trades in its entry zone (Settings). */ entry_alerts?: boolean; /** The 8 AM morning brief (Settings). */ morning_watch?: boolean }

@@ -13,7 +13,7 @@ export type TelegramStatus = {
   board_alerts: boolean
   /** Live: a stock matching the saved scanner filter trades inside its entry zone. */
   scanner_entry_alerts?: boolean
-  /** 9 AM on trading days: saved-filter stocks in or near their entry zone. */
+  /** 8 AM on trading days: the morning brief (Scans::MorningBrief). */
   morning_watch?: boolean
   /** After the nightly analysis: the session's market summary. */
   market_summary?: boolean
